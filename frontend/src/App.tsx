@@ -29,7 +29,7 @@ export default function App() {
   return (
     <div className="min-h-screen">
       <Onboarding />
-      <header className="border-b border-slate-800 px-6 py-4">
+      <header className="border-b border-dark-700 px-6 py-4">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">
             Options Detective
@@ -41,12 +41,12 @@ export default function App() {
                 onClick={() => enabled[tab.id] && setView(tab.id)}
                 title={tab.hint}
                 disabled={!enabled[tab.id]}
-                className={`rounded-md px-4 py-2 text-sm transition-colors ${
+                className={`rounded-md px-4 py-2 text-sm transition-all duration-150 ease-out ${
                   view === tab.id
-                    ? "bg-sky-600 text-white"
+                    ? "bg-blue-600 text-white shadow-md"
                     : enabled[tab.id]
-                      ? "bg-slate-900 text-slate-400 hover:bg-slate-800"
-                      : "cursor-not-allowed bg-slate-900 text-slate-700"
+                      ? "bg-dark-800 text-content-3 hover:bg-dark-700 hover:text-content-1"
+                      : "cursor-not-allowed bg-dark-800 text-content-3/40"
                 }`}
               >
                 {tab.label}
@@ -56,7 +56,7 @@ export default function App() {
         </div>
       </header>
       {error && (
-        <div className="mx-auto mt-4 max-w-6xl rounded-md border border-rose-800 bg-rose-950/60 px-4 py-2 text-sm text-rose-200">
+        <div className="mx-auto mt-4 max-w-6xl rounded-md border border-red-800 bg-red-950/60 px-4 py-2 text-sm text-red-200">
           {error}
         </div>
       )}

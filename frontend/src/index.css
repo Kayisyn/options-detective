@@ -2,6 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design tokens (ux-design-polish-brief §1.1). Dark is the default; Phase 4
+   flips to light by adding .light to <html> — nothing else changes. */
+:root {
+  --od-dark-900: 10 14 39;    /* #0a0e27 app background */
+  --od-dark-800: 26 31 58;    /* #1a1f3a cards, panels */
+  --od-dark-700: 42 48 80;    /* #2a3050 hover, secondary panels */
+  --od-dark-600: 58 66 106;   /* borders on hover */
+  --od-dark-500: 76 86 132;   /* strongest hairline */
+
+  --od-text-1: 255 255 255;   /* primary */
+  --od-text-2: 209 213 219;   /* secondary #d1d5db */
+  --od-text-3: 156 163 175;   /* tertiary #9ca3af */
+}
+
+:root.light {
+  --od-dark-900: 249 250 251; /* #f9fafb */
+  --od-dark-800: 243 244 246; /* #f3f4f6 */
+  --od-dark-700: 229 231 235; /* #e5e7eb */
+  --od-dark-600: 209 213 219;
+  --od-dark-500: 156 163 175;
+
+  --od-text-1: 31 41 55;      /* #1f2937 */
+  --od-text-2: 55 65 81;      /* #374151 */
+  --od-text-3: 107 114 128;   /* #6b7280 */
+}
+
 body {
-  @apply bg-slate-950 text-slate-100 antialiased;
+  @apply bg-dark-900 text-content-1 antialiased;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Roboto", sans-serif;
 }

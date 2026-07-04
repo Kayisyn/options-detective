@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Button from "../ui/Button";
 
 const STORAGE_KEY = "od.onboarded.v1";
 
@@ -57,12 +58,9 @@ export default function Onboarding() {
           hours — staleness is always flagged, never hidden. This is analysis
           software, not investment advice.
         </p>
-        <button
-          onClick={dismiss}
-          className="mt-4 w-full rounded-md bg-sky-600 py-2 text-sm font-medium text-white hover:bg-sky-500"
-        >
+        <Button size="lg" className="mt-4 w-full" onClick={dismiss}>
           Got it — let&apos;s screen
-        </button>
+        </Button>
       </div>
     </div>
   );

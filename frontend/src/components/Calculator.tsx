@@ -3,6 +3,7 @@ import { useStore } from "../store";
 import { money, num, pct, shortDate, signed, strategyLabel } from "../lib/format";
 import PayoffChart from "./shared/PayoffChart";
 import GreeksSummary from "./shared/GreeksSummary";
+import Button from "./ui/Button";
 import type { CalcResult, Leg } from "../types";
 
 // Plain-language readout of the payoff shape. Reads only backend-provided
@@ -80,12 +81,9 @@ export default function Calculator() {
             indicative marks
           </span>
         )}
-        <button
-          onClick={() => s.recommend()}
-          className="ml-auto rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
-        >
+        <Button className="ml-auto" onClick={() => s.recommend()}>
           Compare candidates →
-        </button>
+        </Button>
       </div>
 
       {s.status === "calculating" && (
@@ -161,19 +159,13 @@ export default function Calculator() {
               </table>
               {dirty && (
                 <div className="flex gap-2 border-t border-slate-800 px-3 py-2">
-                  <button
-                    onClick={() => recalculate()}
-                    className="rounded bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-500"
-                    title="Reprice adjusted legs at Black-Scholes theoretical value and recompute everything"
-                  >
+                  <Button size="xs" onClick={() => recalculate()}
+                    title="Reprice adjusted legs at Black-Scholes theoretical value and recompute everything">
                     Recalculate (theoretical)
-                  </button>
-                  <button
-                    onClick={() => setDraftLegs(null)}
-                    className="rounded border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800"
-                  >
+                  </Button>
+                  <Button variant="ghost" size="xs" onClick={() => setDraftLegs(null)}>
                     Reset
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

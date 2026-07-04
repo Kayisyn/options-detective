@@ -1,4 +1,6 @@
 import { money, pct, shortDate, signed, strategyLabel } from "../../lib/format";
+import Button from "../ui/Button";
+import { Badge, Card, CardContent, CardFooter, CardHeader, MetricBox } from "../ui/Card";
 import type { RankedCandidate } from "../../types";
 
 interface CandidateCardProps {
@@ -14,71 +16,64 @@ export default function CandidateCard({
   candidate: c, exported, saved, onOpen, onExport, onSave,
 }: CandidateCardProps) {
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900 p-4">
-      <div className="flex items-center gap-2">
-        <span className="rounded bg-slate-800 px-2 py-0.5 text-xs font-semibold text-sky-400">
-          #{c.rank}
-        </span>
-        <span className="font-medium capitalize">{strategyLabel(c.strategyType)}</span>
-        <span className="text-sm text-slate-500">{shortDate(c.expiration)} · {c.daysToExpiry}d</span>
-        <span className="ml-auto font-semibold tabular-nums text-sky-300">
-          {c.compositeScore.toFixed(1)}
-        </span>
-      </div>
+    <Card glow={c.rank === 1} enterDelayMs={(c.rank - 1) * 50}>
+      <CardHeader>
+        <div className="flex items-center gap-2.5">
+          <span className="rounded bg-dark-700 px-2 py-0.5 text-xs font-semibold text-blue-400">
+            #{c.rank}
+          </span>
+          <div>
+            <h3 className="text-lg font-semibold capitalize text-content-1">
+              {strategyLabel(c.strategyType)}
+            </h3>
+            <p className="text-xs text-content-3">
+              {shortDate(c.expiration)} · {c.daysToExpiry}d
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant={c.probability.pop >= 0.6 ? "green" : "blue"}
+            title="Probability of any profit at expiry (lognormal model)">
+            {pct(c.probability.pop)} POP
+          </Badge>
+          <span className="font-bold tabular-nums text-blue-300"
+            title="Composite score (0-10)">
+            {c.compositeScore.toFixed(1)}
+          </span>
+        </div>
+      </CardHeader>
 
-      <div className="mt-3 grid grid-cols-4 gap-2 text-sm tabular-nums">
-        <div title="Probability of any profit at expiry">
-          <div className="text-xs text-slate-500">POP</div>
-          {pct(c.probability.pop)}
-        </div>
-        <div title="Best case at expiry">
-          <div className="text-xs text-slate-500">Max profit</div>
-          <span className="text-emerald-400">{money(c.payoff.maxProfit)}</span>
-        </div>
-        {/* max loss always shown with equal weight to max profit */}
-        <div title="Worst case at expiry — the number that sizes your position">
-          <div className="text-xs text-slate-500">Max loss</div>
-          <span className="text-rose-400">{money(c.payoff.maxLoss)}</span>
-        </div>
-        <div title="Cash / buying power for one unit">
-          <div className="text-xs text-slate-500">Capital</div>
-          {money(c.sizing.capitalRequired)}{c.sizing.capitalApproximate ? " ≈" : ""}
-        </div>
-      </div>
+      <CardContent className="grid grid-cols-4 gap-3">
+        <MetricBox label="Max Profit" value={money(c.payoff.maxProfit)}
+          highlight="green" hint="Best case at expiry" />
+        {/* max loss always carries equal visual weight to max profit */}
+        <MetricBox label="Max Loss" value={money(c.payoff.maxLoss)}
+          highlight="red" hint="Worst case at expiry — the number that sizes your position" />
+        <MetricBox
+          label="Capital"
+          value={<>{money(c.sizing.capitalRequired)}{c.sizing.capitalApproximate ? " ≈" : ""}</>}
+          hint="Cash / buying power for one unit"
+        />
+        <MetricBox label="θ / day" value={signed(c.metrics.thetaPerDay)}
+          highlight={c.metrics.thetaPerDay >= 0 ? "green" : "red"}
+          hint="Dollars gained (+) or lost (-) per calendar day of time decay" />
+      </CardContent>
 
-      <div className="mt-2 text-xs text-slate-500">
-        {c.rationale} · θ {signed(c.metrics.thetaPerDay)}/day
-      </div>
+      <p className="mb-3 text-xs text-content-3">{c.rationale}</p>
 
-      <div className="mt-3 flex gap-2">
-        <button
-          onClick={onOpen}
-          className="rounded border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800"
-        >
+      <CardFooter>
+        <Button variant="secondary" size="sm" onClick={onOpen}>
           Open in Calculator
-        </button>
-        <button
-          onClick={onExport}
-          className={`rounded px-3 py-1.5 text-xs font-medium ${
-            exported ? "bg-emerald-800 text-emerald-200" : "bg-sky-600 text-white hover:bg-sky-500"
-          }`}
-          title={c.exportText}
-        >
+        </Button>
+        <Button size="sm" onClick={onExport} title={c.exportText}
+          className={exported ? "bg-emerald-700 hover:bg-emerald-700" : undefined}>
           {exported ? "Copied ✓" : "Export order"}
-        </button>
-        <button
-          onClick={onSave}
-          disabled={saved}
-          className={`rounded px-3 py-1.5 text-xs ${
-            saved
-              ? "cursor-default bg-slate-800 text-slate-500"
-              : "border border-slate-700 text-slate-300 hover:bg-slate-800"
-          }`}
-          title="Snapshot this trade into your journal"
-        >
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onSave} disabled={saved}
+          title="Snapshot this trade into your journal">
           {saved ? "Saved ✓" : "Save"}
-        </button>
-      </div>
-    </div>
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }
