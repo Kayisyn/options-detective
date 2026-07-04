@@ -35,11 +35,14 @@ async function waitForBackend(timeoutMs = 20_000) {
   return false;
 }
 
-async function forward(pathname, body) {
-  const init = body === undefined ? {} : {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+async function forward(pathname, body, method) {
+  const resolvedMethod = method || (body === undefined ? "GET" : "POST");
+  const init = {
+    method: resolvedMethod,
+    ...(body === undefined ? {} : {
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
   };
   const res = await fetch(`${BACKEND_URL}${pathname}`, init);
   const payload = await res.json().catch(() => ({}));
@@ -54,6 +57,9 @@ function registerIpc() {
   ipcMain.handle("api:calculate", (_event, body) => forward("/calculate", body));
   ipcMain.handle("api:recommend", (_event, body) => forward("/recommend", body));
   ipcMain.handle("api:data", (_event, { symbol }) => forward(`/data/${encodeURIComponent(symbol)}`));
+  ipcMain.handle("api:trades:list", () => forward("/trades"));
+  ipcMain.handle("api:trades:save", (_event, body) => forward("/trades", body));
+  ipcMain.handle("api:trades:delete", (_event, { id }) => forward(`/trades/${encodeURIComponent(id)}`, undefined, "DELETE"));
   ipcMain.handle("api:export", (_event, { text }) => {
     clipboard.writeText(String(text ?? ""));
     return true;

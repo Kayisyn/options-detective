@@ -9,4 +9,7 @@ contextBridge.exposeInMainWorld("optionsDetective", {
   recommend: (payload) => ipcRenderer.invoke("api:recommend", payload),
   getMarketData: (symbol) => ipcRenderer.invoke("api:data", { symbol }),
   exportTrade: (text) => ipcRenderer.invoke("api:export", { text }),
+  listTrades: () => ipcRenderer.invoke("api:trades:list"),
+  saveTrade: (payload) => ipcRenderer.invoke("api:trades:save", payload),
+  deleteTrade: (id) => ipcRenderer.invoke("api:trades:delete", { id }),
 });

@@ -1,5 +1,6 @@
 import Calculator from "./components/Calculator";
 import Detector from "./components/Detector";
+import Journal from "./components/Journal";
 import Recommender from "./components/Recommender";
 import Onboarding from "./components/shared/Onboarding";
 import { useStore, type View } from "./store";
@@ -8,6 +9,7 @@ const TABS: Array<{ id: View; label: string; hint: string }> = [
   { id: "detector", label: "1 · Detector", hint: "Screen opportunities" },
   { id: "calculator", label: "2 · Calculator", hint: "Analyze the math" },
   { id: "recommender", label: "3 · Recommender", hint: "Compare and export" },
+  { id: "journal", label: "Journal", hint: "Your saved trades" },
 ];
 
 export default function App() {
@@ -21,6 +23,7 @@ export default function App() {
     detector: true,
     calculator: selected !== null,
     recommender: (screenResult?.candidates.length ?? 0) > 0,
+    journal: true,
   };
 
   return (
@@ -61,6 +64,7 @@ export default function App() {
         {view === "detector" && <Detector />}
         {view === "calculator" && <Calculator />}
         {view === "recommender" && <Recommender />}
+        {view === "journal" && <Journal />}
       </main>
     </div>
   );

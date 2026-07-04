@@ -1,11 +1,11 @@
 import { create } from "zustand";
 import { api } from "./lib/api";
 import type {
-  CalcResult, Candidate, DirectionalView, Leg, Recommendation, ScreenParams,
-  ScreenResult,
+  CalcResult, Candidate, DirectionalView, Leg, Recommendation, SavedTrade,
+  ScreenParams, ScreenResult,
 } from "./types";
 
-export type View = "detector" | "calculator" | "recommender";
+export type View = "detector" | "calculator" | "recommender" | "journal";
 
 type Status = "idle" | "screening" | "calculating" | "recommending";
 
@@ -26,6 +26,7 @@ interface AppState {
   calcResult: CalcResult | null;
   recommendation: Recommendation | null;
   exportedId: string | null; // last candidate copied to clipboard
+  savedTrades: SavedTrade[];
 
   setView: (view: View) => void;
   setIntent: (patch: Partial<Pick<AppState,
@@ -35,6 +36,9 @@ interface AppState {
   recalculate: (legs: Leg[], repriceTheoretical: boolean) => Promise<void>;
   recommend: () => Promise<void>;
   exportTrade: (id: string, text: string) => Promise<void>;
+  loadJournal: () => Promise<void>;
+  saveToJournal: (candidate: Candidate, exportText?: string) => Promise<void>;
+  removeFromJournal: (id: string) => Promise<void>;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -53,6 +57,7 @@ export const useStore = create<AppState>((set, get) => ({
   calcResult: null,
   recommendation: null,
   exportedId: null,
+  savedTrades: [],
 
   setView: (view) => set({ view }),
   setIntent: (patch) => set(patch),
@@ -137,6 +142,33 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       await api.exportTrade(text);
       set({ exportedId: id });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async loadJournal() {
+    try {
+      const { trades } = await api.listTrades();
+      set({ savedTrades: trades });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async saveToJournal(candidate, exportText) {
+    try {
+      await api.saveTrade({ candidate, exportText: exportText ?? null });
+      await get().loadJournal();
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async removeFromJournal(id) {
+    try {
+      await api.deleteTrade(id);
+      await get().loadJournal();
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }

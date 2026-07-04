@@ -4,11 +4,15 @@ import type { RankedCandidate } from "../../types";
 interface CandidateCardProps {
   candidate: RankedCandidate;
   exported: boolean;
+  saved: boolean;
   onOpen: () => void;
   onExport: () => void;
+  onSave: () => void;
 }
 
-export default function CandidateCard({ candidate: c, exported, onOpen, onExport }: CandidateCardProps) {
+export default function CandidateCard({
+  candidate: c, exported, saved, onOpen, onExport, onSave,
+}: CandidateCardProps) {
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900 p-4">
       <div className="flex items-center gap-2">
@@ -61,6 +65,18 @@ export default function CandidateCard({ candidate: c, exported, onOpen, onExport
           title={c.exportText}
         >
           {exported ? "Copied ✓" : "Export order"}
+        </button>
+        <button
+          onClick={onSave}
+          disabled={saved}
+          className={`rounded px-3 py-1.5 text-xs ${
+            saved
+              ? "cursor-default bg-slate-800 text-slate-500"
+              : "border border-slate-700 text-slate-300 hover:bg-slate-800"
+          }`}
+          title="Snapshot this trade into your journal"
+        >
+          {saved ? "Saved ✓" : "Save"}
         </button>
       </div>
     </div>

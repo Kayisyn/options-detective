@@ -150,6 +150,14 @@ export interface RankedCandidate extends Candidate {
   exportText: string;
 }
 
+export interface SavedTrade {
+  id: string;
+  savedAt: string; // ISO timestamp
+  note: string;
+  exportText: string | null;
+  candidate: Candidate;
+}
+
 export interface Recommendation {
   source: "provided" | "screened";
   ranked: RankedCandidate[];

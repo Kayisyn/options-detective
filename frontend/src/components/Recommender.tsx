@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useStore } from "../store";
 import { money, pct, shortDate, strategyLabel } from "../lib/format";
 import CandidateCard from "./shared/CandidateCard";
@@ -7,6 +8,11 @@ import CandidateCard from "./shared/CandidateCard";
 export default function Recommender() {
   const s = useStore();
   const rec = s.recommendation;
+
+  useEffect(() => {
+    s.loadJournal(); // so Save buttons reflect what's already journaled
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
+  }, []);
 
   if (s.status === "recommending") {
     return <div className="rounded-md bg-slate-900 px-4 py-3 text-sm text-slate-400">Ranking candidates…</div>;
@@ -38,8 +44,10 @@ export default function Recommender() {
             key={c.id}
             candidate={c}
             exported={s.exportedId === c.id}
+            saved={s.savedTrades.some((t) => t.candidate.id === c.id)}
             onOpen={() => s.openCandidate(c)}
             onExport={() => s.exportTrade(c.id, c.exportText)}
+            onSave={() => s.saveToJournal(c, c.exportText)}
           />
         ))}
       </div>
