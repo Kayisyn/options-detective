@@ -1,16 +1,25 @@
-// GET /data/:symbol -> { price, chains, ivRank, dataAge }
-// yfinance adapter with 60s caching, normalization and liquidity gates
-// (volume >= 50, OI >= 100, spread <= 5%). Implemented in Phase 2.
+// GET /data/:symbol[?refresh=1&expirations=6] -> normalized market data
+// (price, chains after liquidity gates, IV rank, data age). Phase 2 — live.
 const { Router } = require("express");
+const { dataLayer, DataError } = require("../services/dataLayer");
 
 const router = Router();
 
-router.get("/:symbol", (req, res) => {
-  res.status(501).json({
-    error: "Data layer arrives in Phase 2",
-    phase: 2,
-    symbol: req.params.symbol,
-  });
+router.get("/:symbol", async (req, res) => {
+  try {
+    const maxExpirations = Math.min(Number.parseInt(req.query.expirations, 10) || 6, 8);
+    const data = await dataLayer.getMarketData(req.params.symbol, {
+      refresh: req.query.refresh === "1",
+      maxExpirations,
+    });
+    res.json(data);
+  } catch (err) {
+    if (err instanceof DataError) {
+      res.status(404).json({ error: err.message });
+      return;
+    }
+    res.status(502).json({ error: String(err.message || err) });
+  }
 });
 
 module.exports = router;

@@ -1,10 +1,20 @@
 """JSON dispatch entry point — the Node.js backend calls the math engine here.
 
-Protocol
---------
-stdin : one JSON object   {"fn": "<function>", "args": {...}}
-stdout: one JSON object   {"ok": true,  "result": ...}
-                        | {"ok": false, "error": "<message>"}
+Protocols
+---------
+One-shot (default):
+    stdin : one JSON object   {"fn": "<function>", "args": {...}}
+    stdout: one JSON object   {"ok": true,  "result": ...}
+                            | {"ok": false, "error": "<message>"}
+
+Persistent (--serve): one JSON request per line, one JSON response per line.
+Requests may carry an "id" which is echoed back on the response, so the Node
+bridge can pipeline concurrent calls over a single warm interpreter (scipy
+import costs ~0.5s; screening hundreds of candidates cannot pay that per call).
+
+The special fn "batch" runs {"args": {"requests": [{fn, args}, ...]}} and
+returns a list of per-item {ok, result|error} envelopes — one engine call for
+an entire Detector screen.
 
 The process always exits 0 when it managed to emit a JSON response; a
 non-zero exit means the protocol itself broke (crash), not a domain error.
@@ -61,19 +71,12 @@ def _jsonable(obj):
     return obj
 
 
-def handle(request_text: str) -> dict:
-    try:
-        req = json.loads(request_text)
-    except json.JSONDecodeError as exc:
-        return {"ok": False, "error": f"invalid JSON request: {exc}"}
-    if not isinstance(req, dict) or "fn" not in req:
-        return {"ok": False, "error": 'request must be {"fn": "...", "args": {...}}'}
-    fn = DISPATCH.get(req["fn"])
+def _dispatch(fn_name, args) -> dict:
+    fn = DISPATCH.get(fn_name)
     if fn is None:
         return {"ok": False,
-                "error": f"unknown function {req['fn']!r}; "
+                "error": f"unknown function {fn_name!r}; "
                          f"available: {', '.join(sorted(DISPATCH))}"}
-    args = req.get("args", {})
     if not isinstance(args, dict):
         return {"ok": False, "error": "args must be an object of keyword arguments"}
     try:
@@ -83,7 +86,53 @@ def handle(request_text: str) -> dict:
     return {"ok": True, "result": _jsonable(result)}
 
 
-def main() -> int:
+def _handle_batch(args) -> dict:
+    requests = args.get("requests") if isinstance(args, dict) else None
+    if not isinstance(requests, list):
+        return {"ok": False,
+                "error": 'batch args must be {"requests": [{"fn": ..., "args": ...}, ...]}'}
+    results = []
+    for item in requests:
+        if not isinstance(item, dict) or "fn" not in item:
+            results.append({"ok": False, "error": "each batch item must be {fn, args}"})
+        elif item["fn"] == "batch":
+            results.append({"ok": False, "error": "nested batch is not allowed"})
+        else:
+            results.append(_dispatch(item["fn"], item.get("args", {})))
+    return {"ok": True, "result": results}
+
+
+def handle(request_text: str) -> dict:
+    try:
+        req = json.loads(request_text)
+    except json.JSONDecodeError as exc:
+        return {"ok": False, "error": f"invalid JSON request: {exc}"}
+    if not isinstance(req, dict) or "fn" not in req:
+        return {"ok": False, "error": 'request must be {"fn": "...", "args": {...}}'}
+    if req["fn"] == "batch":
+        response = _handle_batch(req.get("args", {}))
+    else:
+        response = _dispatch(req["fn"], req.get("args", {}))
+    if "id" in req:
+        response["id"] = req["id"]
+    return response
+
+
+def serve() -> int:
+    """--serve: line-delimited JSON loop for the persistent Node bridge."""
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        json.dump(handle(line), sys.stdout)
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+    return 0
+
+
+def main(argv) -> int:
+    if "--serve" in argv:
+        return serve()
     response = handle(sys.stdin.read())
     json.dump(response, sys.stdout)
     sys.stdout.write("\n")
@@ -91,4 +140,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))
