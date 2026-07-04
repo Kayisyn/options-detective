@@ -3,6 +3,7 @@ import { useStore } from "../store";
 import { money, num, pct, shortDate, signed, strategyLabel } from "../lib/format";
 import Button from "./ui/Button";
 import { Badge, Card, CardContent, CardFooter, CardHeader, MetricBox } from "./ui/Card";
+import { FormInput, FormSelect } from "./ui/Input";
 import type { Candidate, DirectionalView } from "../types";
 
 const VIEWS: Array<{ id: DirectionalView; label: string }> = [
@@ -30,41 +31,34 @@ export default function Detector() {
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
-        <label className="block">
-          <span className="text-xs uppercase tracking-wide text-content-3">Symbol</span>
-          <input
-            value={s.symbol}
-            onChange={(e) => s.setIntent({ symbol: e.target.value.toUpperCase() })}
-            onKeyDown={(e) => e.key === "Enter" && !screening && s.screen()}
-            className="mt-1 block w-28 rounded-sm border border-dark-600 bg-dark-700 px-3 py-2.5 font-mono text-sm uppercase text-content-1 placeholder:text-content-3 transition-all duration-150 ease-out focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-            placeholder="AAPL"
-            data-testid="symbol-input"
-          />
-        </label>
-        <label className="block">
-          <span className="text-xs uppercase tracking-wide text-content-3"
-            title="Your directional opinion drives which strategies are screened">
-            View
-          </span>
-          <select
-            value={s.directionalView}
-            onChange={(e) => s.setIntent({ directionalView: e.target.value as DirectionalView })}
-            className="mt-1 block rounded-sm border border-dark-600 bg-dark-700 px-3 py-2.5 text-sm text-content-1 transition-all duration-150 ease-out focus:border-blue-500 focus:outline-none"
-          >
-            {VIEWS.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
-          </select>
-        </label>
-        <label className="block">
-          <span className="text-xs uppercase tracking-wide text-content-3">Capital</span>
-          <input
-            type="number"
-            min={1000}
-            step={1000}
-            value={s.capital}
-            onChange={(e) => s.setIntent({ capital: Number(e.target.value) })}
-            className="mt-1 block w-32 rounded-sm border border-dark-600 bg-dark-700 px-3 py-2.5 text-sm text-content-1 transition-all duration-150 ease-out focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-          />
-        </label>
+        <FormInput
+          label="Symbol"
+          placeholder="AAPL, SPY, NVDA"
+          value={s.symbol}
+          onChange={(e) => s.setIntent({ symbol: e.target.value.toUpperCase() })}
+          onKeyDown={(e) => e.key === "Enter" && !screening && s.screen()}
+          className="w-36 font-mono uppercase"
+          data-testid="symbol-input"
+        />
+        <FormSelect
+          label="View"
+          hint="Your directional opinion drives which strategies are screened"
+          value={s.directionalView}
+          onChange={(e) => s.setIntent({ directionalView: e.target.value as DirectionalView })}
+        >
+          {VIEWS.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
+        </FormSelect>
+        <FormInput
+          label="Capital"
+          type="number"
+          min={1000}
+          step={1000}
+          value={s.capital}
+          onChange={(e) => s.setIntent({ capital: Number(e.target.value) })}
+          className="w-32"
+          error={s.capital < 1000 ? "at least $1,000" : undefined}
+          data-testid="capital-input"
+        />
         <label className="flex items-center gap-2 pb-3 text-sm text-content-2"
           title="Exclude strategies whose loss is theoretically unlimited (e.g. short strangles)">
           <input
@@ -78,7 +72,7 @@ export default function Detector() {
         <Button
           size="lg"
           onClick={() => s.screen()}
-          disabled={screening || s.symbol.trim() === ""}
+          disabled={screening || s.symbol.trim() === "" || s.capital < 1000}
           data-testid="screen-button"
         >
           {screening ? "Screening…" : "Screen"}

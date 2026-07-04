@@ -4,6 +4,7 @@ import { money, num, pct, shortDate, signed, strategyLabel } from "../lib/format
 import PayoffChart from "./shared/PayoffChart";
 import GreeksSummary from "./shared/GreeksSummary";
 import Button from "./ui/Button";
+import { compactFieldClasses } from "./ui/Input";
 import type { CalcResult, Leg } from "../types";
 
 // Plain-language readout of the payoff shape. Reads only backend-provided
@@ -97,6 +98,8 @@ export default function Calculator() {
               points={result.payoff.profitAtExpiry}
               breakevens={result.payoff.breakevens}
               spot={result.inputs.spot}
+              maxProfit={result.payoff.maxProfit}
+              maxLoss={result.payoff.maxLoss}
             />
             {narrative(result, candidate.symbol) && (
               <p className="mt-2 text-sm text-sky-200/80">
@@ -137,7 +140,7 @@ export default function Calculator() {
                             step="0.5"
                             value={leg.strike}
                             onChange={(e) => editStrike(i, Number(e.target.value))}
-                            className="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-1 tabular-nums focus:border-sky-500 focus:outline-none"
+                            className={`w-24 ${compactFieldClasses}`}
                           />
                         )}
                       </td>
