@@ -1,0 +1,164 @@
+// Pure candidate-draft generation: strike selection per strategy from a
+// liquidity-gated chain. No I/O and no pricing math here — the Detector
+// prices drafts through the math engine afterward.
+//
+// A draft is the structural half of a Candidate: legs with entry mids and
+// per-leg IVs. Builders return null when the chain cannot support the
+// structure honestly (missing/illiquid strikes, nonsensical economics) —
+// a null draft is normal, not an error.
+
+// Wide-spread (illiquid) contracts are always excluded. Contracts with no
+// live book (indicativeOnly — market closed) are usable only when the caller
+// opts in via ctx.allowIndicative; the Detector does that for stale sessions
+// and labels every resulting candidate.
+function liquidOnly(contracts, allowIndicative = false) {
+  return (contracts || []).filter((c) => !c.illiquid && c.mid > 0
+    && (allowIndicative || !c.indicativeOnly));
+}
+
+function nearest(contracts, targetStrike) {
+  let best = null;
+  let bestDist = Infinity;
+  for (const c of contracts) {
+    const dist = Math.abs(c.strike - targetStrike);
+    if (dist < bestDist) {
+      best = c;
+      bestDist = dist;
+    }
+  }
+  return best;
+}
+
+function nearestWhere(contracts, targetStrike, predicate) {
+  return nearest(contracts.filter(predicate), targetStrike);
+}
+
+// Median gap between adjacent listed strikes — the chain's natural width unit.
+function strikeStep(contracts) {
+  const strikes = [...new Set(contracts.map((c) => c.strike))].sort((a, b) => a - b);
+  if (strikes.length < 2) return null;
+  const diffs = strikes.slice(1).map((s, i) => s - strikes[i]).sort((a, b) => a - b);
+  return diffs[Math.floor(diffs.length / 2)];
+}
+
+function optionLeg(type, contract) {
+  return {
+    type,
+    strike: contract.strike,
+    price: contract.mid,
+    qty: 1,
+    iv: contract.impliedVolatility,
+    spreadPct: contract.spreadPct,
+    volume: contract.volume,
+    openInterest: contract.openInterest,
+  };
+}
+
+// ---- builders -------------------------------------------------------------
+// ctx: { spot, atmIv, dte, calls, puts } (calls/puts already liquidity-gated)
+
+function buildCallVertical(ctx) {
+  const calls = liquidOnly(ctx.calls, ctx.allowIndicative);
+  const long = nearest(calls, ctx.spot);
+  if (!long) return null;
+  const width = Math.max(strikeStep(calls) || ctx.spot * 0.01, ctx.spot * 0.02);
+  const short = nearestWhere(calls, long.strike + width, (c) => c.strike > long.strike);
+  if (!short) return null;
+  if (long.mid - short.mid <= 0) return null; // free spread = bad marks
+  return [optionLeg("long_call", long), optionLeg("short_call", short)];
+}
+
+function buildPutVertical(ctx) {
+  const puts = liquidOnly(ctx.puts, ctx.allowIndicative);
+  const long = nearest(puts, ctx.spot);
+  if (!long) return null;
+  const width = Math.max(strikeStep(puts) || ctx.spot * 0.01, ctx.spot * 0.02);
+  const short = nearestWhere(puts, long.strike - width, (c) => c.strike < long.strike);
+  if (!short) return null;
+  if (long.mid - short.mid <= 0) return null;
+  return [optionLeg("long_put", long), optionLeg("short_put", short)];
+}
+
+function buildCashSecuredPut(ctx) {
+  const puts = liquidOnly(ctx.puts, ctx.allowIndicative);
+  const short = nearestWhere(puts, ctx.spot * 0.96, (c) => c.strike < ctx.spot);
+  if (!short || short.mid <= 0) return null;
+  return [optionLeg("short_put", short)];
+}
+
+function buildCoveredCall(ctx) {
+  const calls = liquidOnly(ctx.calls, ctx.allowIndicative);
+  const short = nearestWhere(calls, ctx.spot * 1.04, (c) => c.strike > ctx.spot);
+  if (!short || short.mid <= 0) return null;
+  return [
+    { type: "long_stock", price: ctx.spot, qty: 100 },
+    optionLeg("short_call", short),
+  ];
+}
+
+function shortStrikesAtOneSigma(ctx) {
+  const sigma = ctx.atmIv || 0.25;
+  const sd = ctx.spot * sigma * Math.sqrt(Math.max(ctx.dte, 1) / 365);
+  const puts = liquidOnly(ctx.puts, ctx.allowIndicative);
+  const calls = liquidOnly(ctx.calls, ctx.allowIndicative);
+  const shortPut = nearestWhere(puts, ctx.spot - sd, (c) => c.strike < ctx.spot);
+  const shortCall = nearestWhere(calls, ctx.spot + sd, (c) => c.strike > ctx.spot);
+  if (!shortPut || !shortCall) return null;
+  return { shortPut, shortCall, puts, calls };
+}
+
+function buildIronCondor(ctx) {
+  const shorts = shortStrikesAtOneSigma(ctx);
+  if (!shorts) return null;
+  const { shortPut, shortCall, puts, calls } = shorts;
+  const wing = Math.max(strikeStep(puts) || ctx.spot * 0.01, ctx.spot * 0.01);
+  const longPut = nearestWhere(puts, shortPut.strike - wing, (c) => c.strike < shortPut.strike);
+  const longCall = nearestWhere(calls, shortCall.strike + wing, (c) => c.strike > shortCall.strike);
+  if (!longPut || !longCall) return null;
+  const credit = shortPut.mid + shortCall.mid - longPut.mid - longCall.mid;
+  if (credit <= 0) return null;
+  return [
+    optionLeg("long_put", longPut),
+    optionLeg("short_put", shortPut),
+    optionLeg("short_call", shortCall),
+    optionLeg("long_call", longCall),
+  ];
+}
+
+function buildLongStraddle(ctx) {
+  const calls = liquidOnly(ctx.calls, ctx.allowIndicative);
+  const puts = liquidOnly(ctx.puts, ctx.allowIndicative);
+  const putStrikes = new Set(puts.map((c) => c.strike));
+  const paired = calls.filter((c) => putStrikes.has(c.strike));
+  const call = nearest(paired, ctx.spot);
+  if (!call) return null;
+  const put = puts.find((c) => c.strike === call.strike);
+  return [optionLeg("long_call", call), optionLeg("long_put", put)];
+}
+
+function buildShortStrangle(ctx) {
+  const shorts = shortStrikesAtOneSigma(ctx);
+  if (!shorts) return null;
+  const { shortPut, shortCall } = shorts;
+  if (shortPut.mid + shortCall.mid <= 0) return null;
+  return [optionLeg("short_put", shortPut), optionLeg("short_call", shortCall)];
+}
+
+const BUILDERS = {
+  call_vertical: buildCallVertical,
+  put_vertical: buildPutVertical,
+  cash_secured_put: buildCashSecuredPut,
+  covered_call: buildCoveredCall,
+  iron_condor: buildIronCondor,
+  long_straddle: buildLongStraddle,
+  short_strangle: buildShortStrangle,
+};
+
+function buildDraft(strategyType, ctx) {
+  const builder = BUILDERS[strategyType];
+  if (!builder) throw new Error(`no builder for strategy ${JSON.stringify(strategyType)}`);
+  const legs = builder(ctx);
+  return legs ? { strategyType, legs } : null;
+}
+
+module.exports = { buildDraft, BUILDERS, strikeStep, liquidOnly, nearest };

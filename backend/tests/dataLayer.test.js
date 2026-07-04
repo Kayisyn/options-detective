@@ -32,18 +32,19 @@ test("liquidity gates drop low-volume, low-OI and unpriced contracts", () => {
   });
 });
 
-test("wide or unknowable spreads are flagged illiquid, not dropped", () => {
+test("wide spreads flagged illiquid; missing books flagged indicative", () => {
   const { chains } = applyLiquidityGates({
     exp: {
       calls: [
-        contract({ spreadPct: 0.04 }),
-        contract({ spreadPct: 0.08 }),
-        contract({ spreadPct: null }),
+        contract({ spreadPct: 0.04 }),  // tight book: fine
+        contract({ spreadPct: 0.08 }),  // wide book: illiquid
+        contract({ spreadPct: null }),  // no book (market closed): indicative
       ],
       puts: [],
     },
   });
-  assert.deepEqual(chains.exp.calls.map((c) => c.illiquid), [false, true, true]);
+  assert.deepEqual(chains.exp.calls.map((c) => c.illiquid), [false, true, false]);
+  assert.deepEqual(chains.exp.calls.map((c) => c.indicativeOnly), [false, false, true]);
 });
 
 test("cache serves within TTL, refetches after, refresh bypasses", async () => {

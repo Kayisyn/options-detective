@@ -89,7 +89,10 @@ function applyLiquidityGates(chains, gates = LIQUIDITY_GATES) {
         kept += 1;
         out[exp][side].push({
           ...contract,
-          illiquid: contract.spreadPct === null || contract.spreadPct > gates.maxSpreadPct,
+          // wide book -> truly illiquid, never recommended;
+          // missing book (market closed) -> indicative last-trade mark only
+          illiquid: contract.spreadPct !== null && contract.spreadPct > gates.maxSpreadPct,
+          indicativeOnly: contract.spreadPct === null,
         });
       }
     }
