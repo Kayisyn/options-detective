@@ -69,7 +69,18 @@ irm http://localhost:3001/health
 - [x] **Phase 8** — In-app intelligence (onboarding, tooltips everywhere,
       IV-context guidance, payoff narrative)
 - [x] **Phase 9** — Hardening (JSON error handlers, graceful engine
-      shutdown, 49 node tests + 1313 pytest green)
+      shutdown, 57 node tests + 1319 pytest green)
+
+### v1.x (post-MVP)
+
+- [x] Expirations spread across the DTE window (daily-expiration products
+      like SPY now screen 5-90 DTE, not just the first week)
+- [x] Strategy variants (narrow/wide verticals, 4%/8% OTM CSP and covered
+      calls, 1.0/1.5 sigma condors), deduplicated on coarse strike grids
+- [x] Saved-trades journal (`/trades` API + Journal view; JSON store at
+      `backend/data/`, override with `OD_DATA_DIR`)
+- [ ] Packaged installer (needs an embedded-Python strategy)
+- [ ] Backtesting, alerts, portfolio integration
 
 ## Running the desktop app
 
