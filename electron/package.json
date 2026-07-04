@@ -1,0 +1,13 @@
+{
+  "name": "options-detective-electron",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Electron shell for Options Detective",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^34.0.0"
+  }
+}
