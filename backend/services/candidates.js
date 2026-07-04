@@ -7,13 +7,15 @@
 // structure honestly (missing/illiquid strikes, nonsensical economics) —
 // a null draft is normal, not an error.
 
-// Wide-spread (illiquid) contracts are always excluded. Contracts with no
-// live book (indicativeOnly — market closed) are usable only when the caller
-// opts in via ctx.allowIndicative; the Detector does that for stale sessions
-// and labels every resulting candidate.
+// Live sessions: wide-spread (illiquid) and bookless (indicativeOnly)
+// contracts are excluded outright — never recommend what you can't trade at
+// a fair price. Closed sessions: the Detector opts into relaxed marks via
+// ctx.allowIndicative (closing books are systematically wide and last-trade
+// marks are all that exists); every resulting candidate is labelled
+// indicative and the response carries a warning.
 function liquidOnly(contracts, allowIndicative = false) {
-  return (contracts || []).filter((c) => !c.illiquid && c.mid > 0
-    && (allowIndicative || !c.indicativeOnly));
+  return (contracts || []).filter((c) => c.mid > 0
+    && (allowIndicative || (!c.illiquid && !c.indicativeOnly)));
 }
 
 function nearest(contracts, targetStrike) {

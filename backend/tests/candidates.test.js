@@ -96,6 +96,16 @@ test("indicative-only contracts need explicit opt-in (closed market)", () => {
   assert.equal(draft.legs[0].spreadPct, null);
 });
 
+test("relaxed marks also admit wide closing books, labelled not hidden", () => {
+  const closingBooks = {
+    ...CTX,
+    calls: CHAIN.calls.map((c) => ({ ...c, illiquid: true })),
+    puts: CHAIN.puts.map((c) => ({ ...c, illiquid: true })),
+  };
+  assert.equal(buildDraft("iron_condor", closingBooks), null);
+  assert.ok(buildDraft("iron_condor", { ...closingBooks, allowIndicative: true }));
+});
+
 test("empty chain yields no drafts, not errors", () => {
   const empty = { spot: 100, atmIv: 0.25, dte: 45, calls: [], puts: [] };
   for (const s of ["call_vertical", "put_vertical", "cash_secured_put",

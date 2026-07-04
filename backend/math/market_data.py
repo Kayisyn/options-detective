@@ -66,6 +66,12 @@ def normalize_contracts(rows) -> list:
         if iv is not None and iv <= 0.0:
             iv = None
         ts = row.get("lastTradeDate")
+        if ts is None:
+            timestamp = None
+        elif hasattr(ts, "isoformat"):
+            timestamp = ts.isoformat()  # pandas Timestamp -> proper ISO 8601
+        else:
+            timestamp = str(ts)
 
         out.append({
             "strike": strike,
@@ -76,7 +82,7 @@ def normalize_contracts(rows) -> list:
             "openInterest": int(_clean_number(row.get("openInterest")) or 0),
             "impliedVolatility": iv,
             "spreadPct": spread_pct,
-            "timestamp": str(ts) if ts is not None else None,
+            "timestamp": timestamp,
         })
     out.sort(key=lambda c: c["strike"])
     return out
@@ -141,6 +147,15 @@ def fetch(symbol: str, max_expirations: int = 6) -> dict:
         }
 
     current_iv = atm_iv(chains[expirations[0]], price)
+
+    # Most recent trade anywhere in the chain: the honest "how live is this
+    # market" signal. Fetch time alone lies on weekends/holidays — you can
+    # fetch a two-day-old closing book "fresh".
+    last_trades = [c["timestamp"]
+                   for chain in chains.values()
+                   for side in ("calls", "puts")
+                   for c in chain[side] if c["timestamp"]]
+
     return {
         "symbol": symbol.upper(),
         "price": price,
@@ -149,6 +164,7 @@ def fetch(symbol: str, max_expirations: int = 6) -> dict:
         "ivRankMethod": "ATM IV ranked against 1y realized-vol range (proxy; see market_data.py)",
         "expirations": expirations,
         "chains": chains,
+        "lastTradeAt": max(last_trades) if last_trades else None,
         "fetchedAt": datetime.now(timezone.utc).isoformat(),
     }
 

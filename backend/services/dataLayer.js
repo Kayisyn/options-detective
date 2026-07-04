@@ -14,9 +14,18 @@ const { MATH_DIR, pythonBin } = require("./python");
 // Upstream/domain problem (unknown symbol, no options listed) — maps to 404.
 class DataError extends Error {}
 
-const LIQUIDITY_GATES = { minVolume: 50, minOpenInterest: 100, maxSpreadPct: 0.05 };
+// Spread gate: a contract is illiquid when its dollar spread exceeds
+// max(maxSpreadPct * mid, spreadFloorDollars). Pure percent-of-mid is the
+// wrong measure — a $0.10-wide book on a $0.50 wing is the tightest book
+// that wing will ever have, yet it is "20%".
+const LIQUIDITY_GATES = {
+  minVolume: 50,
+  minOpenInterest: 100,
+  maxSpreadPct: 0.05,
+  spreadFloorDollars: 0.30,
+};
 const CACHE_TTL_MS = 60_000;
-const STALE_AFTER_S = 15 * 60; // intraday data older than this is flagged
+const STALE_AFTER_S = 15 * 60; // quotes older than this are flagged stale
 
 const SYMBOL_RE = /^[A-Za-z][A-Za-z0-9.^-]{0,9}$/;
 
@@ -87,12 +96,17 @@ function applyLiquidityGates(chains, gates = LIQUIDITY_GATES) {
           continue;
         }
         kept += 1;
+        const hasBook = contract.bid > 0 && contract.ask >= contract.bid;
+        const absSpread = hasBook
+          ? Math.round((contract.ask - contract.bid) * 100) / 100
+          : null;
         out[exp][side].push({
           ...contract,
-          // wide book -> truly illiquid, never recommended;
+          // wide book -> truly illiquid, never recommended while live;
           // missing book (market closed) -> indicative last-trade mark only
-          illiquid: contract.spreadPct !== null && contract.spreadPct > gates.maxSpreadPct,
-          indicativeOnly: contract.spreadPct === null,
+          illiquid: absSpread !== null
+            && absSpread > Math.max(gates.maxSpreadPct * contract.mid, gates.spreadFloorDollars),
+          indicativeOnly: !hasBook,
         });
       }
     }
@@ -104,8 +118,19 @@ function createDataLayer({ fetcher = fetchViaPython, now = Date.now, ttlMs = CAC
   const cache = new Map(); // SYMBOL -> { at, data }
 
   function decorate(data) {
-    const ageSeconds = Math.max(0, Math.round((now() - Date.parse(data.fetchedAt)) / 1000));
-    return { ...data, dataAgeSeconds: ageSeconds, stale: ageSeconds > STALE_AFTER_S };
+    const fetchAge = Math.max(0, Math.round((now() - Date.parse(data.fetchedAt)) / 1000));
+    // staleness keys off the last actual trade in the chain when available:
+    // a weekend fetch of Friday's closing book is fresh-by-fetch but stale-by-quote
+    const lastTradeMs = data.lastTradeAt ? Date.parse(data.lastTradeAt) : NaN;
+    const quoteAge = Number.isFinite(lastTradeMs)
+      ? Math.max(0, Math.round((now() - lastTradeMs) / 1000))
+      : null;
+    return {
+      ...data,
+      dataAgeSeconds: fetchAge,
+      quoteAgeSeconds: quoteAge,
+      stale: (quoteAge ?? fetchAge) > STALE_AFTER_S,
+    };
   }
 
   async function getMarketData(symbol, { refresh = false, maxExpirations = 6 } = {}) {

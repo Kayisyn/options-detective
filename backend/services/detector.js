@@ -177,12 +177,13 @@ function createDetector({ dataLayer = defaultDataLayer, engineBatch = callEngine
 
     const warnings = [];
     if (data.stale) {
-      warnings.push(`market data is ${Math.round(data.dataAgeSeconds / 60)} minutes old (market closed?) — treat marks as indicative`);
+      const ageMin = Math.round((data.quoteAgeSeconds ?? data.dataAgeSeconds) / 60);
+      warnings.push(`quotes are ~${ageMin} minutes old (market closed?) — treat marks as indicative`);
     }
 
-    // When most kept contracts have no live book (market closed), screening
-    // on last-trade marks is still useful — but it is opt-in and labelled,
-    // never silent.
+    // Closed/quiet market (stale quotes, or mostly missing books): screening
+    // on closing/last-trade marks is still useful — but it is opt-in and
+    // labelled on every candidate, never silent.
     let bookless = 0;
     let keptContracts = 0;
     for (const expiration of data.expirations) {
@@ -195,9 +196,10 @@ function createDetector({ dataLayer = defaultDataLayer, engineBatch = callEngine
         }
       }
     }
-    const allowIndicative = keptContracts > 0 && bookless / keptContracts > 0.5;
+    const allowIndicative = data.stale
+      || (keptContracts > 0 && bookless / keptContracts > 0.5);
     if (allowIndicative) {
-      warnings.push("no live bid/ask books (market closed?) — candidates priced off last-trade marks; verify spreads before trading");
+      warnings.push("market appears closed (stale quotes / empty books) — candidates priced off closing marks; verify live spreads before trading");
     }
 
     // ---- build drafts across expirations ----
@@ -315,8 +317,7 @@ function createDetector({ dataLayer = defaultDataLayer, engineBatch = callEngine
           riskFreeRate: opts.riskFreeRate,
           spot: data.price,
           stale: data.stale,
-          indicativeMarks: draft.legs.some(
-            (l) => !l.type.endsWith("stock") && (l.spreadPct === null || l.spreadPct === undefined)),
+          marksQuality: allowIndicative ? "indicative" : "live",
         },
       });
     });

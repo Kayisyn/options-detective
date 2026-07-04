@@ -32,19 +32,45 @@ test("liquidity gates drop low-volume, low-OI and unpriced contracts", () => {
   });
 });
 
-test("wide spreads flagged illiquid; missing books flagged indicative", () => {
+test("spread gate uses dollars with a floor, not naive percent-of-mid", () => {
   const { chains } = applyLiquidityGates({
     exp: {
       calls: [
-        contract({ spreadPct: 0.04 }),  // tight book: fine
-        contract({ spreadPct: 0.08 }),  // wide book: illiquid
-        contract({ spreadPct: null }),  // no book (market closed): indicative
+        // tight book: $0.20 on a $5 mid -> liquid
+        contract({ bid: 4.9, ask: 5.1, mid: 5.0, spreadPct: 0.04 }),
+        // wide book: $2.00 on a $5 mid -> illiquid
+        contract({ bid: 4.0, ask: 6.0, mid: 5.0, spreadPct: 0.4 }),
+        // cheap wing: 33% of mid but only $0.10 wide -> LIQUID (the
+        // percent-only gate wrongly flagged the entire AAPL chain)
+        contract({ bid: 0.25, ask: 0.35, mid: 0.30, spreadPct: 0.3333 }),
+        // busy ATM weekly: $0.23 on $3.04 (7.6% of mid) -> liquid
+        contract({ bid: 2.92, ask: 3.15, mid: 3.035, spreadPct: 0.0758 }),
+        // no book at all (market closed): indicative, not illiquid
+        contract({ bid: 0, ask: 0, mid: 3.2, spreadPct: null }),
       ],
       puts: [],
     },
   });
-  assert.deepEqual(chains.exp.calls.map((c) => c.illiquid), [false, true, false]);
-  assert.deepEqual(chains.exp.calls.map((c) => c.indicativeOnly), [false, false, true]);
+  assert.deepEqual(chains.exp.calls.map((c) => c.illiquid),
+    [false, true, false, false, false]);
+  assert.deepEqual(chains.exp.calls.map((c) => c.indicativeOnly),
+    [false, false, false, false, true]);
+});
+
+test("staleness keys off last trade time, not fetch time", async () => {
+  const nowMs = Date.parse("2026-07-03T16:00:00Z"); // holiday: market closed
+  const layer = createDataLayer({
+    fetcher: async () => ({
+      symbol: "TEST", price: 100, chains: {},
+      fetchedAt: "2026-07-03T16:00:00Z",            // fetched right now...
+      lastTradeAt: "2026-07-02T19:59:58-04:00",     // ...of yesterday's close
+    }),
+    now: () => nowMs,
+  });
+  const d = await layer.getMarketData("TEST");
+  assert.equal(d.dataAgeSeconds, 0);
+  assert.ok(d.quoteAgeSeconds > 15 * 60, `quoteAge ${d.quoteAgeSeconds}`);
+  assert.equal(d.stale, true);
 });
 
 test("cache serves within TTL, refetches after, refresh bypasses", async () => {

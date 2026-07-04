@@ -66,6 +66,14 @@ class TestNormalizeContracts:
                                     "lastPrice": 1, "impliedVolatility": 0.0}])
         assert c["impliedVolatility"] is None
 
+    def test_timestamp_objects_serialize_as_iso8601(self):
+        from datetime import datetime, timezone
+        ts = datetime(2026, 7, 2, 19, 59, tzinfo=timezone.utc)  # pandas
+        # Timestamps also expose .isoformat(), which is the path under test
+        [c] = normalize_contracts([{"strike": 100.0, "bid": 1, "ask": 1.1,
+                                    "lastPrice": 1, "lastTradeDate": ts}])
+        assert c["timestamp"] == "2026-07-02T19:59:00+00:00"
+
 
 class TestAtmIv:
     CHAIN = {
