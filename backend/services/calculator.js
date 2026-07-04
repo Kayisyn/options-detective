@@ -70,6 +70,30 @@ function createCalculator({ engineBatch = callEngineBatch } = {}) {
     validateInputs(opts);
     const sigma = resolveSigma(opts.sigma, opts.legs);
     const T = opts.dte / 365;
+
+    // Strike adjustments have no market quote to lean on; reprice the legs
+    // at Black-Scholes theoretical value (each leg's own IV) and label them.
+    if (opts.repriceTheoretical) {
+      const priceRequests = opts.legs
+        .filter((leg) => !leg.type.endsWith("stock"))
+        .map((leg) => ({
+          fn: leg.type.endsWith("call") ? "bs_call_price" : "bs_put_price",
+          args: {
+            S: opts.spot, K: leg.strike, T, r: opts.riskFreeRate,
+            sigma: (Number.isFinite(leg.iv) && leg.iv > 0) ? leg.iv : sigma,
+          },
+        }));
+      const priced = await engineBatch(priceRequests);
+      let pi = 0;
+      opts.legs = opts.legs.map((leg) => {
+        if (leg.type.endsWith("stock")) return { ...leg, price: opts.spot };
+        const item = priced[pi];
+        pi += 1;
+        if (!item.ok) throw new CalcInputError(item.error);
+        return { ...leg, price: Math.round(item.result * 100) / 100, theoretical: true };
+      });
+    }
+
     const eLegs = engineLegs(opts.legs);
     const probArgs = {
       legs: eLegs, current_price: opts.spot, T, sigma, r: opts.riskFreeRate,

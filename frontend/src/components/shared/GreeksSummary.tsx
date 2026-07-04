@@ -1,29 +1,31 @@
+import { signed } from "../../lib/format";
 import type { Greeks } from "../../types";
 
-// Plain-language explainers surface as tooltips now and feed the Phase 8
-// in-app intelligence layer later.
-const EXPLAINERS: Record<keyof Greeks, string> = {
-  delta: "P&L per $1 move in the underlying",
-  gamma: "How fast delta changes per $1 move",
-  theta: "P&L per calendar day of time decay",
-  vega: "P&L per 1 point change in implied volatility",
-  rho: "P&L per 1 point change in interest rates",
+// Position greeks in dollar terms, each with a plain-language explainer.
+const EXPLAINERS: Record<keyof Greeks, { unit: string; text: string }> = {
+  delta: { unit: "$/1$ move", text: "Dollars gained or lost if the stock moves up $1" },
+  gamma: { unit: "Δ/1$ move", text: "How much delta itself changes per $1 move — high gamma means your exposure shifts fast" },
+  theta: { unit: "$/day", text: "Dollars gained (+) or lost (−) per calendar day from time passing" },
+  vega: { unit: "$/IV pt", text: "Dollars gained or lost if implied volatility rises 1 point" },
+  rho: { unit: "$/rate pt", text: "Dollars gained or lost if interest rates rise 1 point" },
 };
 
 export default function GreeksSummary({ greeks }: { greeks: Greeks }) {
   return (
-    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5" data-testid="greeks-summary">
       {(Object.keys(EXPLAINERS) as Array<keyof Greeks>).map((key) => (
         <div
           key={key}
-          className="rounded-md bg-slate-900 p-3"
-          title={EXPLAINERS[key]}
+          className="cursor-help rounded-md bg-slate-900 p-3"
+          title={EXPLAINERS[key].text}
         >
           <dt className="text-xs uppercase tracking-wide text-slate-500">
-            {key}
+            {key} <span className="normal-case text-slate-600">({EXPLAINERS[key].unit})</span>
           </dt>
-          <dd className="text-lg font-medium tabular-nums">
-            {greeks[key].toFixed(4)}
+          <dd className={`text-lg font-medium tabular-nums ${
+            greeks[key] > 0 ? "text-emerald-400" : greeks[key] < 0 ? "text-rose-400" : ""
+          }`}>
+            {signed(greeks[key])}
           </dd>
         </div>
       ))}

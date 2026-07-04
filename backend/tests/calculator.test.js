@@ -98,6 +98,21 @@ test("input validation rejects malformed requests", async () => {
   }
 });
 
+test("repriceTheoretical replaces marks with BS values and labels them", async () => {
+  const out = await calc.analyze({
+    legs: [{ type: "long_call", strike: 100, price: 999, qty: 1, iv: 0.2 }],
+    spot: 100,
+    dte: 365,
+    sigma: 0.2,
+    riskFreeRate: 0.05,
+    repriceTheoretical: true,
+  });
+  // golden value: BS call S=K=100, T=1y, r=5%, sigma=20% -> 10.45
+  assert.equal(out.legs[0].price, 10.45);
+  assert.equal(out.legs[0].theoretical, true);
+  assert.equal(out.sizing.totalDebit, 1045);
+});
+
 test("adjustment flow: widening the spread raises max profit and max loss", async () => {
   const narrow = await calc.analyze(BULL_CALL);
   const wide = await calc.analyze({
