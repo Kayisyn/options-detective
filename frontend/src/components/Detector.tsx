@@ -4,6 +4,7 @@ import { money, num, pct, shortDate, signed, strategyLabel } from "../lib/format
 import Button from "./ui/Button";
 import { Badge, Card, CardContent, CardFooter, CardHeader, MetricBox } from "./ui/Card";
 import { FormInput, FormSelect } from "./ui/Input";
+import { DetectorSkeleton } from "./shared/Skeleton";
 import type { Candidate, DirectionalView } from "../types";
 
 const VIEWS: Array<{ id: DirectionalView; label: string }> = [
@@ -91,7 +92,9 @@ export default function Detector() {
         )}
       </div>
 
-      {result && (
+      {screening && <DetectorSkeleton />}
+
+      {!screening && result && (
         <>
           <div className="flex flex-wrap items-center gap-4 rounded-md bg-dark-800 px-4 py-3 text-sm">
             <span className="font-mono text-base font-semibold">{result.symbol}</span>

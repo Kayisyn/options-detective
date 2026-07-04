@@ -1,0 +1,76 @@
+import { cx } from "../../lib/cx";
+
+// Loading skeletons per ux-design-polish-brief §3.4 — Tailwind pulse
+// (opacity breathing over ~2s) on dark-700 blocks shaped like the content
+// they stand in for.
+
+export function Skeleton({ className }: { className?: string }) {
+  return <div className={cx("animate-pulse rounded-md bg-dark-700", className)} />;
+}
+
+export function CandidateCardSkeleton() {
+  return (
+    <div
+      className="rounded-lg border border-dark-700 bg-dark-800 p-4 shadow-md"
+      data-testid="card-skeleton"
+    >
+      <div className="mb-3 flex items-center justify-between border-b border-dark-700 pb-3">
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-36" />
+          <Skeleton className="h-3 w-24" />
+        </div>
+        <Skeleton className="h-6 w-20" />
+      </div>
+      <div className="mb-4 grid grid-cols-3 gap-3">
+        <Skeleton className="h-14" />
+        <Skeleton className="h-14" />
+        <Skeleton className="h-14" />
+      </div>
+      <div className="flex gap-2">
+        <Skeleton className="h-8 w-24" />
+        <Skeleton className="h-8 w-20" />
+      </div>
+    </div>
+  );
+}
+
+export function DetectorSkeleton() {
+  return (
+    <div className="space-y-4" data-testid="detector-skeleton">
+      <Skeleton className="h-11" />
+      <div className="grid gap-3 md:grid-cols-2">
+        {Array.from({ length: 6 }, (_, i) => <CandidateCardSkeleton key={i} />)}
+      </div>
+    </div>
+  );
+}
+
+export function CalculatorSkeleton() {
+  return (
+    <div className="grid gap-4 lg:grid-cols-5" data-testid="calculator-skeleton">
+      <div className="space-y-3 lg:col-span-3">
+        <Skeleton className="h-72" />
+        <div className="grid grid-cols-4 gap-3">
+          {Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-16" />)}
+        </div>
+      </div>
+      <div className="space-y-4 lg:col-span-2">
+        <div className="grid grid-cols-5 gap-3">
+          {Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-16" />)}
+        </div>
+        <Skeleton className="h-40" />
+        <div className="grid grid-cols-2 gap-3">
+          {Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-16" />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function RecommenderSkeleton() {
+  return (
+    <div className="grid gap-3 lg:grid-cols-2" data-testid="recommender-skeleton">
+      {Array.from({ length: 4 }, (_, i) => <CandidateCardSkeleton key={i} />)}
+    </div>
+  );
+}

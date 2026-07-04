@@ -5,6 +5,7 @@ import PayoffChart from "./shared/PayoffChart";
 import GreeksSummary from "./shared/GreeksSummary";
 import Button from "./ui/Button";
 import { compactFieldClasses } from "./ui/Input";
+import { CalculatorSkeleton } from "./shared/Skeleton";
 import type { CalcResult, Leg } from "../types";
 
 // Plain-language readout of the payoff shape. Reads only backend-provided
@@ -87,8 +88,11 @@ export default function Calculator() {
         </Button>
       </div>
 
-      {s.status === "calculating" && (
-        <div className="rounded-md bg-slate-900 px-4 py-2 text-sm text-slate-400">Recalculating…</div>
+      {s.status === "calculating" && !result && <CalculatorSkeleton />}
+      {s.status === "calculating" && result && (
+        <div className="rounded-md bg-dark-800 px-4 py-2 text-sm text-content-2">
+          Recalculating…
+        </div>
       )}
 
       {result && (

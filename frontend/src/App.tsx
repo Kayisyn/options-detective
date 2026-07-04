@@ -3,6 +3,7 @@ import Detector from "./components/Detector";
 import Journal from "./components/Journal";
 import Recommender from "./components/Recommender";
 import Onboarding from "./components/shared/Onboarding";
+import ViewTransition from "./components/shared/ViewTransition";
 import { useStore, type View } from "./store";
 
 const TABS: Array<{ id: View; label: string; hint: string }> = [
@@ -60,11 +61,13 @@ export default function App() {
           {error}
         </div>
       )}
-      <main className="mx-auto max-w-6xl p-6">
-        {view === "detector" && <Detector />}
-        {view === "calculator" && <Calculator />}
-        {view === "recommender" && <Recommender />}
-        {view === "journal" && <Journal />}
+      <main className="mx-auto max-w-6xl overflow-x-hidden p-6">
+        <ViewTransition viewKey={view}>
+          {view === "detector" && <Detector />}
+          {view === "calculator" && <Calculator />}
+          {view === "recommender" && <Recommender />}
+          {view === "journal" && <Journal />}
+        </ViewTransition>
       </main>
     </div>
   );

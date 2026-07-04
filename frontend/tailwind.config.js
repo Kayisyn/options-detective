@@ -43,10 +43,21 @@ export default {
           "0%": { opacity: "0", transform: "translateY(8px) scale(0.98)" },
           "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
         },
+        // §3.2 page transitions
+        "view-exit": {
+          "0%": { opacity: "1", transform: "translateX(0)" },
+          "100%": { opacity: "0", transform: "translateX(-20px)" },
+        },
+        "view-enter": {
+          "0%": { opacity: "0", transform: "translateX(20px)" },
+          "100%": { opacity: "1", transform: "translateX(0)" },
+        },
       },
       animation: {
         // "both" so staggered cards stay invisible until their delay hits
         "card-enter": "card-enter 300ms ease-out both",
+        "view-exit": "view-exit 200ms ease-in both",
+        "view-enter": "view-enter 300ms ease-out both",
       },
     },
   },

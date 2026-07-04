@@ -32,3 +32,18 @@ body {
   @apply bg-dark-900 text-content-1 antialiased;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Roboto", sans-serif;
 }
+
+/* Respect OS motion preferences: keep the (near-instant) animations so
+   animationend still fires for the view-transition state machine, but kill
+   the movement and the pulse. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-view-exit,
+  .animate-view-enter,
+  .animate-card-enter {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+  .animate-pulse {
+    animation: none;
+  }
+}
