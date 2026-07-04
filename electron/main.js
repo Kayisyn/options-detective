@@ -10,10 +10,19 @@ const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || null;
 let backendProc = null;
 
 function startBackend() {
-  const backendDir = path.join(__dirname, "..", "backend");
+  // Packaged: everything lives under resources/ and the math engine is the
+  // PyInstaller binary — end users need no Python. Dev: repo paths + venv.
+  const backendDir = app.isPackaged
+    ? path.join(process.resourcesPath, "backend")
+    : path.join(__dirname, "..", "backend");
+  const env = { ...process.env, PORT: String(BACKEND_PORT) };
+  if (app.isPackaged) {
+    env.OD_MATH_BIN = path.join(process.resourcesPath, "od-math", "od-math.exe");
+    env.OD_DATA_DIR = app.getPath("userData"); // trade journal location
+  }
   backendProc = utilityProcess.fork(path.join(backendDir, "server.js"), [], {
     cwd: backendDir,
-    env: { ...process.env, PORT: String(BACKEND_PORT) },
+    env,
     stdio: "pipe",
   });
   backendProc.stdout?.on("data", (d) => console.log("[backend]", String(d).trimEnd()));
@@ -81,6 +90,8 @@ function createWindow() {
 
   if (DEV_SERVER_URL) {
     win.loadURL(DEV_SERVER_URL);
+  } else if (app.isPackaged) {
+    win.loadFile(path.join(process.resourcesPath, "frontend-dist", "index.html"));
   } else {
     win.loadFile(path.join(__dirname, "..", "frontend", "dist", "index.html"));
   }

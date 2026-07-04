@@ -79,8 +79,32 @@ irm http://localhost:3001/health
       calls, 1.0/1.5 sigma condors), deduplicated on coarse strike grids
 - [x] Saved-trades journal (`/trades` API + Journal view; JSON store at
       `backend/data/`, override with `OD_DATA_DIR`)
-- [ ] Packaged installer (needs an embedded-Python strategy)
+- [x] Packaged installer — PyInstaller `od-math.exe` (embedded Python
+      runtime + numpy/scipy/yfinance) + electron-builder NSIS one-click
+      (133 MB, per-user, no admin). See "Building the installer".
 - [ ] Backtesting, alerts, portfolio integration
+
+## Building the installer
+
+```powershell
+# 1. Frontend bundle
+cd frontend; npm run build
+
+# 2. Math engine as a standalone exe (PyInstaller, no Python needed by users)
+cd ../backend; npm run build:math          # -> backend/math/dist/od-math/
+
+# 3. One-click Windows installer (electron-builder, NSIS)
+cd ../electron; npm run dist               # -> electron/release/Options-Detective-Setup-*.exe
+```
+
+The installer is per-user (no admin prompt), installs to
+`%LOCALAPPDATA%\Programs\Options Detective`, and launches on finish. The
+trade journal lives in the user-data folder, not the install folder. The
+binary is unsigned, so SmartScreen will ask for "More info → Run anyway"
+on first launch.
+
+**For users: download `Options-Detective-Setup-<version>.exe`, run it, done.**
+No Python, no Node, no terminal.
 
 ## Running the desktop app
 

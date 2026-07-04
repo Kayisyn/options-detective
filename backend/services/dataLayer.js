@@ -7,9 +7,8 @@
 //   contracts with a wide (or unknowable) spread are kept but flagged
 //   `illiquid: true` and must never end up in a recommendation
 const { spawn } = require("child_process");
-const path = require("path");
 
-const { MATH_DIR, pythonBin } = require("./python");
+const { mathCommand } = require("./python");
 
 // Upstream/domain problem (unknown symbol, no options listed) — maps to 404.
 class DataError extends Error {}
@@ -32,8 +31,9 @@ const SYMBOL_RE = /^[A-Za-z][A-Za-z0-9.^-]{0,9}$/;
 function fetchViaPython(symbol, { maxExpirations = 6, minDte = 1, maxDte = 120,
                                   timeoutMs = 120_000 } = {}) {
   return new Promise((resolve, reject) => {
-    const proc = spawn(pythonBin(), [path.join(MATH_DIR, "market_data.py")], {
-      cwd: MATH_DIR,
+    const cmd = mathCommand("market_data");
+    const proc = spawn(cmd.bin, cmd.args, {
+      cwd: cmd.cwd,
       windowsHide: true,
     });
     let stdout = "";
