@@ -12,6 +12,7 @@ const { callEngineBatch } = require("./mathEngine");
 const { dataLayer: defaultDataLayer } = require("./dataLayer");
 const { buildDraft } = require("./candidates");
 const { eligibleStrategies, ivBand } = require("./strategyMapping");
+const { engineLegs, totalDebitOf, netGreeksOf, capitalRequiredOf } = require("./positionMath");
 
 const DEFAULTS = {
   directionalView: "neutral",
@@ -29,30 +30,10 @@ const DEFAULTS = {
 
 const WEIGHTS = { pop: 0.30, ror: 0.20, theta: 0.20, capEff: 0.15, liquidity: 0.15 };
 
-function legSign(type) {
-  return type.startsWith("long") ? 1 : -1;
-}
-
-function engineLegs(legs) {
-  return legs.map((leg) => (leg.type.endsWith("stock")
-    ? { type: leg.type, price: leg.price, qty: leg.qty }
-    : { type: leg.type, strike: leg.strike, price: leg.price, qty: leg.qty }));
-}
-
 function dteOf(expiration, nowMs) {
   // options expire at the US market close; 21:00 UTC is close enough for DTE
   const expiryMs = Date.parse(`${expiration}T21:00:00Z`);
   return Math.max(1, Math.round((expiryMs - nowMs) / 86_400_000));
-}
-
-// entry cost of one unit of the position: positive = debit, negative = credit
-function totalDebitOf(legs) {
-  let total = 0;
-  for (const leg of legs) {
-    const scale = leg.type.endsWith("stock") ? leg.qty : leg.qty * 100;
-    total += legSign(leg.type) * leg.price * scale;
-  }
-  return Math.round(total * 100) / 100;
 }
 
 function atmIvOf(chain, spot) {
@@ -67,39 +48,6 @@ function atmIvOf(chain, spot) {
   }
   if (found.length === 0) return null;
   return found.reduce((a, b) => a + b, 0) / found.length;
-}
-
-function capitalRequiredOf(strategyType, legs, maxLoss, spot, totalDebit) {
-  if (strategyType === "cash_secured_put") {
-    const strike = legs.find((l) => l.type === "short_put").strike;
-    return { amount: strike * 100 + totalDebit, approximate: false }; // totalDebit is negative (credit)
-  }
-  if (strategyType === "covered_call") {
-    return { amount: totalDebit, approximate: false }; // stock cost less premium
-  }
-  if (Number.isFinite(maxLoss)) {
-    return { amount: Math.max(maxLoss, totalDebit > 0 ? totalDebit : maxLoss), approximate: false };
-  }
-  // undefined risk (short strangle): rough reg-T style proxy, clearly flagged
-  return { amount: 0.2 * spot * 100, approximate: true };
-}
-
-function netGreeksOf(legs, legGreeks) {
-  const net = { delta: 0, gamma: 0, theta: 0, vega: 0, rho: 0 };
-  legs.forEach((leg, i) => {
-    const sign = legSign(leg.type);
-    if (leg.type.endsWith("stock")) {
-      net.delta += sign * leg.qty; // $1 per share per $1 move; other greeks 0
-      return;
-    }
-    const g = legGreeks[i];
-    if (!g) return;
-    for (const key of Object.keys(net)) {
-      net[key] += sign * leg.qty * 100 * g[key];
-    }
-  });
-  for (const key of Object.keys(net)) net[key] = Math.round(net[key] * 100) / 100;
-  return net;
 }
 
 function liquidityOf(legs, dataAgeSeconds) {

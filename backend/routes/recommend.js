@@ -1,12 +1,26 @@
-// POST /recommend  { candidates | symbol } -> ranked candidates + trade-offs
-// Composite score: POP 0.30, risk/reward 0.20, theta 0.20,
-// capital efficiency 0.15, liquidity 0.15. Implemented in Phase 5.
+// POST /recommend  { candidates[] } or { symbol, ...screenParams }
+//   -> top candidates ranked by composite score, trade-off facts, and
+//      broker-format export text. Phase 5 — live.
 const { Router } = require("express");
+const { DataError } = require("../services/dataLayer");
+const { recommender } = require("../services/recommender");
 
 const router = Router();
 
-router.post("/", (_req, res) => {
-  res.status(501).json({ error: "Recommender ranking arrives in Phase 5", phase: 5 });
+router.post("/", async (req, res) => {
+  try {
+    res.json(await recommender.recommend(req.body || {}));
+  } catch (err) {
+    if (err instanceof TypeError) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    if (err instanceof DataError) {
+      res.status(404).json({ error: err.message });
+      return;
+    }
+    res.status(502).json({ error: String(err.message || err) });
+  }
 });
 
 module.exports = router;

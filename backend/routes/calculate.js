@@ -1,14 +1,29 @@
-// POST /calculate  { candidate, adjustments? } -> greeks + payoff + probabilities
-// The candidate-level calculator lands in Phase 4. The raw engine passthrough
-// below is live NOW so integration against real numbers can start early.
+// POST /calculate         { legs, spot, dte, sigma?, ... } -> full analysis
+// POST /calculate/engine  { fn, args } -> raw math engine passthrough
+// Phase 4 — live.
 const { Router } = require("express");
+const { CalcInputError, calculator } = require("../services/calculator");
 const { callEngine, EngineDomainError } = require("../services/mathEngine");
 
 const router = Router();
 
-// POST /calculate/engine  { fn, args } -> { result }
-// Direct access to any math engine function (see docs/api-schema.md for the
-// function list). The engine itself validates fn and args.
+router.post("/", async (req, res) => {
+  try {
+    res.json(await calculator.analyze(req.body || {}));
+  } catch (err) {
+    if (err instanceof CalcInputError) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    if (err instanceof EngineDomainError) {
+      res.status(422).json({ error: err.message });
+      return;
+    }
+    res.status(502).json({ error: String(err.message || err) });
+  }
+});
+
+// Direct access to any math engine function (see docs/api-schema.md).
 router.post("/engine", async (req, res) => {
   const { fn, args } = req.body || {};
   if (typeof fn !== "string" || fn.length === 0) {
@@ -24,10 +39,6 @@ router.post("/engine", async (req, res) => {
     }
     res.status(502).json({ error: String(err.message || err) });
   }
-});
-
-router.post("/", (_req, res) => {
-  res.status(501).json({ error: "Candidate calculator arrives in Phase 4", phase: 4 });
 });
 
 module.exports = router;
