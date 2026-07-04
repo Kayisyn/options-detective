@@ -29,7 +29,8 @@ const STALE_AFTER_S = 15 * 60; // quotes older than this are flagged stale
 
 const SYMBOL_RE = /^[A-Za-z][A-Za-z0-9.^-]{0,9}$/;
 
-function fetchViaPython(symbol, maxExpirations, { timeoutMs = 120_000 } = {}) {
+function fetchViaPython(symbol, { maxExpirations = 6, minDte = 1, maxDte = 120,
+                                  timeoutMs = 120_000 } = {}) {
   return new Promise((resolve, reject) => {
     const proc = spawn(pythonBin(), [path.join(MATH_DIR, "market_data.py")], {
       cwd: MATH_DIR,
@@ -68,7 +69,12 @@ function fetchViaPython(symbol, maxExpirations, { timeoutMs = 120_000 } = {}) {
       resolve(parsed.result);
     });
 
-    proc.stdin.write(JSON.stringify({ symbol, max_expirations: maxExpirations }));
+    proc.stdin.write(JSON.stringify({
+      symbol,
+      max_expirations: maxExpirations,
+      min_dte: minDte,
+      max_dte: maxDte,
+    }));
     proc.stdin.end();
   });
 }
@@ -133,16 +139,18 @@ function createDataLayer({ fetcher = fetchViaPython, now = Date.now, ttlMs = CAC
     };
   }
 
-  async function getMarketData(symbol, { refresh = false, maxExpirations = 6 } = {}) {
+  async function getMarketData(symbol, { refresh = false, maxExpirations = 6,
+                                          minDte = 1, maxDte = 120 } = {}) {
     if (typeof symbol !== "string" || !SYMBOL_RE.test(symbol.trim())) {
       throw new DataError(`invalid symbol: ${JSON.stringify(symbol)}`);
     }
-    const key = symbol.trim().toUpperCase();
+    const sym = symbol.trim().toUpperCase();
+    const key = `${sym}:${maxExpirations}:${minDte}:${maxDte}`;
     const hit = cache.get(key);
     if (hit && !refresh && now() - hit.at < ttlMs) {
       return decorate(hit.data);
     }
-    const raw = await fetcher(key, maxExpirations);
+    const raw = await fetcher(sym, { maxExpirations, minDte, maxDte });
     const gated = applyLiquidityGates(raw.chains);
     const data = {
       ...raw,
