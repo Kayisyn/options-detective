@@ -1,6 +1,7 @@
 import Calculator from "./components/Calculator";
 import Detector from "./components/Detector";
 import Recommender from "./components/Recommender";
+import Onboarding from "./components/shared/Onboarding";
 import { useStore, type View } from "./store";
 
 const TABS: Array<{ id: View; label: string; hint: string }> = [
@@ -24,6 +25,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
+      <Onboarding />
       <header className="border-b border-slate-800 px-6 py-4">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">

@@ -55,15 +55,33 @@ irm http://localhost:3001/health
 ## Build status
 
 - [x] **Phase 0** — project scaffold (Electron, React, Express, Python)
-- [x] **Phase 1** — math engine + full test suite (**1290 tests**)
-- [ ] Phase 2 — data layer (yfinance adapter, caching, liquidity gates)
-- [ ] Phase 3 — Detector (strategy mapping, candidate generation, scoring)
-- [ ] Phase 4 — Calculator (candidate analysis endpoint)
-- [ ] Phase 5 — Recommender (ranking + trade-offs)
-- [ ] Phase 6 — Frontend views (payoff chart, greeks, navigation)
-- [ ] Phase 7 — Electron IPC wiring + clipboard export
-- [ ] Phase 8 — In-app intelligence (tooltips, onboarding, narrative)
-- [ ] Phase 9 — Hardening
+- [x] **Phase 1** — math engine + full test suite (1313 pytest)
+- [x] **Phase 2** — data layer (yfinance adapter, 60s cache, liquidity gates,
+      quote-age staleness) + persistent engine mode (200 greeks in ~40ms)
+- [x] **Phase 3** — Detector (strategy mapping, 7 strategy builders,
+      composite scoring, closed-market indicative marks)
+- [x] **Phase 4** — Calculator (`POST /calculate`, theoretical repricing)
+- [x] **Phase 5** — Recommender (ranking, trade-off facts, broker export)
+- [x] **Phase 6** — Frontend views (payoff chart, dollar greeks, strike
+      adjustments, export) — verified against live AAPL data
+- [x] **Phase 7** — Electron IPC (backend spawned by main, api:* channels,
+      native clipboard export)
+- [x] **Phase 8** — In-app intelligence (onboarding, tooltips everywhere,
+      IV-context guidance, payoff narrative)
+- [x] **Phase 9** — Hardening (JSON error handlers, graceful engine
+      shutdown, 49 node tests + 1313 pytest green)
+
+## Running the desktop app
+
+```powershell
+cd electron
+npm start                        # spawns the backend, loads frontend/dist
+
+# or against the Vite dev server (hot reload):
+cd frontend; npm run dev         # terminal 1
+cd electron                      # terminal 2
+$env:VITE_DEV_SERVER_URL = "http://localhost:5173"; npm start
+```
 
 ## Ground rules (from the build brief)
 

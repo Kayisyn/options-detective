@@ -105,6 +105,19 @@ export default function Detector() {
             </div>
           ))}
 
+          {result.ivBand === "high" && (
+            <div className="rounded-md border border-sky-900 bg-sky-950/50 px-4 py-2 text-sm text-sky-200">
+              💡 IV rank {result.ivRank} is high — options are expensive right now, so the
+              screen favors premium-selling structures (condors, strangles, covered calls).
+            </div>
+          )}
+          {result.ivBand === "low" && (
+            <div className="rounded-md border border-sky-900 bg-sky-950/50 px-4 py-2 text-sm text-sky-200">
+              💡 IV rank {result.ivRank} is low — options are cheap right now, so the screen
+              favors long-volatility structures (straddles) and debit spreads.
+            </div>
+          )}
+
           <div className="overflow-x-auto rounded-lg border border-slate-800">
             <table className="w-full text-sm" data-testid="candidates-table">
               <thead>

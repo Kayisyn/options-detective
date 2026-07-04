@@ -1,15 +1,52 @@
 # API Schema
 
-## REST endpoints (Express, port 3001)
+## REST endpoints (Express, port 3001) — all live
 
-| Endpoint | Phase | Status |
-|---|---|---|
-| `GET /health` | 0 | **live** — verifies Express + Python engine round trip |
-| `POST /calculate/engine` | 1 | **live** — raw math engine passthrough |
-| `GET /data/:symbol` | 2 | 501 stub |
-| `POST /detect` | 3 | 501 stub |
-| `POST /calculate` | 4 | 501 stub |
-| `POST /recommend` | 5 | 501 stub |
+| Endpoint | Purpose |
+|---|---|
+| `GET /health` | Express + Python engine round trip |
+| `GET /data/:symbol?refresh=1&expirations=6` | normalized chains after liquidity gates, IV rank, data/quote age, stale flag |
+| `POST /detect` | screen all expirations × eligible strategies → ranked candidates |
+| `POST /calculate` | full analysis of one position (greeks, payoff, POP, sizing) |
+| `POST /calculate/engine` | raw math engine passthrough |
+| `POST /recommend` | top-5 ranking + trade-off facts + broker export text |
+
+### POST /detect
+
+```json
+{ "symbol": "AAPL", "directionalView": "neutral|bullish|bearish|income",
+  "capital": 25000, "riskTolerancePct": 2, "maxLossDollars": null,
+  "definedRiskOnly": false, "minDTE": 5, "maxDTE": 90, "refresh": false }
+```
+
+Response: `{symbol, price, ivRank, ivBand, strategiesScreened, generated,
+candidates[], dataAgeSeconds, stale, warnings[]}`. Candidates carry
+`meta.marksQuality: "live" | "indicative"` — indicative means the market was
+closed and marks are last-trade/closing values.
+
+### POST /calculate
+
+```json
+{ "legs": [{ "type": "long_call", "strike": 310, "price": 8.0, "qty": 1, "iv": 0.27 }],
+  "spot": 308.63, "dte": 45, "sigma": 0.27, "riskFreeRate": 0.04,
+  "capital": 25000, "riskTolerancePct": 2,
+  "strategyType": "call_vertical",
+  "repriceTheoretical": false }
+```
+
+`sigma` falls back to the average leg IV. `repriceTheoretical: true` replaces
+every option mark with its Black-Scholes value at the leg's IV (used after
+strike adjustments; repriced legs return `"theoretical": true`).
+
+### Liquidity gates (data layer)
+
+- removed outright: `volume < 50`, `openInterest < 100`, no usable price
+- flagged `illiquid` (excluded from live-market candidates): dollar spread
+  `> max(5% of mid, $0.30)`
+- flagged `indicativeOnly` (no bid/ask book): usable only in stale sessions,
+  with warnings and `marksQuality: "indicative"`
+- staleness: `quoteAgeSeconds` from the chain's most recent trade
+  (`lastTradeAt`), falling back to fetch age; stale after 15 minutes
 
 ### POST /calculate/engine (live)
 

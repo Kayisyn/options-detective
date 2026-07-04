@@ -3,7 +3,31 @@ import { useStore } from "../store";
 import { money, num, pct, shortDate, signed, strategyLabel } from "../lib/format";
 import PayoffChart from "./shared/PayoffChart";
 import GreeksSummary from "./shared/GreeksSummary";
-import type { Leg } from "../types";
+import type { CalcResult, Leg } from "../types";
+
+// Plain-language readout of the payoff shape. Reads only backend-provided
+// breakevens and curve signs — no finance computed here.
+function narrative(result: CalcResult, symbol: string): string | null {
+  const bes = result.payoff.breakevens;
+  const curve = result.payoff.profitAtExpiry;
+  if (bes.length === 0 || curve.length === 0) return null;
+  const lowSideProfit = curve[0].profit > 0;
+  const highSideProfit = curve[curve.length - 1].profit > 0;
+  const fmt = (b: number) => `$${b.toFixed(2)}`;
+  if (bes.length === 2 && lowSideProfit && highSideProfit) {
+    return `Profitable if ${symbol} finishes below ${fmt(bes[0])} or above ${fmt(bes[1])} at expiry — a bet on movement.`;
+  }
+  if (bes.length === 2 && !lowSideProfit && !highSideProfit) {
+    return `Profitable if ${symbol} finishes between ${fmt(bes[0])} and ${fmt(bes[1])} at expiry — a bet on calm.`;
+  }
+  if (bes.length === 1 && highSideProfit) {
+    return `Profitable if ${symbol} finishes above ${fmt(bes[0])} at expiry.`;
+  }
+  if (bes.length === 1 && lowSideProfit) {
+    return `Profitable if ${symbol} finishes below ${fmt(bes[0])} at expiry.`;
+  }
+  return null;
+}
 
 // View 2: payoff diagram + greeks + leg detail for the selected candidate,
 // with strike adjustments (repriced at Black-Scholes theoretical, labelled).
@@ -76,6 +100,11 @@ export default function Calculator() {
               breakevens={result.payoff.breakevens}
               spot={result.inputs.spot}
             />
+            {narrative(result, candidate.symbol) && (
+              <p className="mt-2 text-sm text-sky-200/80">
+                {narrative(result, candidate.symbol)}
+              </p>
+            )}
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4 text-sm">
               <Stat label="Max profit" value={money(result.payoff.maxProfit)} tone="good"
                 hint="Best possible outcome at expiry" />

@@ -5,7 +5,7 @@ const detectRouter = require("./routes/detect");
 const calculateRouter = require("./routes/calculate");
 const recommendRouter = require("./routes/recommend");
 const dataRouter = require("./routes/data");
-const { callEngine } = require("./services/mathEngine");
+const { callEngine, engineClient } = require("./services/mathEngine");
 
 const app = express();
 app.use(cors());
@@ -32,11 +32,29 @@ app.use("/calculate", calculateRouter);
 app.use("/recommend", recommendRouter);
 app.use("/data", dataRouter);
 
+// JSON everywhere: unknown routes and unhandled errors never leak HTML.
+app.use((req, res) => {
+  res.status(404).json({ error: `no route ${req.method} ${req.path}` });
+});
+// eslint-disable-next-line no-unused-vars -- express identifies error
+// middleware by arity, the 4th parameter must exist
+app.use((err, _req, res, _next) => {
+  console.error("[server] unhandled:", err);
+  res.status(500).json({ error: "internal error; see server logs" });
+});
+
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`options-detective backend listening on http://localhost:${PORT}`);
   });
+  const shutdown = () => {
+    engineClient.shutdown(); // stop the warm Python child
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 2_000).unref();
+  };
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 }
 
 module.exports = app;
