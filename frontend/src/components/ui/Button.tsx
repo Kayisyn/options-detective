@@ -1,23 +1,24 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cx } from "../../lib/cx";
 
-// Button system per ux-design-polish-brief §2.1. All state changes 150ms
-// ease-out; scale feedback only on variants the brief calls for.
+// Button system per ux-design-polish-brief §2.1, theme-aware since Phase 4:
+// colors ride the accent CSS variables, hover/active shades come from
+// brightness so every theme keeps correct feedback. 150ms ease-out.
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
 export type ButtonSize = "xs" | "sm" | "md" | "lg";
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: cx(
-    "bg-blue-600 text-white shadow-md",
-    "hover:bg-blue-700 hover:scale-[1.02] hover:shadow-lg",
-    "active:bg-blue-800 active:scale-[0.98]",
+    "bg-accent-blue text-white shadow-md",
+    "hover:brightness-110 hover:scale-[1.02] hover:shadow-lg",
+    "active:brightness-90 active:scale-[0.98]",
     "disabled:bg-gray-600",
   ),
   secondary: cx(
-    "border-2 border-blue-600 bg-transparent text-blue-400",
-    "hover:bg-blue-600/10 hover:border-blue-500",
-    "active:border-blue-700 active:text-blue-300",
+    "border-2 border-accent-blue bg-transparent text-accent-blue",
+    "hover:bg-accent-blue/10 hover:brightness-110",
+    "active:brightness-90",
   ),
   ghost: cx(
     "bg-transparent text-content-2",
@@ -25,9 +26,9 @@ const VARIANTS: Record<ButtonVariant, string> = {
     "active:text-accent-blue",
   ),
   destructive: cx(
-    "bg-red-600 text-white shadow-md",
-    "hover:bg-red-700 hover:shadow-lg",
-    "active:bg-red-800 active:scale-[0.98]",
+    "bg-accent-red text-white shadow-md",
+    "hover:brightness-110 hover:shadow-lg",
+    "active:brightness-90 active:scale-[0.98]",
   ),
 };
 
@@ -54,9 +55,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
       className={cx(
         "inline-flex items-center justify-center gap-2 rounded-sm font-medium",
         "transition-all duration-150 ease-out",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/50",
         "disabled:cursor-not-allowed disabled:opacity-50",
-        "disabled:hover:scale-100 disabled:hover:shadow-md",
+        "disabled:hover:scale-100 disabled:hover:shadow-md disabled:hover:brightness-100",
         VARIANTS[variant],
         SIZES[size],
         className,

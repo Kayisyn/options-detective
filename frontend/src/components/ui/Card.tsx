@@ -20,7 +20,7 @@ export function Card({
     <div
       className={cx(
         "rounded-lg border bg-dark-800 p-4 shadow-md",
-        glow ? "border-blue-500/60 shadow-glow" : "border-dark-700",
+        glow ? "border-accent-blue/60 shadow-glow" : "border-dark-700",
         interactive && cx(
           "cursor-pointer transition-all duration-200 ease-out",
           "hover:scale-[1.01] hover:shadow-lg active:scale-[0.98]",
@@ -77,7 +77,7 @@ export function MetricBox({ label, value, highlight = "none", hint }: {
   return (
     <div className={cx("rounded bg-dark-700/50 p-2.5", hint && "cursor-help")} title={hint}>
       <div className="text-xs uppercase tracking-wide text-content-3">{label}</div>
-      <div className={cx("mt-0.5 font-bold tabular-nums", HIGHLIGHTS[highlight])}>
+      <div className={cx("mt-0.5 font-mono font-bold tabular-nums", HIGHLIGHTS[highlight])}>
         {value}
       </div>
     </div>
@@ -89,10 +89,10 @@ export function MetricBox({ label, value, highlight = "none", hint }: {
 type BadgeVariant = "blue" | "green" | "red" | "orange" | "neutral";
 
 const BADGES: Record<BadgeVariant, string> = {
-  blue: "bg-blue-600/20 text-blue-300 border-blue-500/30",
-  green: "bg-emerald-600/20 text-emerald-300 border-emerald-500/30",
-  red: "bg-red-600/20 text-red-300 border-red-500/30",
-  orange: "bg-amber-600/20 text-amber-300 border-amber-500/30",
+  blue: "bg-accent-blue/15 text-accent-blue border-accent-blue/30",
+  green: "bg-accent-green/15 text-accent-green border-accent-green/30",
+  red: "bg-accent-red/15 text-accent-red border-accent-red/30",
+  orange: "bg-accent-orange/15 text-accent-orange border-accent-orange/30",
   neutral: "bg-dark-700 text-content-2 border-dark-600",
 };
 

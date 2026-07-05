@@ -5,6 +5,8 @@ import Button from "./ui/Button";
 import { Badge, Card, CardContent, CardFooter, CardHeader, MetricBox } from "./ui/Card";
 import { FormInput, FormSelect } from "./ui/Input";
 import { DetectorSkeleton } from "./shared/Skeleton";
+import { useMode } from "../contexts/ModeContext";
+import { BEST_FOR } from "../lib/copy";
 import type { Candidate, DirectionalView } from "../types";
 
 const VIEWS: Array<{ id: DirectionalView; label: string }> = [
@@ -25,6 +27,7 @@ function riskReward(c: Candidate): string {
 // View 1: symbol + intent -> ranked candidate cards across all expirations.
 export default function Detector() {
   const s = useStore();
+  const { expertMode } = useMode();
   const result = s.screenResult;
   const screening = s.status === "screening";
   const [detailsId, setDetailsId] = useState<string | null>(null);
@@ -98,10 +101,12 @@ export default function Detector() {
         <>
           <div className="flex flex-wrap items-center gap-4 rounded-md bg-dark-800 px-4 py-3 text-sm">
             <span className="font-mono text-base font-semibold">{result.symbol}</span>
-            <span className="font-bold tabular-nums">{money(result.price, 2)}</span>
-            <span title="Where today's implied volatility sits in the past year's range (0-100). High = options are expensive, favors selling premium.">
-              IV rank <b>{result.ivRank ?? "n/a"}</b> ({result.ivBand})
-            </span>
+            <span className="font-mono font-bold tabular-nums">{money(result.price, 2)}</span>
+            {expertMode && (
+              <span title="Where today's implied volatility sits in the past year's range (0-100). High = options are expensive, favors selling premium.">
+                IV rank <b>{result.ivRank ?? "n/a"}</b> ({result.ivBand})
+              </span>
+            )}
             <span className="text-content-3">
               screened {result.strategiesScreened.map(strategyLabel).join(", ")}
             </span>
@@ -116,14 +121,14 @@ export default function Detector() {
             </div>
           ))}
 
-          {result.ivBand === "high" && (
-            <div className="rounded-md border border-sky-900 bg-sky-950/50 px-4 py-2 text-sm text-sky-200">
+          {expertMode && result.ivBand === "high" && (
+            <div className="rounded-md border border-accent-blue/30 bg-accent-blue/10 px-4 py-2 text-sm text-accent-blue">
               💡 IV rank {result.ivRank} is high — options are expensive right now, so the
               screen favors premium-selling structures (condors, strangles, covered calls).
             </div>
           )}
-          {result.ivBand === "low" && (
-            <div className="rounded-md border border-sky-900 bg-sky-950/50 px-4 py-2 text-sm text-sky-200">
+          {expertMode && result.ivBand === "low" && (
+            <div className="rounded-md border border-accent-blue/30 bg-accent-blue/10 px-4 py-2 text-sm text-accent-blue">
               💡 IV rank {result.ivRank} is low — options are cheap right now, so the screen
               favors long-volatility structures (straddles) and debit spreads.
             </div>
@@ -163,23 +168,29 @@ export default function Detector() {
                       </Badge>
                     )}
                     <Badge variant={c.probability.pop >= 0.6 ? "green" : "blue"}
-                      title="Probability of any profit at expiry (lognormal model)">
+                      title={expertMode
+                        ? "Probability of any profit at expiry (lognormal model)"
+                        : "Rough odds this trade ends up profitable — 60%+ is favorable"}>
                       {pct(c.probability.pop)} POP
                     </Badge>
-                    <span className="font-bold tabular-nums text-blue-300"
-                      title="Composite: POP 30% · risk/reward 20% · theta 20% · capital efficiency 15% · liquidity 15%">
-                      {c.compositeScore.toFixed(1)}
-                    </span>
+                    {expertMode && (
+                      <span className="font-mono font-bold tabular-nums text-accent-blue"
+                        title="Composite: POP 30% · risk/reward 20% · theta 20% · capital efficiency 15% · liquidity 15%">
+                        {c.compositeScore.toFixed(1)}
+                      </span>
+                    )}
                   </div>
                 </CardHeader>
 
-                <CardContent className="grid grid-cols-3 gap-3">
+                <CardContent className={expertMode ? "grid grid-cols-3 gap-3" : "grid grid-cols-2 gap-3"}>
                   <MetricBox label="Max Profit" value={money(c.payoff.maxProfit)}
                     highlight="green" hint="Best possible outcome at expiry" />
                   <MetricBox label="Max Loss" value={money(c.payoff.maxLoss)}
                     highlight="red" hint="Worst possible outcome — size positions off this number" />
-                  <MetricBox label="Risk/Reward" value={riskReward(c)}
-                    hint="Max profit divided by max loss" />
+                  {expertMode && (
+                    <MetricBox label="Risk/Reward" value={riskReward(c)}
+                      hint="Max profit divided by max loss" />
+                  )}
                 </CardContent>
 
                 <CardFooter>
@@ -194,17 +205,24 @@ export default function Detector() {
                       setDetailsId(detailsId === c.id ? null : c.id);
                     }}
                   >
-                    Details
+                    {expertMode ? "Details" : "Learn more"}
                   </Button>
-                  <span className="ml-auto text-xs tabular-nums text-content-3"
-                    title="Dollars gained (+) or lost (-) per calendar day from time decay">
-                    θ {signed(c.metrics.thetaPerDay)}/day
-                  </span>
+                  {expertMode && (
+                    <span className="ml-auto font-mono text-xs tabular-nums text-content-3"
+                      title="Dollars gained (+) or lost (-) per calendar day from time decay">
+                      θ {signed(c.metrics.thetaPerDay)}/day
+                    </span>
+                  )}
                 </CardFooter>
 
                 {detailsId === c.id && (
                   <div className="mt-3 border-t border-dark-700 pt-3 text-sm text-content-2"
                     onClick={(e) => e.stopPropagation()}>
+                    {!expertMode && (
+                      <p className="mb-1 text-accent-blue">
+                        Best for: {BEST_FOR[c.strategyType]}
+                      </p>
+                    )}
                     <p>{c.rationale}</p>
                     <p className="mt-1 text-xs text-content-3">
                       needs {money(c.sizing.capitalRequired)}

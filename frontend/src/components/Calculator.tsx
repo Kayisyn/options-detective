@@ -6,6 +6,8 @@ import GreeksSummary from "./shared/GreeksSummary";
 import Button from "./ui/Button";
 import { compactFieldClasses } from "./ui/Input";
 import { CalculatorSkeleton } from "./shared/Skeleton";
+import { useMode } from "../contexts/ModeContext";
+import { BEST_FOR } from "../lib/copy";
 import type { CalcResult, Leg } from "../types";
 
 // Plain-language readout of the payoff shape. Reads only backend-provided
@@ -36,6 +38,7 @@ function narrative(result: CalcResult, symbol: string): string | null {
 // with strike adjustments (repriced at Black-Scholes theoretical, labelled).
 export default function Calculator() {
   const s = useStore();
+  const { expertMode } = useMode();
   const candidate = s.selected;
   const result = s.calcResult;
   const [draftLegs, setDraftLegs] = useState<Leg[] | null>(null);
@@ -78,7 +81,7 @@ export default function Calculator() {
           · spot {money(candidate.meta.spot, 2)}
         </span>
         {candidate.meta.marksQuality === "indicative" && (
-          <span className="rounded bg-amber-900/60 px-2 py-0.5 text-xs text-amber-300"
+          <span className="rounded bg-accent-orange/15 px-2 py-0.5 text-xs text-accent-orange"
             title="Market was closed when these quotes were captured — verify live prices before trading">
             indicative marks
           </span>
@@ -106,9 +109,29 @@ export default function Calculator() {
               maxLoss={result.payoff.maxLoss}
             />
             {narrative(result, candidate.symbol) && (
-              <p className="mt-2 text-sm text-sky-200/80">
+              <p className="mt-2 text-sm text-accent-blue/90">
                 {narrative(result, candidate.symbol)}
               </p>
+            )}
+            {!expertMode && (
+              <div className="mt-3 rounded-md border border-dark-700 bg-dark-800 p-4 text-sm text-content-2"
+                data-testid="beginner-explainer">
+                <h3 className="mb-1 text-xs font-medium uppercase tracking-wide text-content-3">
+                  Understanding the payoff
+                </h3>
+                <p>
+                  This is a {strategyLabel(candidate.strategyType).toLowerCase()} —{" "}
+                  {BEST_FOR[candidate.strategyType].charAt(0).toLowerCase()}
+                  {BEST_FOR[candidate.strategyType].slice(1)}{" "}
+                  You {result.sizing.totalDebit >= 0
+                    ? `pay ${money(result.sizing.totalDebit)} to open it`
+                    : `collect ${money(-result.sizing.totalDebit)} for opening it`}.
+                  The chart shows what you would make or lose at every stock
+                  price when the options expire. The most you can lose is{" "}
+                  <b className="text-accent-red">{money(result.payoff.maxLoss)}</b> —
+                  never risk money you can't afford to lose on that number.
+                </p>
+              </div>
             )}
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4 text-sm">
               <Stat label="Max profit" value={money(result.payoff.maxProfit)} tone="good"
@@ -124,7 +147,18 @@ export default function Calculator() {
           </div>
 
           <div className="space-y-4 lg:col-span-2">
-            <GreeksSummary greeks={result.netGreeks} />
+            {!expertMode && (
+              <details className="rounded-md border border-dark-700 bg-dark-800/50 p-3"
+                data-testid="beginner-greeks-details">
+                <summary className="cursor-pointer text-sm text-content-2">
+                  See detailed greeks?
+                </summary>
+                <div className="mt-3">
+                  <GreeksSummary greeks={result.netGreeks} />
+                </div>
+              </details>
+            )}
+            {expertMode && <GreeksSummary greeks={result.netGreeks} />}
 
             <div className="rounded-lg border border-slate-800">
               <div className="border-b border-slate-800 px-3 py-2 text-xs uppercase tracking-wide text-slate-500">
@@ -151,7 +185,7 @@ export default function Calculator() {
                       <td className="px-3 py-2 tabular-nums">
                         {money(leg.price, 2)}
                         {leg.theoretical && (
-                          <span className="ml-1 text-xs text-amber-400" title="Black-Scholes theoretical price at the leg's IV — not a market quote">
+                          <span className="ml-1 text-xs text-accent-orange" title="Black-Scholes theoretical price at the leg's IV — not a market quote">
                             theo
                           </span>
                         )}
@@ -207,8 +241,8 @@ function Stat({ label, value, hint, tone }: {
   return (
     <div className="cursor-help rounded-md bg-slate-900 p-3" title={hint}>
       <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
-      <div className={`mt-0.5 font-medium tabular-nums ${
-        tone === "good" ? "text-emerald-400" : tone === "bad" ? "text-rose-400" : ""
+      <div className={`mt-0.5 font-mono font-medium tabular-nums ${
+        tone === "good" ? "text-accent-green" : tone === "bad" ? "text-accent-red" : ""
       }`}>
         {value}
       </div>

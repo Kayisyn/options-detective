@@ -47,9 +47,9 @@ export default function Onboarding() {
         </p>
         <div className="mt-4 space-y-3">
           {STEPS.map((step) => (
-            <div key={step.title} className="rounded-lg bg-slate-800/60 p-3">
-              <div className="text-sm font-medium text-sky-400">{step.title}</div>
-              <p className="mt-1 text-sm text-slate-300">{step.text}</p>
+            <div key={step.title} className="rounded-lg bg-dark-700/60 p-3">
+              <div className="text-sm font-medium text-accent-blue">{step.title}</div>
+              <p className="mt-1 text-sm text-content-2">{step.text}</p>
             </div>
           ))}
         </div>

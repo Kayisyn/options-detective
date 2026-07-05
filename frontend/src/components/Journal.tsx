@@ -56,7 +56,7 @@ export default function Journal() {
           <div className="mt-3 flex gap-2">
             {t.exportText && (
               <Button size="xs" onClick={() => s.exportTrade(t.id, t.exportText!)}
-                className={s.exportedId === t.id ? "bg-emerald-700 hover:bg-emerald-700" : undefined}>
+                className={s.exportedId === t.id ? "bg-accent-green hover:bg-accent-green" : undefined}>
                 {s.exportedId === t.id ? "Copied ✓" : "Copy order"}
               </Button>
             )}

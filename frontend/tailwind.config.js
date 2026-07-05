@@ -19,13 +19,17 @@ export default {
           3: "rgb(var(--od-text-3) / <alpha-value>)", // tertiary / hints
         },
         accent: {
-          blue: "#3b82f6",
-          green: "#10b981",
-          red: "#ef4444",
-          orange: "#f59e0b",
+          blue: "rgb(var(--od-accent-blue) / <alpha-value>)",
+          green: "rgb(var(--od-accent-green) / <alpha-value>)",
+          red: "rgb(var(--od-accent-red) / <alpha-value>)",
+          orange: "rgb(var(--od-accent-orange) / <alpha-value>)",
           purple: "#a855f7",
           cyan: "#06b6d4",
         },
+      },
+      fontFamily: {
+        sans: ["Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+        mono: ["JetBrains Mono", "Consolas", "monospace"],
       },
       // Design-brief radius scale: sm 4 / md 8 / lg 12 / xl 16
       borderRadius: {
@@ -36,7 +40,7 @@ export default {
         xl: "16px",
       },
       boxShadow: {
-        glow: "0 0 0 1px rgb(59 130 246 / 0.4), 0 0 24px rgb(59 130 246 / 0.15)",
+        glow: "0 0 0 1px rgb(var(--od-accent-blue) / 0.4), 0 0 24px rgb(var(--od-accent-blue) / 0.15)",
       },
       keyframes: {
         "card-enter": {

@@ -1,29 +1,50 @@
 import { signed } from "../../lib/format";
+import { useMode } from "../../contexts/ModeContext";
 import type { Greeks } from "../../types";
 
-// Position greeks in dollar terms, each with a plain-language explainer.
-const EXPLAINERS: Record<keyof Greeks, { unit: string; text: string }> = {
-  delta: { unit: "$/1$ move", text: "Dollars gained or lost if the stock moves up $1" },
-  gamma: { unit: "Δ/1$ move", text: "How much delta itself changes per $1 move — high gamma means your exposure shifts fast" },
-  theta: { unit: "$/day", text: "Dollars gained (+) or lost (−) per calendar day from time passing" },
-  vega: { unit: "$/IV pt", text: "Dollars gained or lost if implied volatility rises 1 point" },
-  rho: { unit: "$/rate pt", text: "Dollars gained or lost if interest rates rise 1 point" },
+// Position greeks in dollar terms. Explainer depth follows the complexity
+// mode (updated brief §4.3): beginners get the plain-English version,
+// experts the risk-language version.
+const UNITS: Record<keyof Greeks, string> = {
+  delta: "$/1$ move",
+  gamma: "Δ/1$ move",
+  theta: "$/day",
+  vega: "$/IV pt",
+  rho: "$/rate pt",
+};
+
+const BEGINNER: Record<keyof Greeks, string> = {
+  delta: "How much you make or lose if the stock rises $1. Delta +65 means you gain $65 per $1 up-move.",
+  gamma: "How quickly that sensitivity itself changes as the stock moves.",
+  theta: "How much this trade makes (+) or loses (−) each day just from time passing.",
+  vega: "How much you make or lose if the market gets more nervous (volatility rises 1 point).",
+  rho: "How much interest-rate changes matter here (usually the least important).",
+};
+
+const EXPERT: Record<keyof Greeks, string> = {
+  delta: "Directional exposure in $ per $1 underlying move; hedge ratio for the position",
+  gamma: "Delta convexity per $1 move — short gamma loses on whipsaw, long gamma gains",
+  theta: "Carry per calendar day; positive = collecting decay, negative = paying for optionality",
+  vega: "IV exposure per point — long vega benefits from expansion, watch IV crush after events",
+  rho: "Rate sensitivity per point; matters for long-dated or deep ITM positions",
 };
 
 export default function GreeksSummary({ greeks }: { greeks: Greeks }) {
+  const { expertMode } = useMode();
+  const explainers = expertMode ? EXPERT : BEGINNER;
   return (
     <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5" data-testid="greeks-summary">
-      {(Object.keys(EXPLAINERS) as Array<keyof Greeks>).map((key) => (
+      {(Object.keys(UNITS) as Array<keyof Greeks>).map((key) => (
         <div
           key={key}
-          className="cursor-help rounded-md bg-slate-900 p-3"
-          title={EXPLAINERS[key].text}
+          className="cursor-help rounded-md bg-dark-800 p-3"
+          title={explainers[key]}
         >
-          <dt className="text-xs uppercase tracking-wide text-slate-500">
-            {key} <span className="normal-case text-slate-600">({EXPLAINERS[key].unit})</span>
+          <dt className="text-xs uppercase tracking-wide text-content-3">
+            {key} <span className="normal-case text-content-3/70">({UNITS[key]})</span>
           </dt>
-          <dd className={`text-lg font-medium tabular-nums ${
-            greeks[key] > 0 ? "text-emerald-400" : greeks[key] < 0 ? "text-rose-400" : ""
+          <dd className={`font-mono text-lg font-medium tabular-nums ${
+            greeks[key] > 0 ? "text-accent-green" : greeks[key] < 0 ? "text-accent-red" : ""
           }`}>
             {signed(greeks[key])}
           </dd>

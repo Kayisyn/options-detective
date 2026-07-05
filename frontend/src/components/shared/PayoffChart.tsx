@@ -3,6 +3,7 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { money } from "../../lib/format";
+import { useTheme } from "../../contexts/ThemeContext";
 import type { PayoffPoint } from "../../types";
 
 interface PayoffChartProps {
@@ -14,16 +15,26 @@ interface PayoffChartProps {
   maxLoss?: number | null;
 }
 
-// Color coding per ux-design-polish-brief §2.4: green profit / red loss
-// fills, blue P&L line, cyan for the live spot marker, amber breakevens.
-const COLORS = {
-  line: "#3b82f6",
-  profit: "#10b981",
-  loss: "#ef4444",
-  breakeven: "#f59e0b",
-  spot: "#06b6d4",
-  grid: "#2a3050",
-};
+// Color coding per ux-design-polish-brief §2.4, resolved from the active
+// theme's CSS variables (recharts needs concrete strings, so we read them
+// per render; useTheme() makes the chart re-render on theme switches).
+function cssVar(name: string, fallback: string): string {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v ? `rgb(${v})` : fallback;
+}
+
+function themeColors() {
+  return {
+    line: cssVar("--od-accent-blue", "#3b82f6"),
+    profit: cssVar("--od-accent-green", "#10b981"),
+    loss: cssVar("--od-accent-red", "#ef4444"),
+    breakeven: cssVar("--od-accent-orange", "#f59e0b"),
+    spot: "#06b6d4",
+    grid: cssVar("--od-dark-700", "#2a3050"),
+    panel: cssVar("--od-dark-800", "#1a1f3a"),
+    axis: cssVar("--od-text-3", "#9ca3af"),
+  };
+}
 
 // Flat payoff segments share the extreme value; annotate the middle of the
 // plateau instead of its left edge.
@@ -55,6 +66,8 @@ function LegendSwatch({ color, dashed, label }: {
 export default function PayoffChart({
   points, breakevens, spot, maxProfit, maxLoss,
 }: PayoffChartProps) {
+  useTheme(); // re-resolve colors when the theme changes
+  const COLORS = themeColors();
   if (points.length === 0) {
     return (
       <div className="flex h-72 items-center justify-center rounded-lg border border-dashed border-dark-600 text-sm text-content-3">
@@ -92,12 +105,12 @@ export default function PayoffChart({
               type="number"
               domain={["dataMin", "dataMax"]}
               tickFormatter={(v: number) => `$${Math.round(v)}`}
-              stroke="#9ca3af"
+              stroke={COLORS.axis}
               fontSize={12}
             />
             <YAxis
               tickFormatter={(v: number) => money(v)}
-              stroke="#9ca3af"
+              stroke={COLORS.axis}
               fontSize={12}
               width={72}
             />
@@ -105,8 +118,8 @@ export default function PayoffChart({
               formatter={(value: number) => [money(value, 0), "P&L at expiry"]}
               labelFormatter={(label: number) => `Underlying ${money(label, 2)}`}
               contentStyle={{
-                backgroundColor: "#1a1f3a",
-                border: "1px solid #2a3050",
+                backgroundColor: COLORS.panel,
+                border: `1px solid ${COLORS.grid}`,
                 borderRadius: 8,
                 fontSize: 12,
               }}
@@ -135,7 +148,7 @@ export default function PayoffChart({
                 y={maxProfitPoint.profit}
                 r={4}
                 fill={COLORS.profit}
-                stroke="#0a0e27"
+                stroke={COLORS.panel}
                 strokeWidth={2}
                 label={{
                   value: `max +${money(maxProfit as number)}`,
@@ -149,7 +162,7 @@ export default function PayoffChart({
                 y={maxLossPoint.profit}
                 r={4}
                 fill={COLORS.loss}
-                stroke="#0a0e27"
+                stroke={COLORS.panel}
                 strokeWidth={2}
                 label={{
                   value: `max −${money(maxLoss as number)}`,

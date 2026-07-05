@@ -3,11 +3,13 @@ import { useStore } from "../store";
 import { money, pct, shortDate, strategyLabel } from "../lib/format";
 import CandidateCard from "./shared/CandidateCard";
 import { RecommenderSkeleton } from "./shared/Skeleton";
+import { useMode } from "../contexts/ModeContext";
 
 // View 3: top candidates ranked by composite score, trade-off facts,
 // broker-format export to clipboard.
 export default function Recommender() {
   const s = useStore();
+  const { expertMode } = useMode();
   const rec = s.recommendation;
 
   useEffect(() => {
@@ -42,9 +44,15 @@ export default function Recommender() {
     <section className="space-y-4">
       <div>
         <h2 className="text-lg font-medium">Top candidates</h2>
-        <p className="text-sm text-slate-500" title="How the composite score is weighted">
-          Ranked by composite score: {weightLine}
-        </p>
+        {expertMode ? (
+          <p className="text-sm text-content-3" title="How the composite score is weighted">
+            Ranked by composite score: {weightLine}
+          </p>
+        ) : (
+          <p className="text-sm text-content-3">
+            Best first — each card says what the strategy is good for.
+          </p>
+        )}
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">

@@ -1,9 +1,12 @@
+import { useState } from "react";
 import Calculator from "./components/Calculator";
 import Detector from "./components/Detector";
 import Journal from "./components/Journal";
 import Recommender from "./components/Recommender";
 import Onboarding from "./components/shared/Onboarding";
+import SettingsPanel from "./components/shared/SettingsPanel";
 import ViewTransition from "./components/shared/ViewTransition";
+import { useMode } from "./contexts/ModeContext";
 import { useStore, type View } from "./store";
 
 const TABS: Array<{ id: View; label: string; hint: string }> = [
@@ -19,6 +22,8 @@ export default function App() {
   const selected = useStore((s) => s.selected);
   const screenResult = useStore((s) => s.screenResult);
   const error = useStore((s) => s.error);
+  const { expertMode, toggleMode } = useMode();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const enabled: Record<View, boolean> = {
     detector: true,
@@ -35,7 +40,7 @@ export default function App() {
           <h1 className="text-xl font-semibold tracking-tight">
             Options Detective
           </h1>
-          <nav className="flex gap-2">
+          <nav className="flex items-center gap-2">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
@@ -44,7 +49,7 @@ export default function App() {
                 disabled={!enabled[tab.id]}
                 className={`rounded-md px-4 py-2 text-sm transition-all duration-150 ease-out ${
                   view === tab.id
-                    ? "bg-blue-600 text-white shadow-md"
+                    ? "bg-accent-blue text-white shadow-md"
                     : enabled[tab.id]
                       ? "bg-dark-800 text-content-3 hover:bg-dark-700 hover:text-content-1"
                       : "cursor-not-allowed bg-dark-800 text-content-3/40"
@@ -53,9 +58,28 @@ export default function App() {
                 {tab.label}
               </button>
             ))}
+            <span className="mx-1 h-6 w-px bg-dark-600" />
+            <button
+              onClick={toggleMode}
+              title="Switch complexity level — beginner hides greeks behind plain-language summaries"
+              data-testid="mode-toggle"
+              className="rounded-md bg-dark-800 px-3 py-2 text-sm text-content-2 transition-all duration-150 ease-out hover:bg-dark-700"
+            >
+              {expertMode ? "Expert" : "Beginner"}
+            </button>
+            <button
+              onClick={() => setSettingsOpen(true)}
+              title="Settings — themes and complexity"
+              data-testid="settings-button"
+              aria-label="Settings"
+              className="rounded-md bg-dark-800 px-3 py-2 text-sm text-content-2 transition-all duration-150 ease-out hover:bg-dark-700"
+            >
+              ⚙
+            </button>
           </nav>
         </div>
       </header>
+      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       {error && (
         <div className="mx-auto mt-4 max-w-6xl rounded-md border border-red-800 bg-red-950/60 px-4 py-2 text-sm text-red-200">
           {error}
