@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useStore } from "../store";
 import { money, pct, shortDate, strategyLabel } from "../lib/format";
+import Button from "./ui/Button";
 
 // View 4 (v1.x): saved trades. Snapshot of the candidate at save time —
 // numbers here are historical, not live.
@@ -54,23 +55,14 @@ export default function Journal() {
           {t.note && <p className="mt-2 text-sm text-slate-400">{t.note}</p>}
           <div className="mt-3 flex gap-2">
             {t.exportText && (
-              <button
-                onClick={() => s.exportTrade(t.id, t.exportText!)}
-                className={`rounded px-3 py-1.5 text-xs font-medium ${
-                  s.exportedId === t.id
-                    ? "bg-emerald-800 text-emerald-200"
-                    : "bg-sky-600 text-white hover:bg-sky-500"
-                }`}
-              >
+              <Button size="xs" onClick={() => s.exportTrade(t.id, t.exportText!)}
+                className={s.exportedId === t.id ? "bg-accent-green hover:bg-accent-green" : undefined}>
                 {s.exportedId === t.id ? "Copied ✓" : "Copy order"}
-              </button>
+              </Button>
             )}
-            <button
-              onClick={() => s.removeFromJournal(t.id)}
-              className="rounded border border-rose-900 px-3 py-1.5 text-xs text-rose-300 hover:bg-rose-950"
-            >
+            <Button variant="destructive" size="xs" onClick={() => s.removeFromJournal(t.id)}>
               Delete
-            </button>
+            </Button>
           </div>
         </div>
       ))}

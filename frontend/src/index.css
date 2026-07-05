@@ -2,6 +2,137 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   Theme tokens (ux-design-polish-brief-updated §4.2).
+   Six themes, selected by a theme-* class on <html>; dark is the
+   default (:root with no class). Every surface, text tier and accent
+   rides these variables, so components never change per theme.
+
+   Accent SLOTS are semantic: green = profit/positive, red = loss/
+   negative, blue = primary actions, orange = warnings. The colorblind
+   themes recolor the slots (e.g. deuteranopia: profit becomes blue,
+   loss becomes yellow) — components keep using the same class names.
+   ============================================================ */
+:root,
+:root.theme-dark {
+  --od-dark-900: 10 14 39;    /* #0a0e27 */
+  --od-dark-800: 26 31 58;    /* #1a1f3a */
+  --od-dark-700: 42 48 80;    /* #2a3050 */
+  --od-dark-600: 58 66 106;
+  --od-dark-500: 76 86 132;
+  --od-text-1: 255 255 255;
+  --od-text-2: 209 213 219;
+  --od-text-3: 156 163 175;
+  --od-accent-blue: 59 130 246;   /* #3b82f6 */
+  --od-accent-green: 16 185 129;  /* #10b981 */
+  --od-accent-red: 239 68 68;     /* #ef4444 */
+  --od-accent-orange: 245 158 11; /* #f59e0b */
+}
+
+:root.theme-light {
+  --od-dark-900: 249 250 251;
+  --od-dark-800: 243 244 246;
+  --od-dark-700: 229 231 235;
+  --od-dark-600: 209 213 219;
+  --od-dark-500: 156 163 175;
+  --od-text-1: 31 41 55;
+  --od-text-2: 55 65 81;
+  --od-text-3: 107 114 128;
+  /* darker accents for contrast on light surfaces */
+  --od-accent-blue: 30 64 175;    /* #1e40af */
+  --od-accent-green: 4 120 87;    /* #047857 */
+  --od-accent-red: 153 27 27;     /* #991b1b */
+  --od-accent-orange: 180 83 9;   /* #b45309 */
+}
+
+:root.theme-neon {
+  --od-dark-900: 10 14 39;
+  --od-dark-800: 26 31 58;
+  --od-dark-700: 42 48 80;
+  --od-dark-600: 58 66 106;
+  --od-dark-500: 76 86 132;
+  --od-text-1: 255 255 255;
+  --od-text-2: 209 213 219;
+  --od-text-3: 156 163 175;
+  --od-accent-blue: 6 182 212;    /* cyan #06b6d4 */
+  --od-accent-green: 16 185 129;
+  --od-accent-red: 217 70 239;    /* magenta #d946ef */
+  --od-accent-orange: 250 204 21;
+}
+
+:root.theme-professional {
+  --od-dark-900: 31 41 55;    /* #1f2937 */
+  --od-dark-800: 55 65 81;    /* #374151 */
+  --od-dark-700: 75 85 99;
+  --od-dark-600: 107 114 128;
+  --od-dark-500: 156 163 175;
+  --od-text-1: 255 255 255;
+  --od-text-2: 229 231 235;
+  --od-text-3: 209 213 219;
+  --od-accent-blue: 37 99 235;    /* #2563eb */
+  --od-accent-green: 5 150 105;   /* muted #059669 */
+  --od-accent-red: 220 38 38;     /* muted #dc2626 */
+  --od-accent-orange: 217 119 6;
+}
+
+/* Red-blind safe: profit reads as blue, loss as yellow. */
+:root.theme-deuteranopia {
+  --od-dark-900: 10 14 39;
+  --od-dark-800: 26 31 58;
+  --od-dark-700: 42 48 80;
+  --od-dark-600: 58 66 106;
+  --od-dark-500: 76 86 132;
+  --od-text-1: 255 255 255;
+  --od-text-2: 209 213 219;
+  --od-text-3: 156 163 175;
+  --od-accent-blue: 34 211 238;   /* cyan for primary */
+  --od-accent-green: 59 130 246;  /* profit -> blue #3b82f6 */
+  --od-accent-red: 251 191 36;    /* loss -> yellow #fbbf24 */
+  --od-accent-orange: 249 115 22;
+}
+
+/* Red-green blind safe: profit as sky blue, loss as light red. */
+:root.theme-protanopia {
+  --od-dark-900: 10 14 39;
+  --od-dark-800: 26 31 58;
+  --od-dark-700: 42 48 80;
+  --od-dark-600: 58 66 106;
+  --od-dark-500: 76 86 132;
+  --od-text-1: 255 255 255;
+  --od-text-2: 209 213 219;
+  --od-text-3: 156 163 175;
+  --od-accent-blue: 129 140 248;  /* indigo for primary */
+  --od-accent-green: 14 165 233;  /* profit -> sky #0ea5e9 */
+  --od-accent-red: 248 113 113;   /* loss -> #f87171 */
+  --od-accent-orange: 251 191 36;
+}
+
 body {
-  @apply bg-slate-950 text-slate-100 antialiased;
+  @apply bg-dark-900 font-sans text-content-1 antialiased;
+}
+
+/* Respect OS motion preferences: keep the (near-instant) animations so
+   animationend still fires for the view-transition state machine, but kill
+   the movement and the pulse. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-view-exit,
+  .animate-view-enter,
+  .animate-card-enter,
+  .animate-modal-enter,
+  .animate-modal-exit,
+  .animate-toast-in,
+  .animate-fade-in,
+  .animate-shake,
+  .animate-valid-check,
+  .animate-badge-pulse,
+  .animate-ripple,
+  .animate-value-flash {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+  .animate-pulse,
+  .animate-bounce-down,
+  .animate-stripe-slide {
+    animation: none;
+  }
 }
