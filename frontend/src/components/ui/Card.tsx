@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import { cx } from "../../lib/cx";
+import Hint from "./Hint";
 
 // Card family per ux-design-polish-brief §2.2 / §2.5. Surfaces ride the
 // dark-* CSS variables so the Phase 4 light theme adapts them for free.
@@ -74,14 +75,16 @@ export function MetricBox({ label, value, highlight = "none", hint }: {
   highlight?: Highlight;
   hint?: string;
 }) {
-  return (
-    <div className={cx("rounded bg-dark-700/50 p-2.5", hint && "cursor-help")} title={hint}>
+  const box = (
+    <div className={cx("rounded bg-dark-700/50 p-2.5", hint && "cursor-help")}>
       <div className="text-xs uppercase tracking-wide text-content-3">{label}</div>
       <div className={cx("mt-0.5 font-mono font-bold tabular-nums", HIGHLIGHTS[highlight])}>
         {value}
       </div>
     </div>
   );
+  // long-hover explainer (§5.2) instead of the native title tooltip
+  return hint ? <Hint text={hint} className="block">{box}</Hint> : box;
 }
 
 // ---- Badge -----------------------------------------------------------------
@@ -102,7 +105,8 @@ export function Badge({ variant = "neutral", className, ...rest }: {
   return (
     <span
       className={cx(
-        "inline-flex items-center rounded border px-2 py-1 text-xs font-medium",
+        // badge-pulse (§5.1): one gentle pulse when the badge appears
+        "animate-badge-pulse inline-flex items-center rounded border px-2 py-1 text-xs font-medium",
         BADGES[variant],
         className,
       )}

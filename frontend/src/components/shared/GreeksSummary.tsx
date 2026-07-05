@@ -1,5 +1,7 @@
 import { signed } from "../../lib/format";
 import { useMode } from "../../contexts/ModeContext";
+import CountUp from "../ui/CountUp";
+import Hint from "../ui/Hint";
 import type { Greeks } from "../../types";
 
 // Position greeks in dollar terms. Explainer depth follows the complexity
@@ -35,20 +37,18 @@ export default function GreeksSummary({ greeks }: { greeks: Greeks }) {
   return (
     <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5" data-testid="greeks-summary">
       {(Object.keys(UNITS) as Array<keyof Greeks>).map((key) => (
-        <div
-          key={key}
-          className="cursor-help rounded-md bg-dark-800 p-3"
-          title={explainers[key]}
-        >
-          <dt className="text-xs uppercase tracking-wide text-content-3">
-            {key} <span className="normal-case text-content-3/70">({UNITS[key]})</span>
-          </dt>
-          <dd className={`font-mono text-lg font-medium tabular-nums ${
-            greeks[key] > 0 ? "text-accent-green" : greeks[key] < 0 ? "text-accent-red" : ""
-          }`}>
-            {signed(greeks[key])}
-          </dd>
-        </div>
+        <Hint key={key} text={explainers[key]} className="block">
+          <div className="cursor-help rounded-md bg-dark-800 p-3">
+            <dt className="text-xs uppercase tracking-wide text-content-3">
+              {key} <span className="normal-case text-content-3/70">({UNITS[key]})</span>
+            </dt>
+            <dd className={`font-mono text-lg font-medium tabular-nums ${
+              greeks[key] > 0 ? "text-accent-green" : greeks[key] < 0 ? "text-accent-red" : ""
+            }`}>
+              <CountUp to={greeks[key]} format={(n) => signed(n)} />
+            </dd>
+          </div>
+        </Hint>
       ))}
     </dl>
   );

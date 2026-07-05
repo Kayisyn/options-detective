@@ -1,6 +1,8 @@
 import { THEMES, useTheme } from "../../contexts/ThemeContext";
 import { useMode } from "../../contexts/ModeContext";
+import { useStore } from "../../store";
 import Button from "../ui/Button";
+import Modal from "../ui/Modal";
 import { cx } from "../../lib/cx";
 
 interface SettingsPanelProps {
@@ -14,22 +16,19 @@ interface SettingsPanelProps {
 export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const { theme, setTheme } = useTheme();
   const { expertMode, toggleMode } = useMode();
+  const showToast = useStore((s) => s.showToast);
 
-  if (!open) return null;
+  function close() {
+    onClose();
+    showToast("✓ Settings saved"); // §5.4 — settings apply instantly
+  }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6"
-      onClick={onClose}
-      data-testid="settings-panel"
-    >
-      <div
-        className="w-full max-w-xl rounded-lg border border-dark-600 bg-dark-800 p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal open={open} onClose={close} testid="settings-panel">
+      <>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Settings</h2>
-          <Button variant="ghost" size="xs" onClick={onClose}>✕</Button>
+          <Button variant="ghost" size="xs" onClick={close}>✕</Button>
         </div>
 
         <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-content-3">
@@ -89,7 +88,7 @@ export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           Shortcut: <span className="font-mono">Ctrl+Shift+D</span> flips dark/light.
           Settings apply instantly and persist on this machine.
         </p>
-      </div>
-    </div>
+      </>
+    </Modal>
   );
 }

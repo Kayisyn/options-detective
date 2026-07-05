@@ -117,11 +117,22 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .animate-view-exit,
   .animate-view-enter,
-  .animate-card-enter {
+  .animate-card-enter,
+  .animate-modal-enter,
+  .animate-modal-exit,
+  .animate-toast-in,
+  .animate-fade-in,
+  .animate-shake,
+  .animate-valid-check,
+  .animate-badge-pulse,
+  .animate-ripple,
+  .animate-value-flash {
     animation-duration: 1ms !important;
     animation-delay: 0ms !important;
   }
-  .animate-pulse {
+  .animate-pulse,
+  .animate-bounce-down,
+  .animate-stripe-slide {
     animation: none;
   }
 }

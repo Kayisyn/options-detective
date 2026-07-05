@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "../store";
 import { money, num, pct, shortDate, signed, strategyLabel } from "../lib/format";
 import Button from "./ui/Button";
 import { Badge, Card, CardContent, CardFooter, CardHeader, MetricBox } from "./ui/Card";
+import CountUp from "./ui/CountUp";
 import { FormInput, FormSelect } from "./ui/Input";
 import { DetectorSkeleton } from "./shared/Skeleton";
 import { useMode } from "../contexts/ModeContext";
@@ -31,6 +32,18 @@ export default function Detector() {
   const result = s.screenResult;
   const screening = s.status === "screening";
   const [detailsId, setDetailsId] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+
+  // §5.2 scroll indicator: bounce until the user scrolls, re-arm per screen
+  useEffect(() => {
+    setScrolled(false);
+    function onScroll() {
+      setScrolled(true);
+      window.removeEventListener("scroll", onScroll);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [result]);
 
   return (
     <section className="space-y-4">
@@ -183,9 +196,13 @@ export default function Detector() {
                 </CardHeader>
 
                 <CardContent className={expertMode ? "grid grid-cols-3 gap-3" : "grid grid-cols-2 gap-3"}>
-                  <MetricBox label="Max Profit" value={money(c.payoff.maxProfit)}
+                  <MetricBox label="Max Profit"
+                    value={c.payoff.maxProfit === null ? "∞"
+                      : <CountUp to={c.payoff.maxProfit} format={(n) => money(n)} />}
                     highlight="green" hint="Best possible outcome at expiry" />
-                  <MetricBox label="Max Loss" value={money(c.payoff.maxLoss)}
+                  <MetricBox label="Max Loss"
+                    value={c.payoff.maxLoss === null ? "∞"
+                      : <CountUp to={c.payoff.maxLoss} format={(n) => money(n)} />}
                     highlight="red" hint="Worst possible outcome — size positions off this number" />
                   {expertMode && (
                     <MetricBox label="Risk/Reward" value={riskReward(c)}
@@ -242,6 +259,16 @@ export default function Detector() {
             <Button variant="secondary" onClick={() => s.recommend()}>
               Compare top candidates →
             </Button>
+          )}
+
+          {result.candidates.length > 6 && !scrolled && (
+            <div
+              data-testid="scroll-indicator"
+              className="animate-bounce-down pointer-events-none fixed bottom-4 left-1/2 z-40 -translate-x-1/2 text-content-3"
+              aria-hidden
+            >
+              ▼
+            </div>
           )}
         </>
       )}

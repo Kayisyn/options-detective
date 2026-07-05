@@ -44,15 +44,38 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: ButtonSize;
 }
 
+// §5.1 ripple: spawn an expanding circle at the click point. Plain DOM on
+// purpose — the ripple is fire-and-forget and outside React's interest.
+function spawnRipple(e: React.PointerEvent<HTMLButtonElement>) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const button = e.currentTarget;
+  const rect = button.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  const ripple = document.createElement("span");
+  ripple.className = "animate-ripple pointer-events-none absolute rounded-full bg-white/40";
+  ripple.style.width = `${size}px`;
+  ripple.style.height = `${size}px`;
+  ripple.style.left = `${e.clientX - rect.left - size / 2}px`;
+  ripple.style.top = `${e.clientY - rect.top - size / 2}px`;
+  button.appendChild(ripple);
+  ripple.addEventListener("animationend", () => ripple.remove());
+  setTimeout(() => ripple.remove(), 500); // backstop
+}
+
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = "primary", size = "md", className, type = "button", ...rest },
+  { variant = "primary", size = "md", className, type = "button", onPointerDown, ...rest },
   ref,
 ) {
   return (
     <button
       ref={ref}
       type={type}
+      onPointerDown={(e) => {
+        spawnRipple(e);
+        onPointerDown?.(e);
+      }}
       className={cx(
+        "relative overflow-hidden",
         "inline-flex items-center justify-center gap-2 rounded-sm font-medium",
         "transition-all duration-150 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/50",

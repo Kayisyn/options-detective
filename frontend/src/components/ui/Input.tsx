@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { InputHTMLAttributes, SelectHTMLAttributes } from "react";
 import { cx } from "../../lib/cx";
 
@@ -55,13 +56,33 @@ export interface FormInputProps extends InputHTMLAttributes<HTMLInputElement> {
 export function FormInput({
   label, hint, error, success, containerClassName, className, ...rest
 }: FormInputProps) {
+  // §5.1 validation feedback: shake once when a NEW error appears,
+  // scale-in a checkmark when the field turns valid.
+  const [shaking, setShaking] = useState(false);
+  const prevError = useRef<string | undefined>(error);
+  useEffect(() => {
+    if (error && error !== prevError.current) setShaking(true);
+    prevError.current = error;
+  }, [error]);
+
   return (
     <FieldShell label={label} hint={hint} error={error} className={containerClassName}>
-      <input
-        className={cx("mt-1 block px-3 py-2.5 text-sm", BASE_FIELD,
-          stateClasses(error, success), className)}
-        {...rest}
-      />
+      <span className="relative block">
+        <input
+          className={cx("mt-1 block w-full px-3 py-2.5 text-sm", BASE_FIELD,
+            stateClasses(error, success), shaking && "animate-shake", className)}
+          onAnimationEnd={() => setShaking(false)}
+          {...rest}
+        />
+        {success && !error && (
+          <span
+            data-testid="valid-check"
+            className="animate-valid-check pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-bold text-accent-green"
+          >
+            ✓
+          </span>
+        )}
+      </span>
     </FieldShell>
   );
 }
