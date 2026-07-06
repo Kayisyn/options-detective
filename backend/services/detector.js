@@ -112,6 +112,9 @@ function createDetector({ dataLayer = defaultDataLayer, engineBatch = callEngine
   async function screen(params = {}) {
     const opts = { ...DEFAULTS, ...params };
     if (!opts.symbol) throw new Error("symbol is required");
+    // clients may ask for the full generated set (frontend filters/sorts
+    // locally), but payoff curves are fetched per returned candidate — cap it
+    opts.topN = Math.min(Math.max(1, Math.floor(opts.topN)), 200);
 
     const data = await dataLayer.getMarketData(opts.symbol, {
       refresh: Boolean(opts.refresh),

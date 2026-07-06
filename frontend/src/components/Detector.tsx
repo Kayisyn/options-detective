@@ -5,10 +5,42 @@ import Button from "./ui/Button";
 import { Badge, Card, CardContent, CardFooter, CardHeader, MetricBox } from "./ui/Card";
 import CountUp from "./ui/CountUp";
 import { FormInput, FormSelect } from "./ui/Input";
+import FilterPanel from "./shared/FilterPanel";
+import SortControl from "./shared/SortControl";
 import { DetectorSkeleton } from "./shared/Skeleton";
 import { useMode } from "../contexts/ModeContext";
+import { applyFilters, countActiveFilters, sortCandidates } from "../lib/candidateQuery";
 import { BEST_FOR } from "../lib/copy";
+import type { CandidateFilters } from "../lib/candidateQuery";
 import type { Candidate, DirectionalView } from "../types";
+
+// Dismissible chips for whatever filters are active.
+function filterChips(f: CandidateFilters): Array<{ id: string; label: string; patch: Partial<CandidateFilters> }> {
+  const chips: Array<{ id: string; label: string; patch: Partial<CandidateFilters> }> = [];
+  for (const s of f.strategies) {
+    chips.push({
+      id: `strategy:${s}`,
+      label: strategyLabel(s),
+      patch: { strategies: f.strategies.filter((x) => x !== s) },
+    });
+  }
+  const numeric: Array<[keyof CandidateFilters, string]> = [
+    ["dteMin", `DTE ≥ ${f.dteMin}`],
+    ["dteMax", `DTE ≤ ${f.dteMax}`],
+    ["popMin", `POP ≥ ${f.popMin}%`],
+    ["popMax", `POP ≤ ${f.popMax}%`],
+    ["minVolume", `Vol ≥ ${f.minVolume}`],
+    ["maxSpreadPct", `Spread ≤ ${f.maxSpreadPct}%`],
+    ["maxCapital", `Capital ≤ $${f.maxCapital}`],
+    ["deltaMin", `Δ ≥ ${f.deltaMin}`],
+    ["deltaMax", `Δ ≤ ${f.deltaMax}`],
+    ["thetaMin", `θ ≥ ${f.thetaMin}`],
+  ];
+  for (const [key, label] of numeric) {
+    if (f[key] !== null) chips.push({ id: key, label, patch: { [key]: null } });
+  }
+  return chips;
+}
 
 const VIEWS: Array<{ id: DirectionalView; label: string }> = [
   { id: "bullish", label: "Bullish" },
@@ -33,6 +65,12 @@ export default function Detector() {
   const screening = s.status === "screening";
   const [detailsId, setDetailsId] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
+
+  // filtered + sorted view of the screened set; rank chips keep the
+  // backend's composite rank so re-sorting stays interpretable
+  const allCandidates = result?.candidates ?? [];
+  const visible = sortCandidates(applyFilters(allCandidates, s.filters), s.sort);
+  const rankById = new Map(allCandidates.map((c, i) => [c.id, i + 1]));
 
   // §5.2 scroll indicator: bounce until the user scrolls, re-arm per screen
   useEffect(() => {
@@ -147,8 +185,43 @@ export default function Detector() {
             </div>
           )}
 
-          <div className="grid gap-3 md:grid-cols-2" data-testid="candidate-grid">
-            {result.candidates.map((c, i) => (
+          <div className="flex flex-col gap-4 lg:flex-row">
+            <FilterPanel
+              filters={s.filters}
+              onPatch={s.patchFilters}
+              onClear={s.clearFilters}
+              expertMode={expertMode}
+              activeCount={countActiveFilters(s.filters)}
+            />
+            <div className="min-w-0 flex-1 space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {filterChips(s.filters).map((chip) => (
+                  <button
+                    key={chip.id}
+                    onClick={() => s.patchFilters(chip.patch)}
+                    data-testid="filter-chip"
+                    className="inline-flex items-center gap-1 rounded border border-accent-blue/40 bg-accent-blue/10 px-2 py-1 text-xs capitalize text-accent-blue transition-all duration-150 ease-out hover:bg-accent-blue/20"
+                    title="Remove this filter"
+                  >
+                    {chip.label} <span aria-hidden>✕</span>
+                  </button>
+                ))}
+                <span className="text-xs text-content-3" data-testid="result-count">
+                  Showing {visible.length} of {result.candidates.length}
+                </span>
+                <SortControl sort={s.sort} onChange={s.setSort} className="ml-auto" />
+              </div>
+
+              {visible.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-dark-600 p-8 text-center text-content-3">
+                  No candidates match the current filters.
+                  <Button variant="ghost" size="sm" className="ml-2" onClick={s.clearFilters}>
+                    Clear all
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2" data-testid="candidate-grid">
+                  {visible.map((c, i) => (
               <Card
                 key={c.id}
                 interactive
@@ -159,8 +232,9 @@ export default function Detector() {
               >
                 <CardHeader>
                   <div className="flex items-center gap-2.5">
-                    <span className="rounded bg-dark-700 px-2 py-0.5 text-xs font-semibold text-blue-400">
-                      #{i + 1}
+                    <span className="rounded bg-dark-700 px-2 py-0.5 text-xs font-semibold text-accent-blue"
+                      title="Composite-score rank from the screen">
+                      #{rankById.get(c.id)}
                     </span>
                     <div>
                       <h3 className="text-lg font-semibold capitalize text-content-1">
@@ -252,16 +326,19 @@ export default function Detector() {
                   </div>
                 )}
               </Card>
-            ))}
+                  ))}
+                </div>
+              )}
+
+              {visible.length > 0 && (
+                <Button variant="secondary" onClick={() => s.recommend()}>
+                  Compare top candidates →
+                </Button>
+              )}
+            </div>
           </div>
 
-          {result.candidates.length > 0 && (
-            <Button variant="secondary" onClick={() => s.recommend()}>
-              Compare top candidates →
-            </Button>
-          )}
-
-          {result.candidates.length > 6 && !scrolled && (
+          {visible.length > 6 && !scrolled && (
             <div
               data-testid="scroll-indicator"
               className="animate-bounce-down pointer-events-none fixed bottom-4 left-1/2 z-40 -translate-x-1/2 text-content-3"
@@ -276,7 +353,7 @@ export default function Detector() {
       {!result && !screening && (
         <div className="rounded-lg border border-dashed border-dark-600 p-10 text-center text-content-3">
           Enter a symbol and hit <b>Screen</b>. Every expiration and eligible
-          strategy is checked, priced, and ranked — top 20 shown.
+          strategy is checked, priced, and ranked — then filter and sort to taste.
         </div>
       )}
     </section>

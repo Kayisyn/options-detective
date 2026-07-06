@@ -109,6 +109,7 @@ export interface ScreenParams {
   maxLossDollars?: number | null;
   definedRiskOnly: boolean;
   refresh?: boolean;
+  topN?: number;
 }
 
 export interface ScreenResult {
