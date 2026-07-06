@@ -1,7 +1,9 @@
 import { money, pct, shortDate, signed, strategyLabel } from "../../lib/format";
 import Button from "../ui/Button";
 import { Badge, Card, CardContent, CardFooter, CardHeader, MetricBox } from "../ui/Card";
+import ScoreBreakdown from "./ScoreBreakdown";
 import { useMode } from "../../contexts/ModeContext";
+import { useStore } from "../../store";
 import { BEST_FOR } from "../../lib/copy";
 import type { RankedCandidate } from "../../types";
 
@@ -18,6 +20,7 @@ export default function CandidateCard({
   candidate: c, exported, saved, onOpen, onExport, onSave,
 }: CandidateCardProps) {
   const { expertMode } = useMode();
+  const weights = useStore((s) => s.weights);
   return (
     <Card glow={c.rank === 1} enterDelayMs={(c.rank - 1) * 50}>
       <CardHeader>
@@ -69,7 +72,12 @@ export default function CandidateCard({
       </CardContent>
 
       {expertMode
-        ? <p className="mb-3 text-xs text-content-3">{c.rationale}</p>
+        ? (
+          <div className="mb-3 space-y-2">
+            <ScoreBreakdown candidate={c} weights={weights} />
+            <p className="text-xs text-content-3">{c.rationale}</p>
+          </div>
+        )
         : <p className="mb-3 text-xs text-accent-blue">Best for: {BEST_FOR[c.strategyType]}</p>}
 
       <CardFooter>

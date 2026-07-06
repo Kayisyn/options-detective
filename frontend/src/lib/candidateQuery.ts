@@ -1,6 +1,7 @@
 // Client-side filtering and sorting of screened candidates (v1.1 roadmap §1).
 // Pure functions — the backend produced every number here; this module only
 // selects and orders.
+import { DEFAULT_WEIGHTS, effectiveScore, type ScoreWeights } from "./scoring";
 import type { Candidate, StrategyType } from "../types";
 
 export interface CandidateFilters {
@@ -89,7 +90,7 @@ export const SORT_OPTIONS: Array<{ key: SortKey; label: string; defaultDir: Sort
 // in either direction. Infinity is a real, meaningful value (unbounded
 // profit/risk) and sorts numerically.
 const EXTRACTORS: Record<SortKey, (c: Candidate) => number | null> = {
-  score: (c) => c.compositeScore,
+  score: (c) => c.compositeScore, // replaced per-call when custom weights apply
   pop: (c) => c.probability.pop,
   maxLoss: (c) => (c.payoff.maxLoss === null ? Number.POSITIVE_INFINITY : c.payoff.maxLoss),
   maxProfit: (c) => (c.payoff.maxProfit === null ? Number.POSITIVE_INFINITY : c.payoff.maxProfit),
@@ -99,16 +100,22 @@ const EXTRACTORS: Record<SortKey, (c: Candidate) => number | null> = {
   liquidity: (c) => c.liquidity.bidAskSpread,
 };
 
-export function sortCandidates<T extends Candidate>(candidates: T[], spec: SortSpec): T[] {
-  const extract = EXTRACTORS[spec.key];
+export function sortCandidates<T extends Candidate>(
+  candidates: T[], spec: SortSpec, weights: ScoreWeights = DEFAULT_WEIGHTS,
+): T[] {
+  const extract = spec.key === "score"
+    ? (c: Candidate) => effectiveScore(c, weights)
+    : EXTRACTORS[spec.key];
   const sign = spec.dir === "asc" ? 1 : -1;
+  const tiebreak = (a: Candidate, b: Candidate) =>
+    effectiveScore(b, weights) - effectiveScore(a, weights);
   return [...candidates].sort((a, b) => {
     const va = extract(a);
     const vb = extract(b);
-    if (va === null && vb === null) return 0;
+    if (va === null && vb === null) return tiebreak(a, b);
     if (va === null) return 1;
     if (vb === null) return -1;
-    if (va === vb) return b.compositeScore - a.compositeScore; // stable tiebreak
+    if (va === vb) return tiebreak(a, b);
     return (va - vb) * sign;
   });
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useStore } from "../store";
 import { money, pct, shortDate, strategyLabel } from "../lib/format";
 import { DEFAULT_SORT, sortCandidates, type SortSpec } from "../lib/candidateQuery";
+import { DEFAULT_WEIGHTS, weightsEqual } from "../lib/scoring";
 import CandidateCard from "./shared/CandidateCard";
 import SortControl from "./shared/SortControl";
 import { RecommenderSkeleton } from "./shared/Skeleton";
@@ -41,9 +42,12 @@ export default function Recommender() {
     );
   }
 
-  const weightLine = Object.entries(rec.weights)
+  // when the user has custom weights, the store re-scored the candidates
+  // before ranking — show the weights that actually produced this order
+  const customWeights = !weightsEqual(s.weights, DEFAULT_WEIGHTS);
+  const weightLine = Object.entries(customWeights ? s.weights : rec.weights)
     .map(([k, v]) => `${k} ${Math.round(v * 100)}%`)
-    .join(" · ");
+    .join(" · ") + (customWeights ? " (custom)" : "");
 
   return (
     <section className="space-y-4">

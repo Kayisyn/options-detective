@@ -93,6 +93,28 @@ test("stale data is surfaced as a warning, not hidden", async () => {
   assert.ok(out.warnings.some((w) => w.includes("minutes old")));
 });
 
+test("every candidate exposes a score breakdown consistent with its score", async () => {
+  const detector = createDetector({
+    dataLayer: fakeDataLayer(syntheticMarketData({ ivRank: 80 })),
+  });
+  const out = await detector.screen({ symbol: "TEST", directionalView: "neutral" });
+  assert.ok(out.candidates.length > 0);
+  for (const c of out.candidates) {
+    const b = c.scoreBreakdown;
+    assert.ok(b && b.components && b.weights, `${c.id} missing breakdown`);
+    const keys = ["pop", "ror", "theta", "capEff", "liquidity"];
+    assert.deepEqual(Object.keys(b.components).sort(), [...keys].sort());
+    for (const k of keys) {
+      assert.ok(b.components[k] >= 0 && b.components[k] <= 1, `${c.id} ${k}=${b.components[k]}`);
+    }
+    const weightSum = keys.reduce((s, k) => s + b.weights[k], 0);
+    assert.ok(Math.abs(weightSum - 1) < 1e-9);
+    const recomputed = 10 * keys.reduce((s, k) => s + b.weights[k] * b.components[k], 0);
+    assert.ok(Math.abs(recomputed - c.compositeScore) < 0.02,
+      `${c.id}: recomputed ${recomputed} vs composite ${c.compositeScore}`);
+  }
+});
+
 test("topN is honored and clamped", async () => {
   const detector = createDetector({
     dataLayer: fakeDataLayer(syntheticMarketData({ ivRank: 80 })),

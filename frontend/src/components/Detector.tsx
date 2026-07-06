@@ -6,10 +6,14 @@ import { Badge, Card, CardContent, CardFooter, CardHeader, MetricBox } from "./u
 import CountUp from "./ui/CountUp";
 import { FormInput, FormSelect } from "./ui/Input";
 import FilterPanel from "./shared/FilterPanel";
+import ScoreBreakdown from "./shared/ScoreBreakdown";
 import SortControl from "./shared/SortControl";
 import { DetectorSkeleton } from "./shared/Skeleton";
 import { useMode } from "../contexts/ModeContext";
 import { applyFilters, countActiveFilters, sortCandidates } from "../lib/candidateQuery";
+import {
+  DEFAULT_WEIGHTS, WEIGHT_PRESETS, effectiveScore, weightsEqual,
+} from "../lib/scoring";
 import { BEST_FOR } from "../lib/copy";
 import type { CandidateFilters } from "../lib/candidateQuery";
 import type { Candidate, DirectionalView } from "../types";
@@ -66,11 +70,16 @@ export default function Detector() {
   const [detailsId, setDetailsId] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
 
-  // filtered + sorted view of the screened set; rank chips keep the
-  // backend's composite rank so re-sorting stays interpretable
+  // filtered + sorted view of the screened set. Rank chips show the
+  // composite rank under the ACTIVE weights, so custom weights visibly
+  // re-rank (v1.1 §2) while re-sorting by other keys stays interpretable.
   const allCandidates = result?.candidates ?? [];
-  const visible = sortCandidates(applyFilters(allCandidates, s.filters), s.sort);
-  const rankById = new Map(allCandidates.map((c, i) => [c.id, i + 1]));
+  const customWeights = !weightsEqual(s.weights, DEFAULT_WEIGHTS);
+  const visible = sortCandidates(applyFilters(allCandidates, s.filters), s.sort, s.weights);
+  const rankById = new Map(
+    sortCandidates(allCandidates, { key: "score", dir: "desc" }, s.weights)
+      .map((c, i) => [c.id, i + 1]));
+  const activePreset = WEIGHT_PRESETS.find((p) => weightsEqual(s.weights, p.weights));
 
   // §5.2 scroll indicator: bounce until the user scrolls, re-arm per screen
   useEffect(() => {
@@ -209,6 +218,16 @@ export default function Detector() {
                 <span className="text-xs text-content-3" data-testid="result-count">
                   Showing {visible.length} of {result.candidates.length}
                 </span>
+                {customWeights && (
+                  <button
+                    onClick={() => s.setWeights({ ...DEFAULT_WEIGHTS })}
+                    data-testid="weights-chip"
+                    title="Scores and ranks use your custom weights (adjust in Settings). Click to reset to the default blend."
+                    className="inline-flex items-center gap-1 rounded border border-accent-orange/40 bg-accent-orange/10 px-2 py-1 text-xs text-accent-orange transition-all duration-150 ease-out hover:bg-accent-orange/20"
+                  >
+                    Weights: {activePreset?.name ?? "custom"} <span aria-hidden>✕</span>
+                  </button>
+                )}
                 <SortControl sort={s.sort} onChange={s.setSort} className="ml-auto" />
               </div>
 
@@ -262,8 +281,10 @@ export default function Detector() {
                     </Badge>
                     {expertMode && (
                       <span className="font-mono font-bold tabular-nums text-accent-blue"
-                        title="Composite: POP 30% · risk/reward 20% · theta 20% · capital efficiency 15% · liquidity 15%">
-                        {c.compositeScore.toFixed(1)}
+                        title={customWeights
+                          ? "Composite score under YOUR weights — open Settings → Scoring to adjust"
+                          : "Composite: POP 30% · risk/reward 20% · theta 20% · capital efficiency 15% · liquidity 15%"}>
+                        {effectiveScore(c, s.weights).toFixed(1)}
                       </span>
                     )}
                   </div>
@@ -313,6 +334,11 @@ export default function Detector() {
                       <p className="mb-1 text-accent-blue">
                         Best for: {BEST_FOR[c.strategyType]}
                       </p>
+                    )}
+                    {expertMode && (
+                      <div className="mb-2">
+                        <ScoreBreakdown candidate={c} weights={s.weights} />
+                      </div>
                     )}
                     <p>{c.rationale}</p>
                     <p className="mt-1 text-xs text-content-3">
