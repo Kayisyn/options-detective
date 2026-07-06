@@ -162,12 +162,65 @@ export interface RankedCandidate extends Candidate {
   exportText: string;
 }
 
-export interface SavedTrade {
+export type TradeSide = "debit" | "credit";
+export type TradeStatus = "open" | "closed";
+
+// Journal trade, v1.1 Phase A. Prices are per unit as brokers quote them
+// (per spread for options, per share for stock); dollar P&L multiplies by
+// qty × multiplier. Credit positions profit when the closing price falls.
+export interface JournalTrade {
   id: string;
-  savedAt: string; // ISO timestamp
-  note: string;
+  createdAt: string;
+  status: TradeStatus;
+  symbol: string;
+  strategy: string;
+  side: TradeSide;
+  entryPrice: number;
+  entryQty: number;
+  multiplier: number; // 100 options, 1 shares
+  entryDate: string;
+  maxLossTarget: number | null;
+  maxProfitTarget: number | null;
+  notes: string;
+  tags: string[];
+  exitPrice: number | null;
+  exitDate: string | null;
+  closedAt: string | null;
+  actualPnl: number | null;
+  mae: number | null; // worst unrealized P&L observed (signed, from marks)
+  mfe: number | null; // best unrealized P&L observed
+  lastMark: {
+    underlying: number;
+    mark: number | null;         // signed structure value per unit (theo)
+    unrealizedPnl: number | null;
+    stale: boolean;
+    at: string;
+  } | null;
+  candidate: Candidate | null;
   exportText: string | null;
-  candidate: Candidate;
+}
+
+// Manual entry form payload (POST /journal).
+export interface NewTradeInput {
+  symbol: string;
+  strategy: string;
+  side: TradeSide;
+  entryPrice: number;
+  entryQty: number;
+  multiplier: number;
+  entryDate?: string;
+  maxLossTarget?: number | null;
+  maxProfitTarget?: number | null;
+  notes?: string;
+  tags?: string[];
+}
+
+export interface CloseTradeInput {
+  exitPrice: number;
+  exitDate?: string;
+  mae?: number | null;
+  mfe?: number | null;
+  tags?: string[];
 }
 
 export interface Recommendation {
