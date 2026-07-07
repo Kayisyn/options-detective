@@ -3,6 +3,7 @@ import Calculator from "./components/Calculator";
 import Detector from "./components/Detector";
 import Home from "./components/Home";
 import Journal from "./components/Journal";
+import PaperTrading from "./components/PaperTrading";
 import Recommender from "./components/Recommender";
 import HelpDrawer from "./components/shared/HelpDrawer";
 import Onboarding, { ONBOARDED_KEY } from "./components/shared/Onboarding";
@@ -17,6 +18,7 @@ const TABS: Array<{ id: View; label: string; hint: string }> = [
   { id: "calculator", label: "2 · Calculator", hint: "Analyze the math" },
   { id: "recommender", label: "3 · Recommender", hint: "Compare and export" },
   { id: "journal", label: "Journal", hint: "Your saved trades" },
+  { id: "paper", label: "Paper", hint: "Risk-free simulator with a paper budget" },
 ];
 
 export default function App() {
@@ -64,6 +66,7 @@ export default function App() {
     calculator: selected !== null,
     recommender: (screenResult?.candidates.length ?? 0) > 0,
     journal: true,
+    paper: true,
   };
 
   return (
@@ -149,6 +152,7 @@ export default function App() {
           {view === "calculator" && <Calculator />}
           {view === "recommender" && <Recommender />}
           {view === "journal" && <Journal />}
+          {view === "paper" && <PaperTrading />}
         </ViewTransition>
       </main>
     </div>

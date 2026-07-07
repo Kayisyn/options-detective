@@ -72,6 +72,13 @@ function registerIpc() {
   ipcMain.handle("api:trades:close", (_event, { id, payload }) => forward(`/journal/${encodeURIComponent(id)}/close`, payload));
   ipcMain.handle("api:trades:delete", (_event, { id }) => forward(`/journal/${encodeURIComponent(id)}`, undefined, "DELETE"));
   ipcMain.handle("api:trades:marks", () => forward("/journal/marks", {}));
+  ipcMain.handle("api:paper:get", () => forward("/paper"));
+  ipcMain.handle("api:paper:budget", (_event, body) => forward("/paper/budget", body));
+  ipcMain.handle("api:paper:open", (_event, body) => forward("/paper/trades", body));
+  ipcMain.handle("api:paper:close", (_event, { id, payload }) => forward(`/paper/trades/${encodeURIComponent(id)}/close`, payload));
+  ipcMain.handle("api:paper:process", () => forward("/paper/process", {}));
+  ipcMain.handle("api:paper:curve", (_event, { days }) => forward(`/paper/equity-curve?days=${Number(days) || 30}`));
+  ipcMain.handle("api:paper:reset", (_event, body) => forward("/paper/reset", body));
   ipcMain.handle("api:export", (_event, { text }) => {
     clipboard.writeText(String(text ?? ""));
     return true;

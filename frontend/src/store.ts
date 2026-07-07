@@ -9,11 +9,12 @@ import {
   type ScoreWeights,
 } from "./lib/scoring";
 import type {
-  CalcResult, Candidate, CloseTradeInput, DirectionalView, JournalTrade, Leg,
-  NewTradeInput, Recommendation, ScreenParams, ScreenResult,
+  CalcResult, Candidate, CloseTradeInput, DirectionalView, EquityPoint,
+  JournalTrade, Leg, NewTradeInput, PaperState, Recommendation, ScreenParams,
+  ScreenResult,
 } from "./types";
 
-export type View = "home" | "detector" | "calculator" | "recommender" | "journal";
+export type View = "home" | "detector" | "calculator" | "recommender" | "journal" | "paper";
 
 const LAST_SCREEN_KEY = "od.lastScreen";
 const WEIGHTS_KEY = "od.weights.v1";
@@ -84,6 +85,8 @@ interface AppState {
   recommendation: Recommendation | null;
   exportedId: string | null; // last candidate copied to clipboard
   savedTrades: JournalTrade[];
+  paper: PaperState | null;      // null until first load
+  paperCurve: EquityPoint[];
 
   // v1.1 §1: client-side filtering/sorting of screened candidates
   filters: CandidateFilters;
@@ -118,6 +121,13 @@ interface AppState {
   closeTrade: (id: string, input: CloseTradeInput) => Promise<boolean>;
   updateTrade: (id: string, patch: Partial<JournalTrade>) => Promise<void>;
   refreshMarks: () => Promise<void>;
+
+  loadPaper: (days?: number) => Promise<void>;
+  createPaperAccount: (initialBalance: number) => Promise<void>;
+  openPaperTrade: (body: NewTradeInput | { candidate: Candidate }) => Promise<boolean>;
+  closePaperTrade: (id: string, input: CloseTradeInput) => Promise<boolean>;
+  processPaper: () => Promise<void>;
+  resetPaper: (initialBalance?: number) => Promise<void>;
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -144,6 +154,8 @@ export const useStore = create<AppState>((set, get) => ({
   recommendation: null,
   exportedId: null,
   savedTrades: [],
+  paper: null,
+  paperCurve: [],
   filters: EMPTY_FILTERS,
   sort: DEFAULT_SORT,
   weights: readStoredWeights(),
@@ -374,6 +386,72 @@ export const useStore = create<AppState>((set, get) => ({
       if (warnings.length > 0) {
         set({ error: warnings.join(" · ") });
       }
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async loadPaper(days = 90) {
+    try {
+      const [state, curve] = await Promise.all([api.paperGet(), api.paperCurve(days)]);
+      set({ paper: state, paperCurve: curve.points });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async createPaperAccount(initialBalance) {
+    try {
+      await api.paperBudget(initialBalance);
+      await get().loadPaper();
+      get().showToast("✓ Paper account ready");
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async openPaperTrade(body) {
+    try {
+      const { balance } = await api.paperOpen(body);
+      await Promise.all([get().loadPaper(), get().loadJournal()]);
+      get().showToast(`✓ Paper trade opened — $${balance.available.toFixed(0)} available`);
+      return true;
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+      return false;
+    }
+  },
+
+  async closePaperTrade(id, input) {
+    try {
+      const { trade } = await api.paperClose(id, input);
+      await Promise.all([get().loadPaper(), get().loadJournal()]);
+      get().showToast(`✓ Paper close — P&L $${(trade.actualPnl ?? 0).toFixed(2)}`);
+      return true;
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+      return false;
+    }
+  },
+
+  async processPaper() {
+    try {
+      const { warnings } = await api.paperProcess();
+      await Promise.all([get().loadPaper(), get().loadJournal()]);
+      get().showToast(warnings.length > 0
+        ? `Processed — ${warnings.length} warning${warnings.length > 1 ? "s" : ""}`
+        : "✓ Marks & expirations processed");
+      if (warnings.length > 0) set({ error: warnings.join(" · ") });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async resetPaper(initialBalance) {
+    try {
+      const { archived } = await api.paperReset(initialBalance);
+      await Promise.all([get().loadPaper(), get().loadJournal()]);
+      get().showToast(`✓ Paper account reset — ${archived} position${archived === 1 ? "" : "s"} archived`);
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }
