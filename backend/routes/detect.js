@@ -18,7 +18,7 @@ router.post("/", async (req, res) => {
     res.status(400).json({ error: `directionalView must be one of ${[...VIEWS].join(", ")}` });
     return;
   }
-  for (const numeric of ["capital", "riskTolerancePct", "maxLossDollars", "minDTE", "maxDTE"]) {
+  for (const numeric of ["capital", "riskTolerancePct", "maxLossDollars", "minDTE", "maxDTE", "topN"]) {
     if (body[numeric] !== undefined && body[numeric] !== null
         && (typeof body[numeric] !== "number" || !Number.isFinite(body[numeric]) || body[numeric] <= 0)) {
       res.status(400).json({ error: `${numeric} must be a positive number` });

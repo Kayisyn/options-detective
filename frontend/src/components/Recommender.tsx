@@ -1,7 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "../store";
 import { money, pct, shortDate, strategyLabel } from "../lib/format";
+import { DEFAULT_SORT, sortCandidates, type SortSpec } from "../lib/candidateQuery";
 import CandidateCard from "./shared/CandidateCard";
+import SortControl from "./shared/SortControl";
 import { RecommenderSkeleton } from "./shared/Skeleton";
 import { useMode } from "../contexts/ModeContext";
 
@@ -11,6 +13,9 @@ export default function Recommender() {
   const s = useStore();
   const { expertMode } = useMode();
   const rec = s.recommendation;
+  // local re-ordering of the top five (v1.1 §1); rank badges keep the
+  // composite rank so the original ranking stays visible
+  const [sort, setSort] = useState<SortSpec>(DEFAULT_SORT);
 
   useEffect(() => {
     s.loadJournal(); // so Save buttons reflect what's already journaled
@@ -42,21 +47,24 @@ export default function Recommender() {
 
   return (
     <section className="space-y-4">
-      <div>
-        <h2 className="text-lg font-medium">Top candidates</h2>
-        {expertMode ? (
-          <p className="text-sm text-content-3" title="How the composite score is weighted">
-            Ranked by composite score: {weightLine}
-          </p>
-        ) : (
-          <p className="text-sm text-content-3">
-            Best first — each card says what the strategy is good for.
-          </p>
-        )}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-medium">Top candidates</h2>
+          {expertMode ? (
+            <p className="text-sm text-content-3" title="How the composite score is weighted">
+              Ranked by composite score: {weightLine}
+            </p>
+          ) : (
+            <p className="text-sm text-content-3">
+              Best first — each card says what the strategy is good for.
+            </p>
+          )}
+        </div>
+        <SortControl sort={sort} onChange={setSort} />
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
-        {rec.ranked.map((c) => (
+        {sortCandidates(rec.ranked, sort).map((c) => (
           <CandidateCard
             key={c.id}
             candidate={c}

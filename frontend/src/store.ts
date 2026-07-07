@@ -1,5 +1,9 @@
 import { create } from "zustand";
 import { api } from "./lib/api";
+import {
+  DEFAULT_SORT, EMPTY_FILTERS,
+  type CandidateFilters, type SortSpec,
+} from "./lib/candidateQuery";
 import type {
   CalcResult, Candidate, DirectionalView, Leg, Recommendation, SavedTrade,
   ScreenParams, ScreenResult,
@@ -44,11 +48,18 @@ interface AppState {
   exportedId: string | null; // last candidate copied to clipboard
   savedTrades: SavedTrade[];
 
+  // v1.1 §1: client-side filtering/sorting of screened candidates
+  filters: CandidateFilters;
+  sort: SortSpec;
+
   setView: (view: View) => void;
   setSettingsOpen: (open: boolean) => void;
   showToast: (message: string) => void;
   setIntent: (patch: Partial<Pick<AppState,
     "symbol" | "directionalView" | "capital" | "riskTolerancePct" | "definedRiskOnly">>) => void;
+  patchFilters: (patch: Partial<CandidateFilters>) => void;
+  clearFilters: () => void;
+  setSort: (sort: SortSpec) => void;
   screen: (refresh?: boolean) => Promise<void>;
   openCandidate: (candidate: Candidate) => Promise<void>;
   recalculate: (legs: Leg[], repriceTheoretical: boolean) => Promise<void>;
@@ -81,6 +92,8 @@ export const useStore = create<AppState>((set, get) => ({
   recommendation: null,
   exportedId: null,
   savedTrades: [],
+  filters: EMPTY_FILTERS,
+  sort: DEFAULT_SORT,
 
   setView: (view) => set({ view }),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
@@ -93,6 +106,9 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   setIntent: (patch) => set(patch),
+  patchFilters: (patch) => set((s) => ({ filters: { ...s.filters, ...patch } })),
+  clearFilters: () => set({ filters: EMPTY_FILTERS }),
+  setSort: (sort) => set({ sort }),
 
   async screen(refresh = false) {
     const { symbol, directionalView, capital, riskTolerancePct, definedRiskOnly } = get();
@@ -103,6 +119,8 @@ export const useStore = create<AppState>((set, get) => ({
       riskTolerancePct,
       definedRiskOnly,
       refresh,
+      // request the full generated set; filtering/sorting happens client-side
+      topN: 100,
     };
     set({ status: "screening", error: null, recommendation: null });
     try {

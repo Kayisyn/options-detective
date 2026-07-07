@@ -93,6 +93,17 @@ test("stale data is surfaced as a warning, not hidden", async () => {
   assert.ok(out.warnings.some((w) => w.includes("minutes old")));
 });
 
+test("topN is honored and clamped", async () => {
+  const detector = createDetector({
+    dataLayer: fakeDataLayer(syntheticMarketData({ ivRank: 80 })),
+  });
+  const small = await detector.screen({ symbol: "TEST", directionalView: "neutral", topN: 3 });
+  assert.equal(small.candidates.length, 3);
+  assert.ok(small.candidates.every((c) => c.payoff.profitAtExpiry.length > 0));
+  const silly = await detector.screen({ symbol: "TEST", directionalView: "neutral", topN: 10_000 });
+  assert.ok(silly.candidates.length <= 200);
+});
+
 test("sizing respects the risk budget", async () => {
   const detector = createDetector({
     dataLayer: fakeDataLayer(syntheticMarketData({ ivRank: 80 })),
