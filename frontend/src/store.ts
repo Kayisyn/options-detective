@@ -68,6 +68,8 @@ interface AppState {
   error: string | null;
   toast: string | null;
   settingsOpen: boolean;
+  helpOpen: boolean;
+  helpTopic: string | null; // glossary entry id to scroll to
 
   // Detector inputs (a lightweight UserIntent)
   symbol: string;
@@ -93,6 +95,8 @@ interface AppState {
 
   setView: (view: View) => void;
   setSettingsOpen: (open: boolean) => void;
+  openHelp: (topic?: string) => void;
+  closeHelp: () => void;
   showToast: (message: string) => void;
   setIntent: (patch: Partial<Pick<AppState,
     "symbol" | "directionalView" | "capital" | "riskTolerancePct" | "definedRiskOnly">>) => void;
@@ -125,6 +129,8 @@ export const useStore = create<AppState>((set, get) => ({
   error: null,
   toast: null,
   settingsOpen: false,
+  helpOpen: false,
+  helpTopic: null,
 
   symbol: "AAPL",
   directionalView: "neutral",
@@ -145,6 +151,8 @@ export const useStore = create<AppState>((set, get) => ({
 
   setView: (view) => set({ view }),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
+  openHelp: (topic) => set({ helpOpen: true, helpTopic: topic ?? null }),
+  closeHelp: () => set({ helpOpen: false, helpTopic: null }),
 
   // §5.4 confirmations: slide-in toast, auto-dismissed after 3s
   showToast: (message) => {

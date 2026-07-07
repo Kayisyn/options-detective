@@ -4,6 +4,7 @@ import Detector from "./components/Detector";
 import Home from "./components/Home";
 import Journal from "./components/Journal";
 import Recommender from "./components/Recommender";
+import HelpDrawer from "./components/shared/HelpDrawer";
 import Onboarding, { ONBOARDED_KEY } from "./components/shared/Onboarding";
 import SettingsPanel from "./components/shared/SettingsPanel";
 import ViewTransition from "./components/shared/ViewTransition";
@@ -27,6 +28,7 @@ export default function App() {
   const toast = useStore((s) => s.toast);
   const settingsOpen = useStore((s) => s.settingsOpen);
   const setSettingsOpen = useStore((s) => s.setSettingsOpen);
+  const openHelp = useStore((s) => s.openHelp);
   const { expertMode, toggleMode } = useMode();
   const [onboardingOpen, setOnboardingOpen] = useState(() => {
     try {
@@ -49,12 +51,12 @@ export default function App() {
       }
       if (e.ctrlKey && e.shiftKey && e.key === "?") {
         e.preventDefault();
-        setOnboardingOpen(true);
+        openHelp();
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [setView]);
+  }, [setView, openHelp]);
 
   const enabled: Record<View, boolean> = {
     home: true,
@@ -68,6 +70,7 @@ export default function App() {
     <div className="min-h-screen">
       <Onboarding open={onboardingOpen} onClose={() => setOnboardingOpen(false)} />
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <HelpDrawer onReplayWalkthrough={() => setOnboardingOpen(true)} />
       {toast && (
         <div
           className="fixed left-1/2 top-4 z-[60] -translate-x-1/2 animate-toast-in rounded-md border border-accent-green/40 bg-dark-800 px-4 py-2 text-sm text-accent-green shadow-lg"
@@ -123,8 +126,8 @@ export default function App() {
               ⚙
             </button>
             <button
-              onClick={() => setOnboardingOpen(true)}
-              title="Reopen the walkthrough (Ctrl+Shift+?)"
+              onClick={() => openHelp()}
+              title="Help & glossary (Ctrl+Shift+?)"
               data-testid="help-button"
               aria-label="Help"
               className="rounded-md bg-dark-800 px-3 py-2 text-sm text-content-2 transition-all duration-150 ease-out hover:bg-dark-700"

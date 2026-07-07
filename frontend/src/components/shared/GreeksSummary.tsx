@@ -1,5 +1,6 @@
 import { signed } from "../../lib/format";
 import { useMode } from "../../contexts/ModeContext";
+import { useStore } from "../../store";
 import CountUp from "../ui/CountUp";
 import Hint from "../ui/Hint";
 import type { Greeks } from "../../types";
@@ -33,6 +34,7 @@ const EXPERT: Record<keyof Greeks, string> = {
 
 export default function GreeksSummary({ greeks }: { greeks: Greeks }) {
   const { expertMode } = useMode();
+  const openHelp = useStore((s) => s.openHelp);
   const explainers = expertMode ? EXPERT : BEGINNER;
   return (
     <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5" data-testid="greeks-summary">
@@ -41,6 +43,15 @@ export default function GreeksSummary({ greeks }: { greeks: Greeks }) {
           <div className="cursor-help rounded-md bg-dark-800 p-3">
             <dt className="text-xs uppercase tracking-wide text-content-3">
               {key} <span className="normal-case text-content-3/70">({UNITS[key]})</span>
+              <button
+                onClick={() => openHelp(key)}
+                data-greek-info={key}
+                aria-label={`Glossary: ${key}`}
+                title="Open in the glossary"
+                className="ml-1 text-content-3/70 transition-colors duration-150 hover:text-accent-blue"
+              >
+                ⓘ
+              </button>
             </dt>
             <dd className={`font-mono text-lg font-medium tabular-nums ${
               greeks[key] > 0 ? "text-accent-green" : greeks[key] < 0 ? "text-accent-red" : ""

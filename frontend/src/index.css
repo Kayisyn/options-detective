@@ -120,6 +120,8 @@ body {
   .animate-card-enter,
   .animate-modal-enter,
   .animate-modal-exit,
+  .animate-drawer-enter,
+  .animate-drawer-exit,
   .animate-toast-in,
   .animate-fade-in,
   .animate-shake,

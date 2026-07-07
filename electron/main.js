@@ -1,4 +1,4 @@
-const { app, BrowserWindow, clipboard, ipcMain, utilityProcess } = require("electron");
+const { app, BrowserWindow, clipboard, ipcMain, shell, utilityProcess } = require("electron");
 const path = require("path");
 
 const BACKEND_PORT = Number(process.env.PORT || 3001);
@@ -89,6 +89,14 @@ function createWindow() {
       nodeIntegration: false,
       sandbox: true,
     },
+  });
+
+  // glossary links etc. open in the OS browser, never in-app windows
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith("https:") || url.startsWith("http:")) {
+      shell.openExternal(url);
+    }
+    return { action: "deny" };
   });
 
   if (DEV_SERVER_URL) {
