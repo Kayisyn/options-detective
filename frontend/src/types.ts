@@ -73,6 +73,15 @@ export interface Sizing {
   capitalApproximate: boolean;
 }
 
+export type ScoreComponentKey = "pop" | "ror" | "theta" | "capEff" | "liquidity";
+
+// Normalized (0-1) scoring components from the backend, plus the default
+// weights it used. theta is normalized relative to the screened set.
+export interface ScoreBreakdown {
+  components: Record<ScoreComponentKey, number>;
+  weights: Record<ScoreComponentKey, number>;
+}
+
 export interface Candidate {
   id: string;
   strategyType: StrategyType;
@@ -99,6 +108,8 @@ export interface Candidate {
   };
   compositeScore: number; // 0-10
   rationale: string;
+  // optional: absent on journal snapshots saved before v1.1
+  scoreBreakdown?: ScoreBreakdown;
 }
 
 export interface ScreenParams {

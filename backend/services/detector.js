@@ -92,6 +92,22 @@ function scoreCandidates(list) {
     const volumeScore = Math.min((c.liquidity.volume ?? 0) / 500, 1);
     const liq = spreadScore * 0.7 + volumeScore * 0.3;
 
+    // v1.1 transparency: expose the normalized components so the frontend
+    // can show per-candidate breakdowns and re-rank under user weights
+    // without re-screening. theta and (indirectly) ror/capEff caps make
+    // these RELATIVE to this screen's candidate set.
+    const round4 = (x) => Math.round(x * 10_000) / 10_000;
+    c.scoreBreakdown = {
+      components: {
+        pop: round4(pop),
+        ror: round4(ror),
+        theta: round4(theta),
+        capEff: round4(capEff),
+        liquidity: round4(liq),
+      },
+      weights: { ...WEIGHTS },
+    };
+
     c.compositeScore = Math.round(
       10 * (WEIGHTS.pop * pop + WEIGHTS.ror * ror + WEIGHTS.theta * theta
         + WEIGHTS.capEff * capEff + WEIGHTS.liquidity * liq) * 100,

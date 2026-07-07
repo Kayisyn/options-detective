@@ -4,6 +4,10 @@ import {
   DEFAULT_SORT, EMPTY_FILTERS,
   type CandidateFilters, type SortSpec,
 } from "./lib/candidateQuery";
+import {
+  COMPONENT_KEYS, DEFAULT_WEIGHTS, effectiveScore, weightsEqual,
+  type ScoreWeights,
+} from "./lib/scoring";
 import type {
   CalcResult, Candidate, DirectionalView, Leg, Recommendation, SavedTrade,
   ScreenParams, ScreenResult,
@@ -12,6 +16,37 @@ import type {
 export type View = "home" | "detector" | "calculator" | "recommender" | "journal";
 
 const LAST_SCREEN_KEY = "od.lastScreen";
+const WEIGHTS_KEY = "od.weights.v1";
+const PROFILES_KEY = "od.weightProfiles.v1";
+
+export interface WeightProfile {
+  name: string;
+  weights: ScoreWeights;
+}
+
+function isWeights(x: unknown): x is ScoreWeights {
+  return !!x && typeof x === "object"
+    && COMPONENT_KEYS.every((k) => typeof (x as Record<string, unknown>)[k] === "number");
+}
+
+function readStoredWeights(): ScoreWeights {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(WEIGHTS_KEY) ?? "null");
+    return isWeights(parsed) ? parsed : { ...DEFAULT_WEIGHTS };
+  } catch {
+    return { ...DEFAULT_WEIGHTS };
+  }
+}
+
+function readStoredProfiles(): WeightProfile[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(PROFILES_KEY) ?? "null");
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((p) => typeof p?.name === "string" && isWeights(p?.weights));
+  } catch {
+    return [];
+  }
+}
 
 export function readLastScreen(): { symbol: string; at: number } | null {
   try {
@@ -52,6 +87,10 @@ interface AppState {
   filters: CandidateFilters;
   sort: SortSpec;
 
+  // v1.1 §2: user-adjustable scoring weights (persisted)
+  weights: ScoreWeights;
+  weightProfiles: WeightProfile[];
+
   setView: (view: View) => void;
   setSettingsOpen: (open: boolean) => void;
   showToast: (message: string) => void;
@@ -60,6 +99,9 @@ interface AppState {
   patchFilters: (patch: Partial<CandidateFilters>) => void;
   clearFilters: () => void;
   setSort: (sort: SortSpec) => void;
+  setWeights: (weights: ScoreWeights) => void;
+  saveWeightProfile: (name: string) => void;
+  deleteWeightProfile: (name: string) => void;
   screen: (refresh?: boolean) => Promise<void>;
   openCandidate: (candidate: Candidate) => Promise<void>;
   recalculate: (legs: Leg[], repriceTheoretical: boolean) => Promise<void>;
@@ -94,6 +136,8 @@ export const useStore = create<AppState>((set, get) => ({
   savedTrades: [],
   filters: EMPTY_FILTERS,
   sort: DEFAULT_SORT,
+  weights: readStoredWeights(),
+  weightProfiles: readStoredProfiles(),
 
   setView: (view) => set({ view }),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
@@ -109,6 +153,36 @@ export const useStore = create<AppState>((set, get) => ({
   patchFilters: (patch) => set((s) => ({ filters: { ...s.filters, ...patch } })),
   clearFilters: () => set({ filters: EMPTY_FILTERS }),
   setSort: (sort) => set({ sort }),
+
+  setWeights: (weights) => {
+    set({ weights });
+    try {
+      localStorage.setItem(WEIGHTS_KEY, JSON.stringify(weights));
+    } catch {
+      // private mode: weights live for the session
+    }
+  },
+
+  saveWeightProfile: (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const profiles = [
+      ...get().weightProfiles.filter((p) => p.name !== trimmed),
+      { name: trimmed, weights: { ...get().weights } },
+    ];
+    set({ weightProfiles: profiles });
+    try {
+      localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+    } catch { /* session-only */ }
+  },
+
+  deleteWeightProfile: (name) => {
+    const profiles = get().weightProfiles.filter((p) => p.name !== name);
+    set({ weightProfiles: profiles });
+    try {
+      localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+    } catch { /* session-only */ }
+  },
 
   async screen(refresh = false) {
     const { symbol, directionalView, capital, riskTolerancePct, definedRiskOnly } = get();
@@ -183,11 +257,20 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   async recommend() {
-    const { screenResult } = get();
+    const { screenResult, weights } = get();
     if (!screenResult || screenResult.candidates.length === 0) return;
     set({ view: "recommender", status: "recommending", error: null });
     try {
-      const recommendation = await api.recommend({ candidates: screenResult.candidates });
+      // custom weights re-mix the backend's component scores; the ranker
+      // then orders by that composite (same formula, user's priorities)
+      const custom = !weightsEqual(weights, DEFAULT_WEIGHTS);
+      const candidates = custom
+        ? screenResult.candidates.map((c) => ({
+          ...c,
+          compositeScore: effectiveScore(c, weights),
+        }))
+        : screenResult.candidates;
+      const recommendation = await api.recommend({ candidates });
       set({ recommendation, status: "idle" });
     } catch (err) {
       set({ status: "idle", error: err instanceof Error ? err.message : String(err) });
