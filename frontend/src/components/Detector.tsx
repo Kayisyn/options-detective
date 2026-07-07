@@ -165,6 +165,14 @@ export default function Detector() {
             {expertMode && (
               <span title="Where today's implied volatility sits in the past year's range (0-100). High = options are expensive, favors selling premium.">
                 IV rank <b>{result.ivRank ?? "n/a"}</b> ({result.ivBand})
+                <button
+                  onClick={() => s.openHelp("iv-rank")}
+                  aria-label="Glossary: IV rank"
+                  title="Open in the glossary"
+                  className="ml-1 text-content-3/70 transition-colors duration-150 hover:text-accent-blue"
+                >
+                  ⓘ
+                </button>
               </span>
             )}
             <span className="text-content-3">

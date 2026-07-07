@@ -27,6 +27,7 @@ export default function Onboarding({ open, onClose }: {
   onClose: () => void;
 }) {
   const setView = useStore((s) => s.setView);
+  const openHelp = useStore((s) => s.openHelp);
 
   function dismiss(startScreening: boolean) {
     try {
@@ -60,7 +61,14 @@ export default function Onboarding({ open, onClose }: {
       <p className="mt-4 text-xs text-content-3">
         Quotes come from free intraday data and can be stale outside market
         hours — staleness is always flagged, never hidden. This is analysis
-        software, not investment advice.
+        software, not investment advice.{" "}
+        <button
+          onClick={() => { dismiss(false); openHelp(); }}
+          className="text-accent-blue underline decoration-accent-blue/40 underline-offset-2 hover:brightness-110"
+          data-testid="onboarding-glossary-link"
+        >
+          Learn the concepts in the glossary →
+        </button>
       </p>
       <div className="mt-4 flex gap-3">
         <Button size="lg" className="flex-1" onClick={() => dismiss(true)}>

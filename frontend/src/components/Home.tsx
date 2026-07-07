@@ -17,7 +17,7 @@ const FEATURES = [
 const SHORTCUTS = [
   { keys: "Ctrl+K", action: "Jump to screening" },
   { keys: "Ctrl+Shift+D", action: "Toggle dark / light" },
-  { keys: "Ctrl+Shift+?", action: "Reopen the walkthrough" },
+  { keys: "Ctrl+Shift+?", action: "Help & glossary" },
 ];
 
 function relativeTime(at: number): string {
@@ -92,6 +92,9 @@ export default function Home() {
         </Button>
         <Button variant="ghost" size="lg" onClick={() => s.setSettingsOpen(true)}>
           Settings
+        </Button>
+        <Button variant="ghost" size="lg" onClick={() => s.openHelp()} data-testid="home-learn">
+          Learn the concepts
         </Button>
       </div>
 

@@ -142,7 +142,8 @@ export default function Calculator() {
                 value={result.payoff.breakevens.map((b) => b.toFixed(2)).join(" / ") || "—"}
                 hint="Underlying prices where the trade neither makes nor loses money" />
               <Stat label="POP" value={pct(result.probability.pop)}
-                hint="Probability of any profit at expiry (lognormal model, risk-neutral drift)" />
+                hint="Probability of any profit at expiry (lognormal model, risk-neutral drift)"
+                onInfo={() => s.openHelp("pop")} />
             </div>
           </div>
 
@@ -235,12 +236,21 @@ export default function Calculator() {
   );
 }
 
-function Stat({ label, value, hint, tone }: {
+function Stat({ label, value, hint, tone, onInfo }: {
   label: string; value: string; hint?: string; tone?: "good" | "bad";
+  onInfo?: () => void;
 }) {
   return (
-    <div className="cursor-help rounded-md bg-slate-900 p-3" title={hint}>
-      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
+    <div className="cursor-help rounded-md bg-dark-800 p-3" title={hint}>
+      <div className="text-xs uppercase tracking-wide text-content-3">
+        {label}
+        {onInfo && (
+          <button onClick={onInfo} title="Open in the glossary" aria-label={`Glossary: ${label}`}
+            className="ml-1 text-content-3/70 transition-colors duration-150 hover:text-accent-blue">
+            ⓘ
+          </button>
+        )}
+      </div>
       <div className={`mt-0.5 font-mono font-medium tabular-nums ${
         tone === "good" ? "text-accent-green" : tone === "bad" ? "text-accent-red" : ""
       }`}>

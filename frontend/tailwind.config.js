@@ -100,6 +100,14 @@ export default {
           "0%": { opacity: "0", transform: "translateY(-10px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        "drawer-enter": {
+          "0%": { transform: "translateX(100%)" },
+          "100%": { transform: "translateX(0)" },
+        },
+        "drawer-exit": {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(100%)" },
+        },
         "fade-in": {
           "0%": { opacity: "0" },
           "100%": { opacity: "1" },
@@ -121,6 +129,8 @@ export default {
         "modal-exit": "modal-exit 150ms ease-in both",
         "toast-in": "toast-in 300ms ease-out both",
         "fade-in": "fade-in 200ms ease-out both",
+        "drawer-enter": "drawer-enter 200ms ease-out both",
+        "drawer-exit": "drawer-exit 150ms ease-in both",
       },
     },
   },
