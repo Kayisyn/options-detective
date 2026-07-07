@@ -10,11 +10,12 @@ import {
 } from "./lib/scoring";
 import type {
   CalcResult, Candidate, CloseTradeInput, DirectionalView, EquityPoint,
+  EtfFilters, EtfReference, EtfScreenResult, EtfStrategy,
   JournalTrade, Leg, NewTradeInput, PaperState, Recommendation, ScreenParams,
   ScreenResult,
 } from "./types";
 
-export type View = "home" | "detector" | "calculator" | "recommender" | "journal" | "paper";
+export type View = "home" | "detector" | "calculator" | "recommender" | "journal" | "paper" | "etf";
 
 const LAST_SCREEN_KEY = "od.lastScreen";
 const WEIGHTS_KEY = "od.weights.v1";
@@ -88,6 +89,12 @@ interface AppState {
   paper: PaperState | null;      // null until first load
   paperCurve: EquityPoint[];
 
+  // v2.0 ETF screener
+  etfReference: EtfReference | null;
+  etfResult: EtfScreenResult | null;
+  etfWatchlist: string[];
+  etfBusy: boolean;
+
   // v1.1 §1: client-side filtering/sorting of screened candidates
   filters: CandidateFilters;
   sort: SortSpec;
@@ -128,6 +135,13 @@ interface AppState {
   closePaperTrade: (id: string, input: CloseTradeInput) => Promise<boolean>;
   processPaper: () => Promise<void>;
   resetPaper: (initialBalance?: number) => Promise<void>;
+
+  loadEtfReference: () => Promise<void>;
+  screenEtf: (filters: EtfFilters, strategy: EtfStrategy) => Promise<void>;
+  refreshEtfMetrics: (tickers: string[]) => Promise<void>;
+  loadEtfWatchlist: () => Promise<void>;
+  toggleEtfWatch: (ticker: string, watched: boolean) => Promise<void>;
+  analyzeEtfInDetector: (ticker: string) => Promise<void>;
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -156,6 +170,10 @@ export const useStore = create<AppState>((set, get) => ({
   savedTrades: [],
   paper: null,
   paperCurve: [],
+  etfReference: null,
+  etfResult: null,
+  etfWatchlist: [],
+  etfBusy: false,
   filters: EMPTY_FILTERS,
   sort: DEFAULT_SORT,
   weights: readStoredWeights(),
@@ -455,5 +473,65 @@ export const useStore = create<AppState>((set, get) => ({
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }
+  },
+
+  async loadEtfReference() {
+    try {
+      if (!get().etfReference) set({ etfReference: await api.etfReference() });
+      await get().loadEtfWatchlist();
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async screenEtf(filters, strategy) {
+    set({ etfBusy: true, error: null });
+    try {
+      const etfResult = await api.etfScreen({ filters, strategy, limit: 25 });
+      set({ etfResult, etfBusy: false });
+      if (!etfResult.anyMetrics) {
+        set({ error: "No live metrics yet — hit “Refresh data” to fetch prices, IV and premiums." });
+      }
+    } catch (err) {
+      set({ etfBusy: false, error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async refreshEtfMetrics(tickers) {
+    set({ etfBusy: true, error: null });
+    try {
+      const { refreshed, errors } = await api.etfRefresh(tickers);
+      set({ etfBusy: false });
+      get().showToast(`✓ Refreshed ${refreshed} ETF${refreshed === 1 ? "" : "s"}`);
+      if (errors && errors.length > 0) {
+        set({ error: `${errors.length} could not be fetched: ${errors.slice(0, 3).join(" · ")}` });
+      }
+    } catch (err) {
+      set({ etfBusy: false, error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async loadEtfWatchlist() {
+    try {
+      const { etfs } = await api.etfWatchlist();
+      set({ etfWatchlist: etfs.map((e) => e.ticker) });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async toggleEtfWatch(ticker, watched) {
+    try {
+      const { watchlist } = await api.etfWatchToggle(ticker, watched ? "add" : "remove");
+      set({ etfWatchlist: watchlist });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  // §2.9: hand a discovered ETF to the Detector and screen it immediately.
+  async analyzeEtfInDetector(ticker) {
+    set({ symbol: ticker.toUpperCase(), view: "detector" });
+    await get().screen();
   },
 }));

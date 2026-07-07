@@ -141,6 +141,16 @@ export default function Detector() {
         >
           {screening ? "Screening…" : "Screen"}
         </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => s.setView("etf")}
+          title="Don't know what to screen? Discover ETF candidates"
+          className="mb-1"
+          data-testid="discover-etfs"
+        >
+          Discover ETFs →
+        </Button>
         {result && (
           <Button
             variant="secondary"

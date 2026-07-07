@@ -268,6 +268,84 @@ export interface PaperState {
   stats: PaperStats;
 }
 
+// v2.0 ETF screener
+export type EtfStrategy = "covered_call" | "csp" | "spread";
+
+export interface EtfScoreComponent {
+  key: string;
+  label: string;
+  component: number; // 0-1
+  points: number;    // of the 0-10 score
+}
+
+export interface EtfRecord {
+  ticker: string;
+  name: string;
+  issuer: string;
+  sector: string;
+  assetClass: string;
+  expenseRatio: number;
+  expenseRatioPct: number;
+  aumBillions: number;
+  // dynamic (null until refreshed)
+  price: number | null;
+  ytdReturn: number | null;
+  atmIv: number | null;
+  ivRank: number | null;
+  annualizedCallPremiumPct: number | null;
+  otmCallStrike: number | null;
+  callVolume: number | null;
+  dte: number | null;
+  asOf: string | null;
+  hasMetrics: boolean;
+  stale: boolean;
+  // present in screen results
+  score?: number;
+  scoreBreakdown?: EtfScoreComponent[];
+}
+
+export interface EtfDetail extends EtfRecord {
+  scores: Record<EtfStrategy, { score: number; breakdown: EtfScoreComponent[] }>;
+}
+
+export interface EtfPreset {
+  id: string;
+  name: string;
+  hint: string;
+  strategy: EtfStrategy;
+  filters: EtfFilters;
+}
+
+export interface EtfReference {
+  sectors: string[];
+  assetClasses: string[];
+  count: number;
+  presets: EtfPreset[];
+}
+
+export interface EtfFilters {
+  sectors?: string[];
+  assetClasses?: string[];
+  priceMin?: number | null;
+  priceMax?: number | null;
+  ivRankMin?: number | null;
+  ivRankMax?: number | null;
+  premiumMin?: number | null;
+  premiumMax?: number | null;
+  maxExpenseRatioPct?: number | null;
+  minAum?: number | null;
+  ytdMin?: number | null;
+  ytdMax?: number | null;
+  minCallVolume?: number | null;
+}
+
+export interface EtfScreenResult {
+  strategy: EtfStrategy;
+  total: number;
+  candidates: EtfRecord[];
+  anyMetrics: boolean;
+}
+
 export interface CloseTradeInput {
   exitPrice: number;
   exitDate?: string;

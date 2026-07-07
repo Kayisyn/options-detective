@@ -87,6 +87,9 @@ export default function Home() {
         <Button size="lg" onClick={() => s.setView("detector")} data-testid="home-screen-cta">
           Screen a symbol
         </Button>
+        <Button variant="secondary" size="lg" onClick={() => s.setView("etf")} data-testid="home-etf">
+          Discover ETFs
+        </Button>
         <Button variant="secondary" size="lg" onClick={() => s.setView("journal")}>
           View journal
         </Button>
