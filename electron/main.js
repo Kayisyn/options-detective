@@ -66,9 +66,12 @@ function registerIpc() {
   ipcMain.handle("api:calculate", (_event, body) => forward("/calculate", body));
   ipcMain.handle("api:recommend", (_event, body) => forward("/recommend", body));
   ipcMain.handle("api:data", (_event, { symbol }) => forward(`/data/${encodeURIComponent(symbol)}`));
-  ipcMain.handle("api:trades:list", () => forward("/trades"));
-  ipcMain.handle("api:trades:save", (_event, body) => forward("/trades", body));
-  ipcMain.handle("api:trades:delete", (_event, { id }) => forward(`/trades/${encodeURIComponent(id)}`, undefined, "DELETE"));
+  ipcMain.handle("api:trades:list", () => forward("/journal"));
+  ipcMain.handle("api:trades:save", (_event, body) => forward("/journal", body));
+  ipcMain.handle("api:trades:patch", (_event, { id, payload }) => forward(`/journal/${encodeURIComponent(id)}`, payload, "PATCH"));
+  ipcMain.handle("api:trades:close", (_event, { id, payload }) => forward(`/journal/${encodeURIComponent(id)}/close`, payload));
+  ipcMain.handle("api:trades:delete", (_event, { id }) => forward(`/journal/${encodeURIComponent(id)}`, undefined, "DELETE"));
+  ipcMain.handle("api:trades:marks", () => forward("/journal/marks", {}));
   ipcMain.handle("api:export", (_event, { text }) => {
     clipboard.writeText(String(text ?? ""));
     return true;

@@ -29,11 +29,11 @@ function relativeTime(at: number): string {
   return `${Math.round(hours / 24)}d ago`;
 }
 
-function mostUsedStrategy(trades: { candidate: { strategyType: string } }[]): string | null {
+function mostUsedStrategy(trades: { strategy: string }[]): string | null {
   if (trades.length === 0) return null;
   const counts = new Map<string, number>();
   for (const t of trades) {
-    counts.set(t.candidate.strategyType, (counts.get(t.candidate.strategyType) ?? 0) + 1);
+    counts.set(t.strategy, (counts.get(t.strategy) ?? 0) + 1);
   }
   const [top] = [...counts.entries()].sort((a, b) => b[1] - a[1]);
   return strategyLabel(top[0]);

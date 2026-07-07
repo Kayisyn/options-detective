@@ -9,8 +9,8 @@ import {
   type ScoreWeights,
 } from "./lib/scoring";
 import type {
-  CalcResult, Candidate, DirectionalView, Leg, Recommendation, SavedTrade,
-  ScreenParams, ScreenResult,
+  CalcResult, Candidate, CloseTradeInput, DirectionalView, JournalTrade, Leg,
+  NewTradeInput, Recommendation, ScreenParams, ScreenResult,
 } from "./types";
 
 export type View = "home" | "detector" | "calculator" | "recommender" | "journal";
@@ -81,7 +81,7 @@ interface AppState {
   calcResult: CalcResult | null;
   recommendation: Recommendation | null;
   exportedId: string | null; // last candidate copied to clipboard
-  savedTrades: SavedTrade[];
+  savedTrades: JournalTrade[];
 
   // v1.1 §1: client-side filtering/sorting of screened candidates
   filters: CandidateFilters;
@@ -110,6 +110,10 @@ interface AppState {
   loadJournal: () => Promise<void>;
   saveToJournal: (candidate: Candidate, exportText?: string) => Promise<void>;
   removeFromJournal: (id: string) => Promise<void>;
+  logTrade: (input: NewTradeInput) => Promise<boolean>;
+  closeTrade: (id: string, input: CloseTradeInput) => Promise<boolean>;
+  updateTrade: (id: string, patch: Partial<JournalTrade>) => Promise<void>;
+  refreshMarks: () => Promise<void>;
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -314,6 +318,54 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       await api.deleteTrade(id);
       await get().loadJournal();
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async logTrade(input) {
+    try {
+      await api.saveTrade(input);
+      await get().loadJournal();
+      get().showToast("✓ Trade logged");
+      return true;
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+      return false;
+    }
+  },
+
+  async closeTrade(id, input) {
+    try {
+      const closed = await api.closeTrade(id, input);
+      await get().loadJournal();
+      get().showToast(`✓ Closed — P&L $${(closed.actualPnl ?? 0).toFixed(2)}`);
+      return true;
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+      return false;
+    }
+  },
+
+  async updateTrade(id, patch) {
+    try {
+      await api.patchTrade(id, patch);
+      await get().loadJournal();
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async refreshMarks() {
+    try {
+      const { trades, warnings } = await api.refreshMarks();
+      set({ savedTrades: trades });
+      get().showToast(warnings.length > 0
+        ? `Marks refreshed — ${warnings.length} warning${warnings.length > 1 ? "s" : ""}`
+        : "✓ Marks refreshed");
+      if (warnings.length > 0) {
+        set({ error: warnings.join(" · ") });
+      }
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }
