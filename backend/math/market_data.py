@@ -124,7 +124,36 @@ def iv_rank(current_iv, vol_series):
     return round(min(100.0, max(0.0, 100.0 * (current_iv - lo) / (hi - lo))), 1)
 
 
-def fetch(symbol: str, max_expirations: int = 6) -> dict:
+def select_expirations(expirations, max_n=6, min_dte=1, max_dte=120, today=None):
+    """Pick up to max_n expirations spread across the DTE window.
+
+    yfinance lists expirations nearest-first; taking the first N on a
+    daily-expiration product (SPY, QQQ) screens barely a week out. Instead:
+    filter to the window, then keep the nearest and furthest and space the
+    rest evenly. Falls back to the first max_n listed when nothing falls in
+    the window (the caller's DTE filters will report honestly downstream).
+    """
+    if today is None:
+        today = datetime.now(timezone.utc).date()
+    in_window = []
+    for exp in expirations:
+        try:
+            exp_date = datetime.strptime(exp, "%Y-%m-%d").date()
+        except (TypeError, ValueError):
+            continue
+        if min_dte <= (exp_date - today).days <= max_dte:
+            in_window.append(exp)
+    if not in_window:
+        return list(expirations)[:max_n]
+    if len(in_window) <= max_n or max_n <= 1:
+        return in_window[:max_n]
+    step = (len(in_window) - 1) / (max_n - 1)
+    picked_idx = sorted({round(i * step) for i in range(max_n)})
+    return [in_window[i] for i in picked_idx]
+
+
+def fetch(symbol: str, max_expirations: int = 6, min_dte: int = 1,
+          max_dte: int = 120) -> dict:
     import yfinance as yf  # lazy: keeps pure functions testable offline
 
     ticker = yf.Ticker(symbol)
@@ -134,9 +163,11 @@ def fetch(symbol: str, max_expirations: int = 6) -> dict:
     closes = [float(x) for x in hist["Close"].tolist()]
     price = closes[-1]
 
-    expirations = list(ticker.options or [])[:max_expirations]
-    if not expirations:
+    all_expirations = list(ticker.options or [])
+    if not all_expirations:
         raise ValueError(f"{symbol!r} has no listed options")
+    expirations = select_expirations(all_expirations, max_expirations,
+                                     min_dte, max_dte)
 
     chains = {}
     for exp in expirations:
@@ -180,7 +211,10 @@ def main() -> int:
             response = {"ok": False, "error": 'request must be {"symbol": "...", "max_expirations"?: n}'}
         else:
             try:
-                result = fetch(symbol.strip(), int(req.get("max_expirations", 6)))
+                result = fetch(symbol.strip(),
+                               int(req.get("max_expirations", 6)),
+                               int(req.get("min_dte", 1)),
+                               int(req.get("max_dte", 120)))
                 response = {"ok": True, "result": result}
             except ValueError as exc:
                 response = {"ok": False, "error": str(exc)}

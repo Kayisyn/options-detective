@@ -58,39 +58,42 @@ function optionLeg(type, contract) {
 
 // ---- builders -------------------------------------------------------------
 // ctx: { spot, atmIv, dte, calls, puts } (calls/puts already liquidity-gated)
+// params: per-strategy tuning knobs, so the Detector can screen several
+// variants of the same structure (narrow/wide verticals, closer/farther
+// short strikes) and let the composite score arbitrate.
 
-function buildCallVertical(ctx) {
+function buildCallVertical(ctx, { widthPct = 0.02 } = {}) {
   const calls = liquidOnly(ctx.calls, ctx.allowIndicative);
   const long = nearest(calls, ctx.spot);
   if (!long) return null;
-  const width = Math.max(strikeStep(calls) || ctx.spot * 0.01, ctx.spot * 0.02);
+  const width = Math.max(strikeStep(calls) || ctx.spot * 0.01, ctx.spot * widthPct);
   const short = nearestWhere(calls, long.strike + width, (c) => c.strike > long.strike);
   if (!short) return null;
   if (long.mid - short.mid <= 0) return null; // free spread = bad marks
   return [optionLeg("long_call", long), optionLeg("short_call", short)];
 }
 
-function buildPutVertical(ctx) {
+function buildPutVertical(ctx, { widthPct = 0.02 } = {}) {
   const puts = liquidOnly(ctx.puts, ctx.allowIndicative);
   const long = nearest(puts, ctx.spot);
   if (!long) return null;
-  const width = Math.max(strikeStep(puts) || ctx.spot * 0.01, ctx.spot * 0.02);
+  const width = Math.max(strikeStep(puts) || ctx.spot * 0.01, ctx.spot * widthPct);
   const short = nearestWhere(puts, long.strike - width, (c) => c.strike < long.strike);
   if (!short) return null;
   if (long.mid - short.mid <= 0) return null;
   return [optionLeg("long_put", long), optionLeg("short_put", short)];
 }
 
-function buildCashSecuredPut(ctx) {
+function buildCashSecuredPut(ctx, { otmPct = 0.04 } = {}) {
   const puts = liquidOnly(ctx.puts, ctx.allowIndicative);
-  const short = nearestWhere(puts, ctx.spot * 0.96, (c) => c.strike < ctx.spot);
+  const short = nearestWhere(puts, ctx.spot * (1 - otmPct), (c) => c.strike < ctx.spot);
   if (!short || short.mid <= 0) return null;
   return [optionLeg("short_put", short)];
 }
 
-function buildCoveredCall(ctx) {
+function buildCoveredCall(ctx, { otmPct = 0.04 } = {}) {
   const calls = liquidOnly(ctx.calls, ctx.allowIndicative);
-  const short = nearestWhere(calls, ctx.spot * 1.04, (c) => c.strike > ctx.spot);
+  const short = nearestWhere(calls, ctx.spot * (1 + otmPct), (c) => c.strike > ctx.spot);
   if (!short || short.mid <= 0) return null;
   return [
     { type: "long_stock", price: ctx.spot, qty: 100 },
@@ -98,9 +101,9 @@ function buildCoveredCall(ctx) {
   ];
 }
 
-function shortStrikesAtOneSigma(ctx) {
+function shortStrikesAtSigma(ctx, sigmaMult) {
   const sigma = ctx.atmIv || 0.25;
-  const sd = ctx.spot * sigma * Math.sqrt(Math.max(ctx.dte, 1) / 365);
+  const sd = ctx.spot * sigma * Math.sqrt(Math.max(ctx.dte, 1) / 365) * sigmaMult;
   const puts = liquidOnly(ctx.puts, ctx.allowIndicative);
   const calls = liquidOnly(ctx.calls, ctx.allowIndicative);
   const shortPut = nearestWhere(puts, ctx.spot - sd, (c) => c.strike < ctx.spot);
@@ -109,8 +112,8 @@ function shortStrikesAtOneSigma(ctx) {
   return { shortPut, shortCall, puts, calls };
 }
 
-function buildIronCondor(ctx) {
-  const shorts = shortStrikesAtOneSigma(ctx);
+function buildIronCondor(ctx, { sigmaMult = 1.0 } = {}) {
+  const shorts = shortStrikesAtSigma(ctx, sigmaMult);
   if (!shorts) return null;
   const { shortPut, shortCall, puts, calls } = shorts;
   const wing = Math.max(strikeStep(puts) || ctx.spot * 0.01, ctx.spot * 0.01);
@@ -138,8 +141,8 @@ function buildLongStraddle(ctx) {
   return [optionLeg("long_call", call), optionLeg("long_put", put)];
 }
 
-function buildShortStrangle(ctx) {
-  const shorts = shortStrikesAtOneSigma(ctx);
+function buildShortStrangle(ctx, { sigmaMult = 1.0 } = {}) {
+  const shorts = shortStrikesAtSigma(ctx, sigmaMult);
   if (!shorts) return null;
   const { shortPut, shortCall } = shorts;
   if (shortPut.mid + shortCall.mid <= 0) return null;
@@ -156,11 +159,39 @@ const BUILDERS = {
   short_strangle: buildShortStrangle,
 };
 
-function buildDraft(strategyType, ctx) {
+// Variants screened per strategy. Two flavors where it changes the trade's
+// character; the composite score decides which survives the top-20.
+const VARIANTS = {
+  call_vertical: [{ widthPct: 0.02 }, { widthPct: 0.05 }],
+  put_vertical: [{ widthPct: 0.02 }, { widthPct: 0.05 }],
+  cash_secured_put: [{ otmPct: 0.04 }, { otmPct: 0.08 }],
+  covered_call: [{ otmPct: 0.04 }, { otmPct: 0.08 }],
+  iron_condor: [{ sigmaMult: 1.0 }, { sigmaMult: 1.5 }],
+  long_straddle: [{}],
+  short_strangle: [{ sigmaMult: 1.0 }],
+};
+
+function buildDraft(strategyType, ctx, params = {}) {
   const builder = BUILDERS[strategyType];
   if (!builder) throw new Error(`no builder for strategy ${JSON.stringify(strategyType)}`);
-  const legs = builder(ctx);
+  const legs = builder(ctx, params);
   return legs ? { strategyType, legs } : null;
 }
 
-module.exports = { buildDraft, BUILDERS, strikeStep, liquidOnly, nearest };
+// All variants of a strategy for one expiration, deduplicated (coarse strike
+// grids often collapse two variants onto the same strikes).
+function buildDrafts(strategyType, ctx) {
+  const seen = new Set();
+  const drafts = [];
+  for (const params of VARIANTS[strategyType] ?? [{}]) {
+    const draft = buildDraft(strategyType, ctx, params);
+    if (!draft) continue;
+    const key = draft.legs.map((l) => `${l.type}@${l.strike ?? "S"}`).join("|");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    drafts.push(draft);
+  }
+  return drafts;
+}
+
+module.exports = { buildDraft, buildDrafts, BUILDERS, VARIANTS, strikeStep, liquidOnly, nearest };

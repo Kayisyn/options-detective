@@ -56,7 +56,8 @@ test("cash-secured put capital is strike x 100 less credit", async () => {
   assert.ok(csp, "no cash-secured put produced");
   const credit = -csp.sizing.totalDebit;
   assert.ok(credit > 0);
-  assert.ok(Math.abs(csp.sizing.capitalRequired - (95 * 100 - credit)) < 1);
+  const strike = csp.legs[0].strike;
+  assert.ok(Math.abs(csp.sizing.capitalRequired - (strike * 100 - credit)) < 1);
 });
 
 test("definedRiskOnly drops the short strangle", async () => {

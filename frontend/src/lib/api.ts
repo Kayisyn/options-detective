@@ -1,23 +1,26 @@
 // Single API seam: inside Electron the preload bridge handles transport
 // (Phase 7); in the browser we go through Vite's /api proxy to Express.
-import type { CalcResult, Recommendation, ScreenResult } from "../types";
+import type { CalcResult, Recommendation, SavedTrade, ScreenResult } from "../types";
 
 type Bridge = {
   detect?: (body: unknown) => Promise<ScreenResult>;
   calculate?: (body: unknown) => Promise<CalcResult>;
   recommend?: (body: unknown) => Promise<Recommendation>;
   exportTrade?: (text: string) => Promise<void>;
+  listTrades?: () => Promise<{ trades: SavedTrade[] }>;
+  saveTrade?: (body: unknown) => Promise<SavedTrade>;
+  deleteTrade?: (id: string) => Promise<{ removed: boolean }>;
 };
 
 function bridge(): Bridge | null {
   return (window as { optionsDetective?: Bridge }).optionsDetective ?? null;
 }
 
-async function post<T>(path: string, body: unknown): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(`/api${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    method,
+    headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
@@ -26,6 +29,8 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   }
   return res.json() as Promise<T>;
 }
+
+const post = <T,>(path: string, body: unknown) => request<T>("POST", path, body);
 
 export const api = {
   detect(body: unknown): Promise<ScreenResult> {
@@ -36,6 +41,16 @@ export const api = {
   },
   recommend(body: unknown): Promise<Recommendation> {
     return bridge()?.recommend?.(body) ?? post<Recommendation>("/recommend", body);
+  },
+  listTrades(): Promise<{ trades: SavedTrade[] }> {
+    return bridge()?.listTrades?.() ?? request("GET", "/trades");
+  },
+  saveTrade(body: unknown): Promise<SavedTrade> {
+    return bridge()?.saveTrade?.(body) ?? post("/trades", body);
+  },
+  deleteTrade(id: string): Promise<{ removed: boolean }> {
+    return bridge()?.deleteTrade?.(id)
+      ?? request("DELETE", `/trades/${encodeURIComponent(id)}`);
   },
   async exportTrade(text: string): Promise<void> {
     const b = bridge();

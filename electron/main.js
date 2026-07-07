@@ -10,10 +10,19 @@ const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || null;
 let backendProc = null;
 
 function startBackend() {
-  const backendDir = path.join(__dirname, "..", "backend");
+  // Packaged: everything lives under resources/ and the math engine is the
+  // PyInstaller binary — end users need no Python. Dev: repo paths + venv.
+  const backendDir = app.isPackaged
+    ? path.join(process.resourcesPath, "backend")
+    : path.join(__dirname, "..", "backend");
+  const env = { ...process.env, PORT: String(BACKEND_PORT) };
+  if (app.isPackaged) {
+    env.OD_MATH_BIN = path.join(process.resourcesPath, "od-math", "od-math.exe");
+    env.OD_DATA_DIR = app.getPath("userData"); // trade journal location
+  }
   backendProc = utilityProcess.fork(path.join(backendDir, "server.js"), [], {
     cwd: backendDir,
-    env: { ...process.env, PORT: String(BACKEND_PORT) },
+    env,
     stdio: "pipe",
   });
   backendProc.stdout?.on("data", (d) => console.log("[backend]", String(d).trimEnd()));
@@ -35,11 +44,14 @@ async function waitForBackend(timeoutMs = 20_000) {
   return false;
 }
 
-async function forward(pathname, body) {
-  const init = body === undefined ? {} : {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+async function forward(pathname, body, method) {
+  const resolvedMethod = method || (body === undefined ? "GET" : "POST");
+  const init = {
+    method: resolvedMethod,
+    ...(body === undefined ? {} : {
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
   };
   const res = await fetch(`${BACKEND_URL}${pathname}`, init);
   const payload = await res.json().catch(() => ({}));
@@ -54,6 +66,9 @@ function registerIpc() {
   ipcMain.handle("api:calculate", (_event, body) => forward("/calculate", body));
   ipcMain.handle("api:recommend", (_event, body) => forward("/recommend", body));
   ipcMain.handle("api:data", (_event, { symbol }) => forward(`/data/${encodeURIComponent(symbol)}`));
+  ipcMain.handle("api:trades:list", () => forward("/trades"));
+  ipcMain.handle("api:trades:save", (_event, body) => forward("/trades", body));
+  ipcMain.handle("api:trades:delete", (_event, { id }) => forward(`/trades/${encodeURIComponent(id)}`, undefined, "DELETE"));
   ipcMain.handle("api:export", (_event, { text }) => {
     clipboard.writeText(String(text ?? ""));
     return true;
@@ -75,6 +90,8 @@ function createWindow() {
 
   if (DEV_SERVER_URL) {
     win.loadURL(DEV_SERVER_URL);
+  } else if (app.isPackaged) {
+    win.loadFile(path.join(process.resourcesPath, "frontend-dist", "index.html"));
   } else {
     win.loadFile(path.join(__dirname, "..", "frontend", "dist", "index.html"));
   }

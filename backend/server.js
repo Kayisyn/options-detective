@@ -5,6 +5,7 @@ const detectRouter = require("./routes/detect");
 const calculateRouter = require("./routes/calculate");
 const recommendRouter = require("./routes/recommend");
 const dataRouter = require("./routes/data");
+const tradesRouter = require("./routes/trades");
 const { callEngine, engineClient } = require("./services/mathEngine");
 
 const app = express();
@@ -31,6 +32,7 @@ app.use("/detect", detectRouter);
 app.use("/calculate", calculateRouter);
 app.use("/recommend", recommendRouter);
 app.use("/data", dataRouter);
+app.use("/trades", tradesRouter);
 
 // JSON everywhere: unknown routes and unhandled errors never leak HTML.
 app.use((req, res) => {

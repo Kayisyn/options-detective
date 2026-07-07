@@ -1,11 +1,25 @@
 import { create } from "zustand";
 import { api } from "./lib/api";
 import type {
-  CalcResult, Candidate, DirectionalView, Leg, Recommendation, ScreenParams,
-  ScreenResult,
+  CalcResult, Candidate, DirectionalView, Leg, Recommendation, SavedTrade,
+  ScreenParams, ScreenResult,
 } from "./types";
 
-export type View = "detector" | "calculator" | "recommender";
+export type View = "home" | "detector" | "calculator" | "recommender" | "journal";
+
+const LAST_SCREEN_KEY = "od.lastScreen";
+
+export function readLastScreen(): { symbol: string; at: number } | null {
+  try {
+    const raw = localStorage.getItem(LAST_SCREEN_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return typeof parsed?.symbol === "string" && typeof parsed?.at === "number"
+      ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 
 type Status = "idle" | "screening" | "calculating" | "recommending";
 
@@ -13,6 +27,8 @@ interface AppState {
   view: View;
   status: Status;
   error: string | null;
+  toast: string | null;
+  settingsOpen: boolean;
 
   // Detector inputs (a lightweight UserIntent)
   symbol: string;
@@ -26,8 +42,11 @@ interface AppState {
   calcResult: CalcResult | null;
   recommendation: Recommendation | null;
   exportedId: string | null; // last candidate copied to clipboard
+  savedTrades: SavedTrade[];
 
   setView: (view: View) => void;
+  setSettingsOpen: (open: boolean) => void;
+  showToast: (message: string) => void;
   setIntent: (patch: Partial<Pick<AppState,
     "symbol" | "directionalView" | "capital" | "riskTolerancePct" | "definedRiskOnly">>) => void;
   screen: (refresh?: boolean) => Promise<void>;
@@ -35,12 +54,20 @@ interface AppState {
   recalculate: (legs: Leg[], repriceTheoretical: boolean) => Promise<void>;
   recommend: () => Promise<void>;
   exportTrade: (id: string, text: string) => Promise<void>;
+  loadJournal: () => Promise<void>;
+  saveToJournal: (candidate: Candidate, exportText?: string) => Promise<void>;
+  removeFromJournal: (id: string) => Promise<void>;
 }
 
+let toastTimer: ReturnType<typeof setTimeout> | undefined;
+let exportTimer: ReturnType<typeof setTimeout> | undefined;
+
 export const useStore = create<AppState>((set, get) => ({
-  view: "detector",
+  view: "home",
   status: "idle",
   error: null,
+  toast: null,
+  settingsOpen: false,
 
   symbol: "AAPL",
   directionalView: "neutral",
@@ -53,8 +80,18 @@ export const useStore = create<AppState>((set, get) => ({
   calcResult: null,
   recommendation: null,
   exportedId: null,
+  savedTrades: [],
 
   setView: (view) => set({ view }),
+  setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
+
+  // §5.4 confirmations: slide-in toast, auto-dismissed after 3s
+  showToast: (message) => {
+    clearTimeout(toastTimer);
+    set({ toast: message });
+    toastTimer = setTimeout(() => set({ toast: null }), 3000);
+  },
+
   setIntent: (patch) => set(patch),
 
   async screen(refresh = false) {
@@ -71,6 +108,12 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const screenResult = await api.detect(params);
       set({ screenResult, status: "idle" });
+      try {
+        localStorage.setItem(LAST_SCREEN_KEY,
+          JSON.stringify({ symbol: params.symbol, at: Date.now() }));
+      } catch {
+        // private mode — the home screen just won't show "last screened"
+      }
     } catch (err) {
       set({ status: "idle", error: err instanceof Error ? err.message : String(err) });
     }
@@ -137,6 +180,39 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       await api.exportTrade(text);
       set({ exportedId: id });
+      // §5.4: "Copied" state reverts on its own after 2s
+      clearTimeout(exportTimer);
+      exportTimer = setTimeout(() => {
+        if (get().exportedId === id) set({ exportedId: null });
+      }, 2000);
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async loadJournal() {
+    try {
+      const { trades } = await api.listTrades();
+      set({ savedTrades: trades });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async saveToJournal(candidate, exportText) {
+    try {
+      await api.saveTrade({ candidate, exportText: exportText ?? null });
+      await get().loadJournal();
+      get().showToast("✓ Saved to journal");
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async removeFromJournal(id) {
+    try {
+      await api.deleteTrade(id);
+      await get().loadJournal();
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }

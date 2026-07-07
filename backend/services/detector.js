@@ -10,7 +10,7 @@
 
 const { callEngineBatch } = require("./mathEngine");
 const { dataLayer: defaultDataLayer } = require("./dataLayer");
-const { buildDraft } = require("./candidates");
+const { buildDrafts } = require("./candidates");
 const { eligibleStrategies, ivBand } = require("./strategyMapping");
 const { engineLegs, totalDebitOf, netGreeksOf, capitalRequiredOf } = require("./positionMath");
 
@@ -116,6 +116,8 @@ function createDetector({ dataLayer = defaultDataLayer, engineBatch = callEngine
     const data = await dataLayer.getMarketData(opts.symbol, {
       refresh: Boolean(opts.refresh),
       maxExpirations: opts.maxExpirations,
+      minDte: opts.minDTE,
+      maxDte: opts.maxDTE,
     });
 
     const strategies = eligibleStrategies(opts.directionalView, data.ivRank, {
@@ -161,8 +163,9 @@ function createDetector({ dataLayer = defaultDataLayer, engineBatch = callEngine
       if (!atmIv) continue; // cannot price probabilities honestly without an IV
       const ctx = { spot: data.price, atmIv, dte, calls: chain.calls, puts: chain.puts, allowIndicative };
       for (const strategyType of strategies) {
-        const draft = buildDraft(strategyType, ctx);
-        if (draft) drafts.push({ ...draft, expiration, dte, atmIv });
+        for (const draft of buildDrafts(strategyType, ctx)) {
+          drafts.push({ ...draft, expiration, dte, atmIv });
+        }
       }
     }
 

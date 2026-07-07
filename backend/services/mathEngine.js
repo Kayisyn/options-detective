@@ -7,9 +7,8 @@
 //
 // Full protocol contract in docs/api-schema.md.
 const { spawn } = require("child_process");
-const path = require("path");
 
-const { MATH_DIR, pythonBin } = require("./python");
+const { mathCommand } = require("./python");
 
 // Domain error: the engine rejected the inputs (bad strike, arbitrage
 // violation, ...). Infrastructure failures reject with a plain Error.
@@ -25,8 +24,9 @@ class EngineClient {
 
   ensureProcess() {
     if (this.proc) return;
-    const proc = spawn(pythonBin(), [path.join(MATH_DIR, "engine.py"), "--serve"], {
-      cwd: MATH_DIR,
+    const cmd = mathCommand("engine", ["--serve"]);
+    const proc = spawn(cmd.bin, cmd.args, {
+      cwd: cmd.cwd,
       windowsHide: true,
     });
     proc.stdout.setEncoding("utf8");

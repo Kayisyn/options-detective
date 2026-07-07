@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from market_data import (atm_iv, iv_rank, normalize_contracts,
-                         realized_vol_series)
+                         realized_vol_series, select_expirations)
 
 NAN = float("nan")
 
@@ -133,6 +133,56 @@ class TestIvRank:
             closes.append(price)
         vols = realized_vol_series(closes)
         assert vols[-1] == pytest.approx(0.01 * math.sqrt(252), rel=0.05)
+
+
+class TestSelectExpirations:
+    from datetime import date, timedelta  # noqa: PLC0415 - test-local
+
+    TODAY = date(2026, 7, 3)
+
+    def _daily(self, upto=120):
+        from datetime import timedelta
+        return [(self.TODAY + timedelta(days=d)).isoformat()
+                for d in range(1, upto + 1)]
+
+    def test_daily_chains_spread_across_the_window(self):
+        # SPY-style daily expirations: first-6 would cover barely a week
+        picked = select_expirations(self._daily(), max_n=6, min_dte=5,
+                                    max_dte=90, today=self.TODAY)
+        assert len(picked) == 6
+        from datetime import date as d
+        dtes = [(d.fromisoformat(p) - self.TODAY).days for p in picked]
+        assert dtes[0] == 5          # nearest kept
+        assert dtes[-1] == 90        # furthest kept
+        gaps = [b - a for a, b in zip(dtes, dtes[1:])]
+        assert min(gaps) >= 10       # actually spread, not clustered
+
+    def test_fewer_than_max_returns_all_in_window(self):
+        exps = ["2026-07-17", "2026-08-21", "2026-09-18"]
+        assert select_expirations(exps, max_n=6, min_dte=5, max_dte=120,
+                                  today=self.TODAY) == exps
+
+    def test_window_filters_out_of_range(self):
+        exps = ["2026-07-04", "2026-07-17", "2027-08-20"]
+        picked = select_expirations(exps, max_n=6, min_dte=5, max_dte=90,
+                                    today=self.TODAY)
+        assert picked == ["2026-07-17"]
+
+    def test_nothing_in_window_falls_back_to_first_n(self):
+        exps = ["2026-07-04", "2027-01-15"]
+        picked = select_expirations(exps, max_n=1, min_dte=7, max_dte=90,
+                                    today=self.TODAY)
+        assert picked == ["2026-07-04"]
+
+    def test_junk_dates_are_skipped(self):
+        exps = ["garbage", "2026-08-21"]
+        assert select_expirations(exps, max_n=6, min_dte=5, max_dte=120,
+                                  today=self.TODAY) == ["2026-08-21"]
+
+    def test_max_n_one_returns_nearest(self):
+        picked = select_expirations(self._daily(), max_n=1, min_dte=5,
+                                    max_dte=90, today=self.TODAY)
+        assert len(picked) == 1
 
 
 class TestCliProtocol:

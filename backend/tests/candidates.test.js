@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { buildDraft, strikeStep } = require("../services/candidates");
+const { buildDraft, buildDrafts, strikeStep } = require("../services/candidates");
 const { syntheticChain } = require("./fixtures");
 
 const CHAIN = syntheticChain({ spot: 100 });
@@ -104,6 +104,36 @@ test("relaxed marks also admit wide closing books, labelled not hidden", () => {
   };
   assert.equal(buildDraft("iron_condor", closingBooks), null);
   assert.ok(buildDraft("iron_condor", { ...closingBooks, allowIndicative: true }));
+});
+
+test("width variants produce distinct verticals on a fine strike grid", () => {
+  const fine = syntheticChain({
+    spot: 100,
+    strikes: Array.from({ length: 41 }, (_, i) => 80 + i), // $1 steps
+  });
+  const ctx = { spot: 100, atmIv: 0.25, dte: 45, calls: fine.calls, puts: fine.puts };
+  const drafts = buildDrafts("call_vertical", ctx);
+  assert.equal(drafts.length, 2);
+  const widths = drafts.map((d) => d.legs[1].strike - d.legs[0].strike);
+  assert.deepEqual(widths, [2, 5]); // 2% and 5% of spot
+});
+
+test("variants collapsing onto the same strikes deduplicate", () => {
+  // $5 strike steps swallow both width targets -> one draft, not two clones
+  const drafts = buildDrafts("call_vertical", CTX);
+  assert.equal(drafts.length, 1);
+});
+
+test("cash-secured put variants pick different strikes", () => {
+  const drafts = buildDrafts("cash_secured_put", CTX);
+  assert.deepEqual(drafts.map((d) => d.legs[0].strike), [95, 90]); // 4% / 8% OTM
+});
+
+test("iron condor sigma variants move the shorts wider", () => {
+  const drafts = buildDrafts("iron_condor", CTX);
+  assert.equal(drafts.length, 2);
+  const shortPuts = drafts.map((d) => d.legs[1].strike);
+  assert.ok(shortPuts[1] < shortPuts[0], `expected wider shorts, got ${shortPuts}`);
 });
 
 test("empty chain yields no drafts, not errors", () => {
