@@ -14,10 +14,11 @@ import type { CloseTradeInput, JournalTrade, NewTradeInput, TradeSide } from "..
 // with realized P&L, tags, filters/sorts, analytics, CSV export.
 
 type StatusFilter = "all" | "open" | "closed";
+type ScopeFilter = "all" | "real" | "paper";
 type JournalSort = "newest" | "oldest" | "pnlDesc" | "pnlAsc" | "symbol";
 
 function displayPnl(t: JournalTrade): { value: number | null; realized: boolean } {
-  if (t.status === "closed") return { value: t.actualPnl, realized: true };
+  if (t.status !== "open") return { value: t.actualPnl, realized: true };
   return { value: t.lastMark?.unrealizedPnl ?? null, realized: false };
 }
 
@@ -27,10 +28,13 @@ function pnlClass(v: number | null): string {
 }
 
 function applyJournalFilters(
-  trades: JournalTrade[], status: StatusFilter, symbol: string, sort: JournalSort,
+  trades: JournalTrade[], status: StatusFilter, scope: ScopeFilter,
+  symbol: string, sort: JournalSort,
 ): JournalTrade[] {
   let list = trades;
-  if (status !== "all") list = list.filter((t) => t.status === status);
+  if (scope !== "all") list = list.filter((t) => (scope === "paper" ? t.paper : !t.paper));
+  if (status === "open") list = list.filter((t) => t.status === "open");
+  if (status === "closed") list = list.filter((t) => t.status !== "open");
   const sym = symbol.trim().toUpperCase();
   if (sym) list = list.filter((t) => t.symbol.includes(sym));
   const pnlOf = (t: JournalTrade) => displayPnl(t).value ?? Number.NEGATIVE_INFINITY;
@@ -48,6 +52,7 @@ function applyJournalFilters(
 export default function Journal() {
   const s = useStore();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [scope, setScope] = useState<ScopeFilter>("all");
   const [symbolFilter, setSymbolFilter] = useState("");
   const [sort, setSort] = useState<JournalSort>("newest");
   const [logOpen, setLogOpen] = useState(false);
@@ -60,8 +65,11 @@ export default function Journal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   }, []);
 
-  const stats = useMemo(() => journalStats(s.savedTrades), [s.savedTrades]);
-  const visible = applyJournalFilters(s.savedTrades, statusFilter, symbolFilter, sort);
+  // scope applies to stats too (§1.3I: analytics separate real vs paper)
+  const scoped = scope === "all" ? s.savedTrades
+    : s.savedTrades.filter((t) => (scope === "paper" ? t.paper : !t.paper));
+  const stats = useMemo(() => journalStats(scoped), [scoped]);
+  const visible = applyJournalFilters(s.savedTrades, statusFilter, scope, symbolFilter, sort);
 
   async function onRefreshMarks() {
     setMarksBusy(true);
@@ -140,7 +148,13 @@ export default function Journal() {
           onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}>
           <option value="all">All</option>
           <option value="open">Open</option>
-          <option value="closed">Closed</option>
+          <option value="closed">Settled</option>
+        </FormSelect>
+        <FormSelect label="Scope" value={scope} data-testid="scope-filter"
+          onChange={(e) => setScope(e.target.value as ScopeFilter)}>
+          <option value="all">Real + paper</option>
+          <option value="real">Real only</option>
+          <option value="paper">Paper only</option>
         </FormSelect>
         <FormInput label="Symbol" placeholder="AAPL" value={symbolFilter}
           onChange={(e) => setSymbolFilter(e.target.value.toUpperCase())}
@@ -175,7 +189,14 @@ export default function Journal() {
                   <span className="w-16 font-mono font-semibold">{t.symbol}</span>
                   <span className="capitalize">{strategyLabel(t.strategy)}</span>
                   <Badge variant={t.side === "debit" ? "blue" : "orange"}>{t.side}</Badge>
-                  <Badge variant={t.status === "open" ? "green" : "neutral"}>{t.status}</Badge>
+                  <Badge variant={t.status === "open" ? "green" : t.status === "assigned" ? "orange" : "neutral"}>
+                    {t.status}
+                  </Badge>
+                  {t.paper && (
+                    <Badge variant="blue" title="Simulated position — paper budget, not real money">
+                      paper
+                    </Badge>
+                  )}
                   <span className="font-mono text-sm text-content-2">
                     ${t.entryPrice.toFixed(2)} × {t.entryQty}
                   </span>
@@ -244,12 +265,18 @@ export default function Journal() {
 
       <LogTradeModal open={logOpen} onClose={() => setLogOpen(false)}
         onSubmit={async (input) => {
-          const ok = await s.logTrade(input);
+          // paper trades go through the paper engine (budget reservation)
+          const ok = input.paper
+            ? await s.openPaperTrade(input)
+            : await s.logTrade(input);
           if (ok) setLogOpen(false);
         }} />
       <CloseTradeModal trade={closeTarget} onClose={() => setCloseTarget(null)}
         onSubmit={async (id, input) => {
-          const ok = await s.closeTrade(id, input);
+          const target = s.savedTrades.find((t) => t.id === id);
+          const ok = target?.paper
+            ? await s.closePaperTrade(id, input)
+            : await s.closeTrade(id, input);
           if (ok) setCloseTarget(null);
         }} />
     </section>
@@ -290,10 +317,15 @@ function LogTradeModal({ open, onClose, onSubmit }: {
     symbol: "", strategy: "covered_call", side: "debit" as TradeSide,
     entryPrice: "", entryQty: "1", multiplier: "100",
     maxLossTarget: "", maxProfitTarget: "", notes: "", tags: "",
+    paper: false, expiration: "", assignmentStrike: "",
   });
   const patch = (p: Partial<typeof form>) => setForm((f) => ({ ...f, ...p }));
+  // paper credit trades need a risk basis or the simulator can't reserve capital
+  const paperCreditOk = !form.paper || form.side !== "credit"
+    || Number(form.assignmentStrike) > 0 || Number(form.maxLossTarget) > 0;
   const valid = form.symbol.trim() !== "" && Number(form.entryPrice) > 0
-    && Number.isInteger(Number(form.entryQty)) && Number(form.entryQty) > 0;
+    && Number.isInteger(Number(form.entryQty)) && Number(form.entryQty) > 0
+    && paperCreditOk;
 
   return (
     <Modal open={open} onClose={onClose} testid="log-trade-modal">
@@ -333,7 +365,21 @@ function LogTradeModal({ open, onClose, onSubmit }: {
           onChange={(e) => patch({ maxLossTarget: e.target.value })} />
         <FormInput label="Tags (comma-sep)" value={form.tags}
           onChange={(e) => patch({ tags: e.target.value })} />
+        <FormInput label="Expiration" type="date" value={form.expiration}
+          hint="Enables automatic expiry/assignment processing (paper trades)"
+          onChange={(e) => patch({ expiration: e.target.value })} />
+        <FormInput label="Assignment strike" type="number" step="0.5" value={form.assignmentStrike}
+          hint="Short strike for CSP/covered-call assignment logic"
+          error={paperCreditOk ? undefined : "needed for paper credit trades"}
+          onChange={(e) => patch({ assignmentStrike: e.target.value })} />
       </div>
+      <label className="mt-3 flex items-center gap-2 text-sm text-content-2"
+        title="Simulated position against your paper budget — capital is reserved, P&L tracked, no real money">
+        <input type="checkbox" checked={form.paper} data-testid="paper-toggle"
+          onChange={(e) => patch({ paper: e.target.checked })}
+          className="accent-blue-600" />
+        Paper trade (simulated budget)
+      </label>
       <label className="mt-3 block">
         <span className="text-xs uppercase tracking-wide text-content-3">Notes</span>
         <textarea value={form.notes} onChange={(e) => patch({ notes: e.target.value })} rows={2}
@@ -352,6 +398,9 @@ function LogTradeModal({ open, onClose, onSubmit }: {
             maxProfitTarget: form.maxProfitTarget === "" ? null : Number(form.maxProfitTarget),
             notes: form.notes,
             tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
+            paper: form.paper,
+            expiration: form.expiration === "" ? null : form.expiration,
+            assignmentStrike: form.assignmentStrike === "" ? null : Number(form.assignmentStrike),
           })}>
           Log trade
         </Button>
@@ -361,7 +410,7 @@ function LogTradeModal({ open, onClose, onSubmit }: {
   );
 }
 
-function CloseTradeModal({ trade, onClose, onSubmit }: {
+export function CloseTradeModal({ trade, onClose, onSubmit }: {
   trade: JournalTrade | null;
   onClose: () => void;
   onSubmit: (id: string, input: CloseTradeInput) => void;

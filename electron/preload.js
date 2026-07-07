@@ -15,4 +15,11 @@ contextBridge.exposeInMainWorld("optionsDetective", {
   closeTrade: (id, payload) => ipcRenderer.invoke("api:trades:close", { id, payload }),
   deleteTrade: (id) => ipcRenderer.invoke("api:trades:delete", { id }),
   refreshMarks: () => ipcRenderer.invoke("api:trades:marks"),
+  paperGet: () => ipcRenderer.invoke("api:paper:get"),
+  paperBudget: (payload) => ipcRenderer.invoke("api:paper:budget", payload),
+  paperOpen: (payload) => ipcRenderer.invoke("api:paper:open", payload),
+  paperClose: (id, payload) => ipcRenderer.invoke("api:paper:close", { id, payload }),
+  paperProcess: () => ipcRenderer.invoke("api:paper:process"),
+  paperCurve: (days) => ipcRenderer.invoke("api:paper:curve", { days }),
+  paperReset: (payload) => ipcRenderer.invoke("api:paper:reset", payload),
 });

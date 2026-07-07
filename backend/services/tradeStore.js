@@ -32,11 +32,21 @@ function pnlOf(trade, exitPrice) {
   return round2((exitPrice - trade.entryPrice) * dir * trade.entryQty * trade.multiplier);
 }
 
+function migrateV2(entry) {
+  // v2 -> v2.1: paper-trading fields (defaults keep old entries valid)
+  if (entry.paper === undefined) entry.paper = false;
+  if (entry.archived === undefined) entry.archived = false;
+  if (entry.expiration === undefined) entry.expiration = entry.candidate?.expiration ?? null;
+  if (entry.assignmentStrike === undefined) entry.assignmentStrike = null;
+  if (entry.reservedCapital === undefined) entry.reservedCapital = null;
+  return entry;
+}
+
 function migrate(entry) {
-  if (entry.status) return entry; // already v2
+  if (entry.status) return migrateV2(entry); // already v2
   const c = entry.candidate ?? null;
   const totalDebit = c?.sizing?.totalDebit ?? 0;
-  return {
+  return migrateV2({
     id: entry.id,
     createdAt: entry.savedAt,
     status: "open",
@@ -60,7 +70,7 @@ function migrate(entry) {
     lastMark: null,
     candidate: c,
     exportText: entry.exportText ?? null,
-  };
+  });
 }
 
 function assertFiniteNumber(value, name, { positive = false, allowNull = false } = {}) {
@@ -100,8 +110,10 @@ function createTradeStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
     fs.renameSync(tmp, file); // atomic on the same volume
   }
 
-  function list() {
-    return load().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  function list({ includeArchived = false } = {}) {
+    return load()
+      .filter((t) => includeArchived || !t.archived)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
   function get(id) {
@@ -132,6 +144,11 @@ function createTradeStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
       id: crypto.randomUUID(),
       createdAt: nowIso,
       status: "open",
+      paper: Boolean(input.paper),
+      archived: false,
+      expiration: input.expiration ? String(input.expiration) : null,
+      assignmentStrike: assertFiniteNumber(input.assignmentStrike, "assignmentStrike", { allowNull: true, positive: true }),
+      reservedCapital: null, // set by the paper engine when it reserves budget
       symbol: input.symbol.trim().toUpperCase(),
       strategy: input.strategy.trim(),
       side,
@@ -160,7 +177,7 @@ function createTradeStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
   }
 
   // One-click logging from the Recommender: candidate snapshot -> open trade.
-  function createFromCandidate({ candidate, exportText = null, note = "" } = {}) {
+  function createFromCandidate({ candidate, exportText = null, note = "", paper = false } = {}) {
     if (!candidate || typeof candidate !== "object"
         || typeof candidate.strategyType !== "string"
         || !Array.isArray(candidate.legs) || candidate.legs.length === 0) {
@@ -168,10 +185,21 @@ function createTradeStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
     }
     const totalDebit = candidate?.sizing?.totalDebit ?? 0;
     const nowIso = now().toISOString();
+    // assignment strike for the single-short-strike strategies
+    const shortPut = candidate.legs.find((l) => l.type === "short_put");
+    const shortCall = candidate.legs.find((l) => l.type === "short_call");
+    const assignmentStrike = candidate.strategyType === "cash_secured_put"
+      ? shortPut?.strike ?? null
+      : candidate.strategyType === "covered_call" ? shortCall?.strike ?? null : null;
     const trade = {
       id: crypto.randomUUID(),
       createdAt: nowIso,
       status: "open",
+      paper: Boolean(paper),
+      archived: false,
+      expiration: candidate.expiration ?? null,
+      assignmentStrike,
+      reservedCapital: null,
       symbol: String(candidate.symbol ?? "?").toUpperCase(),
       strategy: candidate.strategyType,
       side: totalDebit >= 0 ? "debit" : "credit",
@@ -202,6 +230,7 @@ function createTradeStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
   const EDITABLE = new Set([
     "notes", "tags", "maxLossTarget", "maxProfitTarget",
     "entryPrice", "entryQty", "entryDate", "strategy", "symbol", "side",
+    "expiration", "assignmentStrike",
   ]);
 
   function update(id, patch = {}) {
@@ -232,6 +261,8 @@ function createTradeStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
         trade.entryQty = q;
       } else if (key === "entryDate") {
         trade.entryDate = String(value);
+      } else if (key === "expiration") {
+        trade.expiration = value === null ? null : String(value);
       } else {
         trade[key] = assertFiniteNumber(value, key, { allowNull: true });
       }
@@ -297,8 +328,60 @@ function createTradeStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
     return true;
   }
 
+  // Paper engine: record the capital reserved when the position opened.
+  function setReservedCapital(id, amount) {
+    const trades = load();
+    const trade = trades.find((t) => t.id === id);
+    if (!trade) throw new NotFoundError(`no trade ${id}`);
+    trade.reservedCapital = round2(assertFiniteNumber(amount, "reservedCapital"));
+    persist(trades);
+    return trade;
+  }
+
+  // Settlement writer for the paper engine's expiration/assignment logic:
+  // the SERVICE computes actualPnl (via the math engine's payoff at the
+  // settlement price); the store just records the outcome. exitPrice is
+  // back-derived so pnlOf(trade, exitPrice) stays consistent.
+  function settle(id, { status, actualPnl, exitDate, note } = {}) {
+    if (status !== "assigned" && status !== "expired") {
+      throw new TypeError('settle status must be "assigned" or "expired"');
+    }
+    const trades = load();
+    const trade = trades.find((t) => t.id === id);
+    if (!trade) throw new NotFoundError(`no trade ${id}`);
+    if (trade.status !== "open") throw new TypeError("only open trades settle");
+    const pnl = round2(assertFiniteNumber(actualPnl, "actualPnl"));
+    const dir = trade.side === "credit" ? -1 : 1;
+    const perUnit = pnl / (trade.entryQty * trade.multiplier);
+    trade.exitPrice = Math.max(0, round2(trade.entryPrice + dir * perUnit));
+    trade.exitDate = exitDate ? String(exitDate) : now().toISOString();
+    trade.closedAt = now().toISOString();
+    trade.actualPnl = pnl;
+    trade.status = status;
+    if (note) trade.notes = trade.notes ? `${trade.notes}\n${note}` : note;
+    const outcome = pnl > 0 ? "Winner" : pnl < 0 ? "Loser" : "Breakeven";
+    trade.tags = [...new Set([...trade.tags, status === "assigned" ? "Assigned" : "Expired", outcome])];
+    persist(trades);
+    return trade;
+  }
+
+  // Paper account reset: archive paper trades instead of deleting them.
+  function archivePaperTrades() {
+    const trades = load();
+    let archived = 0;
+    for (const t of trades) {
+      if (t.paper && !t.archived) {
+        t.archived = true;
+        archived += 1;
+      }
+    }
+    persist(trades);
+    return archived;
+  }
+
   return {
     list, get, create, createFromCandidate, update, close, recordMark, remove,
+    setReservedCapital, settle, archivePaperTrades,
     pnlOf, file,
   };
 }

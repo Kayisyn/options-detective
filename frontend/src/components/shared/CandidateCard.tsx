@@ -21,6 +21,7 @@ export default function CandidateCard({
 }: CandidateCardProps) {
   const { expertMode } = useMode();
   const weights = useStore((s) => s.weights);
+  const openPaperTrade = useStore((s) => s.openPaperTrade);
   return (
     <Card glow={c.rank === 1} enterDelayMs={(c.rank - 1) * 50}>
       <CardHeader>
@@ -91,6 +92,12 @@ export default function CandidateCard({
         <Button variant="ghost" size="sm" onClick={onSave} disabled={saved}
           title="Snapshot this trade into your journal">
           {saved ? "Saved ✓" : "Save"}
+        </Button>
+        <Button variant="ghost" size="sm"
+          onClick={() => openPaperTrade({ candidate: c })}
+          title="Open this as a simulated position against your paper budget"
+          data-testid="paper-candidate">
+          Paper
         </Button>
       </CardFooter>
     </Card>

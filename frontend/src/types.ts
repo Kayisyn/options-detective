@@ -163,7 +163,7 @@ export interface RankedCandidate extends Candidate {
 }
 
 export type TradeSide = "debit" | "credit";
-export type TradeStatus = "open" | "closed";
+export type TradeStatus = "open" | "closed" | "assigned" | "expired";
 
 // Journal trade, v1.1 Phase A. Prices are per unit as brokers quote them
 // (per spread for options, per share for stock); dollar P&L multiplies by
@@ -172,6 +172,11 @@ export interface JournalTrade {
   id: string;
   createdAt: string;
   status: TradeStatus;
+  paper: boolean;
+  archived: boolean;
+  expiration: string | null;
+  assignmentStrike: number | null;
+  reservedCapital: number | null; // paper trades: budget reserved at open
   symbol: string;
   strategy: string;
   side: TradeSide;
@@ -213,6 +218,54 @@ export interface NewTradeInput {
   maxProfitTarget?: number | null;
   notes?: string;
   tags?: string[];
+  paper?: boolean;
+  expiration?: string | null;
+  assignmentStrike?: number | null;
+}
+
+// v2.0 paper trading
+export interface PaperBalance {
+  initialBalance: number;
+  createdAt: string;
+  resetAt: string | null;
+  realizedPnl: number;
+  unrealizedPnl: number | null;
+  reserved: number;
+  available: number;
+  accountValue: number;
+  openCount: number;
+  closedCount: number;
+}
+
+export interface PaperStats {
+  closed: number;
+  wins: number;
+  losses: number;
+  assigned: number;
+  winRate: number | null;
+  grossProfit: number;
+  grossLoss: number;
+  profitFactor: number | null;
+  avgWin: number | null;
+  avgLoss: number | null;
+  largestWin: number | null;
+  largestLoss: number | null;
+  byStrategy: Array<{ key: string; pnl: number; count: number }>;
+  bySymbol: Array<{ key: string; pnl: number; count: number }>;
+}
+
+export interface EquityPoint {
+  at: string;
+  accountValue: number;
+  realizedPnl: number;
+  unrealizedPnl: number | null;
+  openCount: number;
+}
+
+export interface PaperState {
+  balance: PaperBalance | null;
+  trades: JournalTrade[];
+  stats: PaperStats;
 }
 
 export interface CloseTradeInput {

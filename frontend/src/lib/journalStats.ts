@@ -43,7 +43,8 @@ function buckets(trades: JournalTrade[], keyOf: (t: JournalTrade) => string): Pn
 }
 
 export function journalStats(trades: JournalTrade[]): JournalStats {
-  const closed = trades.filter((t) => t.status === "closed" && t.actualPnl !== null);
+  // "closed" here means settled any way: manual close, assignment, expiry
+  const closed = trades.filter((t) => t.status !== "open" && t.actualPnl !== null);
   const open = trades.filter((t) => t.status === "open");
   const wins = closed.filter((t) => (t.actualPnl ?? 0) > 0);
   const losses = closed.filter((t) => (t.actualPnl ?? 0) < 0);

@@ -1,7 +1,8 @@
 // Single API seam: inside Electron the preload bridge handles transport
 // (Phase 7); in the browser we go through Vite's /api proxy to Express.
 import type {
-  CalcResult, JournalTrade, Recommendation, ScreenResult,
+  CalcResult, EquityPoint, JournalTrade, PaperBalance, PaperState,
+  Recommendation, ScreenResult,
 } from "../types";
 
 type Bridge = {
@@ -15,6 +16,13 @@ type Bridge = {
   closeTrade?: (id: string, body: unknown) => Promise<JournalTrade>;
   deleteTrade?: (id: string) => Promise<{ removed: boolean }>;
   refreshMarks?: () => Promise<{ trades: JournalTrade[]; warnings: string[] }>;
+  paperGet?: () => Promise<PaperState>;
+  paperBudget?: (body: unknown) => Promise<{ budget: unknown; balance: PaperBalance }>;
+  paperOpen?: (body: unknown) => Promise<{ trade: JournalTrade; balance: PaperBalance }>;
+  paperClose?: (id: string, body: unknown) => Promise<{ trade: JournalTrade; balance: PaperBalance }>;
+  paperProcess?: () => Promise<{ trades: JournalTrade[]; balance: PaperBalance; warnings: string[] }>;
+  paperCurve?: (days: number) => Promise<{ points: EquityPoint[] }>;
+  paperReset?: (body: unknown) => Promise<{ archived: number; balance: PaperBalance }>;
 };
 
 function bridge(): Bridge | null {
@@ -67,6 +75,32 @@ export const api = {
   },
   refreshMarks(): Promise<{ trades: JournalTrade[]; warnings: string[] }> {
     return bridge()?.refreshMarks?.() ?? post("/journal/marks", {});
+  },
+  paperGet(): Promise<PaperState> {
+    return bridge()?.paperGet?.() ?? request("GET", "/paper");
+  },
+  paperBudget(initialBalance: number) {
+    return bridge()?.paperBudget?.({ initialBalance })
+      ?? post<{ budget: unknown; balance: PaperBalance }>("/paper/budget", { initialBalance });
+  },
+  paperOpen(body: unknown) {
+    return bridge()?.paperOpen?.(body)
+      ?? post<{ trade: JournalTrade; balance: PaperBalance }>("/paper/trades", body);
+  },
+  paperClose(id: string, body: unknown) {
+    return bridge()?.paperClose?.(id, body)
+      ?? post<{ trade: JournalTrade; balance: PaperBalance }>(`/paper/trades/${encodeURIComponent(id)}/close`, body);
+  },
+  paperProcess() {
+    return bridge()?.paperProcess?.()
+      ?? post<{ trades: JournalTrade[]; balance: PaperBalance; warnings: string[] }>("/paper/process", {});
+  },
+  paperCurve(days: number): Promise<{ points: EquityPoint[] }> {
+    return bridge()?.paperCurve?.(days) ?? request("GET", `/paper/equity-curve?days=${days}`);
+  },
+  paperReset(initialBalance?: number) {
+    return bridge()?.paperReset?.({ initialBalance })
+      ?? post<{ archived: number; balance: PaperBalance }>("/paper/reset", { initialBalance });
   },
   async exportTrade(text: string): Promise<void> {
     const b = bridge();
