@@ -10,12 +10,12 @@ import {
 } from "./lib/scoring";
 import type {
   CalcResult, Candidate, CloseTradeInput, DirectionalView, EquityPoint,
-  EtfFilters, EtfReference, EtfScreenResult, EtfStrategy,
+  EtfFilters, EtfReference, EtfScreenResult, EtfStrategy, IcsResult,
   JournalTrade, Leg, NewTradeInput, PaperState, Recommendation, ScreenParams,
   ScreenResult,
 } from "./types";
 
-export type View = "home" | "detector" | "calculator" | "recommender" | "journal" | "paper" | "etf";
+export type View = "home" | "detector" | "calculator" | "recommender" | "journal" | "paper" | "etf" | "ics";
 
 const LAST_SCREEN_KEY = "od.lastScreen";
 const WEIGHTS_KEY = "od.weights.v1";
@@ -95,6 +95,12 @@ interface AppState {
   etfWatchlist: string[];
   etfBusy: boolean;
 
+  // v1.3.0 Index Component Screener
+  icsEtf: string | null;
+  icsResult: IcsResult | null;
+  icsBusy: boolean;
+  icsError: string | null; // in-view (e.g. "holdings not available"), not the global banner
+
   // v1.1 §1: client-side filtering/sorting of screened candidates
   filters: CandidateFilters;
   sort: SortSpec;
@@ -142,6 +148,9 @@ interface AppState {
   loadEtfWatchlist: () => Promise<void>;
   toggleEtfWatch: (ticker: string, watched: boolean) => Promise<void>;
   analyzeEtfInDetector: (ticker: string) => Promise<void>;
+
+  openIcs: (ticker: string) => Promise<void>;
+  runIcs: (refresh?: boolean) => Promise<void>;
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -174,6 +183,10 @@ export const useStore = create<AppState>((set, get) => ({
   etfResult: null,
   etfWatchlist: [],
   etfBusy: false,
+  icsEtf: null,
+  icsResult: null,
+  icsBusy: false,
+  icsError: null,
   filters: EMPTY_FILTERS,
   sort: DEFAULT_SORT,
   weights: readStoredWeights(),
@@ -533,5 +546,37 @@ export const useStore = create<AppState>((set, get) => ({
   async analyzeEtfInDetector(ticker) {
     set({ symbol: ticker.toUpperCase(), view: "detector" });
     await get().screen();
+  },
+
+  // v1.3.0 ICS: expand an ETF's holdings and batch-screen all of them.
+  // Keep stale results visible only when re-opening the same ETF.
+  async openIcs(ticker) {
+    const etf = ticker.toUpperCase();
+    const sameEtf = get().icsResult?.etf === etf;
+    set({
+      view: "ics", icsEtf: etf, icsError: null,
+      ...(sameEtf ? {} : { icsResult: null }),
+    });
+    if (!sameEtf) await get().runIcs();
+  },
+
+  async runIcs(refresh = false) {
+    const etf = get().icsEtf;
+    if (!etf) return;
+    set({ icsBusy: true, icsError: null });
+    try {
+      const { capital, riskTolerancePct, definedRiskOnly } = get();
+      const icsResult = await api.icsBatch({
+        etf,
+        refresh,
+        constraints: { capital, riskTolerancePct, definedRiskOnly },
+      });
+      set({ icsResult, icsBusy: false });
+    } catch (err) {
+      set({
+        icsBusy: false,
+        icsError: err instanceof Error ? err.message : String(err),
+      });
+    }
   },
 }));

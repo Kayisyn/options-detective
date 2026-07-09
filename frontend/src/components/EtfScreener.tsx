@@ -250,6 +250,11 @@ export default function EtfScreener() {
                               onClick={(ev) => { ev.stopPropagation(); s.analyzeEtfInDetector(e.ticker); }}>
                               Analyze in Detector →
                             </Button>
+                            <Button variant="secondary" size="xs" data-testid="etf-expand-holdings"
+                              title="Screen option strategies across every holding of this ETF"
+                              onClick={(ev) => { ev.stopPropagation(); s.openIcs(e.ticker); }}>
+                              Expand holdings ⌄
+                            </Button>
                             <Button variant="ghost" size="xs"
                               onClick={(ev) => { ev.stopPropagation(); s.toggleEtfWatch(e.ticker, !s.etfWatchlist.includes(e.ticker)); }}>
                               {s.etfWatchlist.includes(e.ticker) ? "★ In watchlist" : "☆ Watch"}

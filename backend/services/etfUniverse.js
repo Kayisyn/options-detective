@@ -6,10 +6,15 @@
 // YTD) are fetched live and merged on top (see etfScreener.js).
 //
 // AUM is in USD billions, approximate. expenseRatio is a fraction
-// (0.0003 = 0.03%). Curated for high liquidity / liquid options across
-// Vanguard + iShares.
+// (0.0003 = 0.03%). Curated for high liquidity / liquid options — mostly
+// Vanguard + iShares, plus QQQ and SPY (added in v1.3.0): the two most
+// options-liquid ETFs in existence and the primary component-screening
+// targets in the ICS spec.
 
 const ETF_UNIVERSE = [
+  // --- flagship index ETFs (v1.3.0) ---
+  { ticker: "QQQ", name: "Invesco QQQ Trust (Nasdaq-100)", issuer: "Invesco", sector: "US Equity - Growth", assetClass: "Equity", expenseRatio: 0.0020, aumBillions: 300 },
+  { ticker: "SPY", name: "SPDR S&P 500 ETF Trust", issuer: "State Street", sector: "US Equity - Broad", assetClass: "Equity", expenseRatio: 0.0009, aumBillions: 600 },
   // --- Vanguard: broad US equity ---
   { ticker: "VOO", name: "Vanguard S&P 500", issuer: "Vanguard", sector: "US Equity - Broad", assetClass: "Equity", expenseRatio: 0.0003, aumBillions: 1300 },
   { ticker: "VTI", name: "Vanguard Total Stock Market", issuer: "Vanguard", sector: "US Equity - Broad", assetClass: "Equity", expenseRatio: 0.0003, aumBillions: 1500 },

@@ -346,6 +346,58 @@ export interface EtfScreenResult {
   anyMetrics: boolean;
 }
 
+// v1.3.0 Index Component Screener
+export interface EtfHolding {
+  symbol: string;
+  weight: number;        // 0-1, approximate
+  sector: string | null; // null for yfinance-sourced holdings
+  rank: number;          // 1 = largest weight
+}
+
+export type HoldingsSource = "curated" | "yfinance-top10";
+
+export interface HoldingsInfo {
+  etf: string;
+  source: HoldingsSource;
+  asOf: string;
+  holdings: EtfHolding[];
+  totalHoldings: number;
+}
+
+// a Detector candidate + the holding it came from (curves stripped;
+// the Calculator recomputes them on open)
+export type IcsCandidate = Candidate & { holding: EtfHolding };
+
+export interface IcsSkipped {
+  symbol: string;
+  reason: string;
+}
+
+export interface IcsConstraints {
+  directionalView?: DirectionalView;
+  capital?: number;
+  riskTolerancePct?: number;
+  definedRiskOnly?: boolean;
+  minDTE?: number;
+  maxDTE?: number;
+}
+
+export interface IcsResult {
+  etf: string;
+  source: HoldingsSource;
+  asOf: string;
+  totalHoldings: number;
+  holdings: EtfHolding[];
+  screenedSymbols: number;
+  skipped: IcsSkipped[];
+  candidates: IcsCandidate[];
+  totalCandidates: number;
+  constraints: Required<IcsConstraints> & { maxExpirations: number };
+  screeningTimeMs: number;
+  screenedAt: string;
+  cached: boolean;
+}
+
 export interface CloseTradeInput {
   exitPrice: number;
   exitDate?: string;

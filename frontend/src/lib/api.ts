@@ -2,8 +2,8 @@
 // (Phase 7); in the browser we go through Vite's /api proxy to Express.
 import type {
   CalcResult, EquityPoint, EtfDetail, EtfFilters, EtfRecord, EtfReference,
-  EtfScreenResult, EtfStrategy, JournalTrade, PaperBalance, PaperState,
-  Recommendation, ScreenResult,
+  EtfScreenResult, EtfStrategy, HoldingsInfo, IcsConstraints, IcsResult,
+  JournalTrade, PaperBalance, PaperState, Recommendation, ScreenResult,
 } from "../types";
 
 type Bridge = {
@@ -31,6 +31,8 @@ type Bridge = {
   etfDetail?: (ticker: string) => Promise<{ etf: EtfDetail }>;
   etfWatchlist?: () => Promise<{ etfs: EtfRecord[] }>;
   etfWatchToggle?: (body: unknown) => Promise<{ watchlist: string[] }>;
+  icsHoldings?: (ticker: string) => Promise<HoldingsInfo>;
+  icsBatch?: (body: unknown) => Promise<IcsResult>;
 };
 
 function bridge(): Bridge | null {
@@ -133,6 +135,13 @@ export const api = {
   etfWatchToggle(ticker: string, action: "add" | "remove") {
     return bridge()?.etfWatchToggle?.({ ticker, action })
       ?? post<{ watchlist: string[] }>("/etf-screener/watchlist", { ticker, action });
+  },
+  icsHoldings(ticker: string): Promise<HoldingsInfo> {
+    return bridge()?.icsHoldings?.(ticker)
+      ?? request("GET", `/screener/etf/${encodeURIComponent(ticker)}/holdings`);
+  },
+  icsBatch(body: { etf: string; constraints?: IcsConstraints; refresh?: boolean }): Promise<IcsResult> {
+    return bridge()?.icsBatch?.(body) ?? post<IcsResult>("/screener/batch", body);
   },
   async exportTrade(text: string): Promise<void> {
     const b = bridge();

@@ -8,6 +8,7 @@ const dataRouter = require("./routes/data");
 const journalRouter = require("./routes/journal");
 const paperRouter = require("./routes/paper");
 const etfRouter = require("./routes/etf");
+const screenerRouter = require("./routes/screener");
 const { callEngine, engineClient } = require("./services/mathEngine");
 
 const app = express();
@@ -38,6 +39,7 @@ app.use("/journal", journalRouter);
 app.use("/trades", journalRouter); // pre-v1.1 alias (old bridge builds)
 app.use("/paper", paperRouter);
 app.use("/etf-screener", etfRouter);
+app.use("/screener", screenerRouter);
 
 // JSON everywhere: unknown routes and unhandled errors never leak HTML.
 app.use((req, res) => {
