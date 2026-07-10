@@ -99,6 +99,18 @@ test("v1.3.1: candidate save honors edited entry/targets, keeps derived defaults
   assert.throws(() => store.createFromCandidate({ candidate: CANDIDATE, entryPrice: "abc" }), TypeError);
 });
 
+test("v1.3.3: candidate save takes a contract count — whole contracts only", () => {
+  const { store } = tmpStore();
+  const sized = store.createFromCandidate({ candidate: CANDIDATE, entryQty: 3 });
+  assert.equal(sized.entryQty, 3);
+  assert.equal(sized.entryPrice, 3.8); // per-share entry unaffected by size
+  assert.equal(store.createFromCandidate({ candidate: CANDIDATE }).entryQty, 1); // default
+
+  assert.throws(() => store.createFromCandidate({ candidate: CANDIDATE, entryQty: 0 }), TypeError);
+  assert.throws(() => store.createFromCandidate({ candidate: CANDIDATE, entryQty: 1.5 }), TypeError);
+  assert.throws(() => store.createFromCandidate({ candidate: CANDIDATE, entryQty: -2 }), TypeError);
+});
+
 test("v1 snapshot entries migrate to open v2 trades on read", () => {
   const { store, dir } = tmpStore();
   fs.writeFileSync(path.join(dir, "trades.json"), JSON.stringify([{

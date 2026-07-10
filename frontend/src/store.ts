@@ -146,7 +146,10 @@ interface AppState {
 
   loadPaper: (days?: number) => Promise<void>;
   createPaperAccount: (initialBalance: number) => Promise<void>;
-  openPaperTrade: (body: NewTradeInput | { candidate: Candidate }) => Promise<boolean>;
+  openPaperTrade: (
+    body: NewTradeInput
+      | ({ candidate: Candidate; entryQty?: number } & JournalSaveOptions),
+  ) => Promise<boolean>;
   closePaperTrade: (id: string, input: CloseTradeInput) => Promise<boolean>;
   processPaper: (opts?: { quiet?: boolean }) => Promise<void>;
   resetPaper: (initialBalance?: number) => Promise<void>;

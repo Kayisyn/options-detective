@@ -70,6 +70,21 @@ test("opening reserves capital and enforces the budget", () => {
   assert.throws(() => paper.open({ candidate: CSP_CANDIDATE }), /insufficient paper balance/);
 });
 
+test("v1.3.3: candidate opens scale reservation by contract count", () => {
+  const { paper } = rig();
+  paper.setBudget(20_000);
+  // 2 contracts of a $9,300-capital CSP -> $18,600 reserved, still fits
+  const { trade, balance } = paper.open({ candidate: CSP_CANDIDATE, entryQty: 2 });
+  assert.equal(trade.entryQty, 2);
+  assert.equal(trade.reservedCapital, 18_600);
+  assert.equal(balance.available, 1_400);
+  // 3 contracts would need $27,900 on a fresh $20k account -> rejected
+  const fresh = rig();
+  fresh.paper.setBudget(20_000);
+  assert.throws(() => fresh.paper.open({ candidate: CSP_CANDIDATE, entryQty: 3 }),
+    /insufficient paper balance/);
+});
+
 test("credit trades without a loss basis are rejected", () => {
   const { paper } = rig();
   paper.setBudget(50_000);

@@ -43,11 +43,11 @@ export default function Calculator() {
   const candidate = s.selected;
   const result = s.calcResult;
   const [draftLegs, setDraftLegs] = useState<Leg[] | null>(null);
-  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [captureMode, setCaptureMode] = useState<"journal" | "paper" | null>(null);
 
   useEffect(() => {
     setDraftLegs(null); // reset edits whenever a new candidate is opened
-    setShowSaveModal(false);
+    setCaptureMode(null);
   }, [candidate?.id]);
 
   if (!candidate) {
@@ -96,14 +96,20 @@ export default function Calculator() {
             data-testid="compare-candidates">
             Compare candidates →
           </Button>
-          <Button onClick={() => setShowSaveModal(true)} data-testid="save-to-journal">
+          <Button variant="secondary" onClick={() => setCaptureMode("paper")}
+            title="Open this position in the risk-free paper simulator"
+            data-testid="log-paper-trade">
+            Log as Paper Trade
+          </Button>
+          <Button onClick={() => setCaptureMode("journal")} data-testid="save-to-journal">
             Save to Journal
           </Button>
         </div>
       </div>
 
-      {showSaveModal && (
-        <SaveToJournalModal candidate={candidate} onClose={() => setShowSaveModal(false)} />
+      {captureMode && (
+        <TradeCaptureModal candidate={candidate} mode={captureMode}
+          onClose={() => setCaptureMode(null)} />
       )}
 
       {s.status === "calculating" && !result && <CalculatorSkeleton />}
@@ -251,56 +257,80 @@ export default function Calculator() {
   );
 }
 
-// v1.3.1 Bug 1: save the on-screen strategy to the journal without leaving
-// the Calculator. Pre-filled from the candidate; entry price and targets are
-// editable and ride along as overrides — the full candidate snapshot is
-// still stored, so journal marks keep working.
-function SaveToJournalModal({ candidate, onClose }: {
-  candidate: Candidate; onClose: () => void;
+// v1.3.1 Bug 1 (+ v1.3.3 paper mode): capture the on-screen strategy into
+// the journal or the paper simulator without leaving the Calculator.
+// Pre-filled from the candidate; entry price, size and targets are editable
+// and ride along as overrides — the full candidate snapshot is still stored,
+// so marks and paper settlement keep working. Paper mode reserves capital
+// server-side and rejects the open if the paper budget can't cover it.
+function TradeCaptureModal({ candidate, mode, onClose }: {
+  candidate: Candidate; mode: "journal" | "paper"; onClose: () => void;
 }) {
   const saveToJournal = useStore((st) => st.saveToJournal);
+  const openPaperTrade = useStore((st) => st.openPaperTrade);
+  const paper = mode === "paper";
   const isCredit = candidate.sizing.totalDebit < 0;
   const [entryPrice, setEntryPrice] = useState(
     (Math.abs(candidate.sizing.totalDebit) / 100).toFixed(2));
+  const [qty, setQty] = useState("1");
   const [maxLoss, setMaxLoss] = useState(
     candidate.payoff.maxLoss === null ? "" : String(candidate.payoff.maxLoss));
   const [maxProfit, setMaxProfit] = useState(
     candidate.payoff.maxProfit === null ? "" : String(candidate.payoff.maxProfit));
   const [note, setNote] = useState("");
   const [priceError, setPriceError] = useState<string | undefined>();
+  const [qtyError, setQtyError] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
 
   async function save() {
     const price = Number(entryPrice);
-    if (entryPrice.trim() === "" || !Number.isFinite(price) || price <= 0) {
-      setPriceError("Entry price is required (per share, > 0)");
-      return;
-    }
-    setPriceError(undefined);
+    const priceBad = entryPrice.trim() === "" || !Number.isFinite(price) || price <= 0;
+    setPriceError(priceBad ? "Entry price is required (per share, > 0)" : undefined);
+    const contracts = Number(qty);
+    const qtyBad = paper && (!Number.isInteger(contracts) || contracts <= 0);
+    setQtyError(qtyBad ? "Whole contracts only (≥ 1)" : undefined);
+    if (priceBad || qtyBad) return;
+
     setSaving(true);
-    const ok = await saveToJournal(candidate, {
+    const overrides = {
       note,
       entryPrice: price,
       maxLossTarget: maxLoss.trim() === "" ? null : Number(maxLoss),
       maxProfitTarget: maxProfit.trim() === "" ? null : Number(maxProfit),
-    });
+    };
+    const ok = paper
+      ? await openPaperTrade({ candidate, entryQty: contracts, ...overrides })
+      : await saveToJournal(candidate, overrides);
     setSaving(false);
     if (ok) onClose(); // success toast comes from the store
   }
 
+  const cta = paper ? "Log as Paper Trade" : "Save to Journal";
   return (
-    <Modal open onClose={onClose} testid="save-journal-modal" maxWidth="max-w-md">
-      <h3 className="mb-1 text-base font-medium">Save to journal</h3>
+    <Modal open onClose={onClose} testid="trade-capture-modal" maxWidth="max-w-md">
+      <h3 className="mb-1 text-base font-medium">
+        {paper ? "Log as paper trade" : "Save to journal"}
+      </h3>
       <p className="mb-4 text-sm text-content-3">
         <span className="font-mono font-semibold text-content-1">{candidate.symbol}</span>
         {" · "}<span className="capitalize">{strategyLabel(candidate.strategyType)}</span>
-        {" · "}expires {shortDate(candidate.expiration)} · logged as open, dated today
+        {" · "}expires {shortDate(candidate.expiration)}
+        {paper
+          ? " · reserves capital from your paper budget"
+          : " · logged as open, dated today"}
       </p>
       <div className="space-y-3">
-        <FormInput label={`Entry price (per share, ${isCredit ? "credit" : "debit"})`}
-          type="number" step="0.01" value={entryPrice} error={priceError}
-          data-testid="save-entry-price"
-          onChange={(e) => setEntryPrice(e.target.value)} />
+        <div className={paper ? "grid grid-cols-2 gap-3" : ""}>
+          <FormInput label={`Entry price (per share, ${isCredit ? "credit" : "debit"})`}
+            type="number" step="0.01" value={entryPrice} error={priceError}
+            data-testid="save-entry-price"
+            onChange={(e) => setEntryPrice(e.target.value)} />
+          {paper && (
+            <FormInput label="Contracts" type="number" step="1" min="1" value={qty}
+              error={qtyError} data-testid="save-qty"
+              onChange={(e) => setQty(e.target.value)} />
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <FormInput label="Max loss target ($)" type="number" step="1" value={maxLoss}
             hint="blank = none" onChange={(e) => setMaxLoss(e.target.value)} />
@@ -315,8 +345,8 @@ function SaveToJournalModal({ candidate, onClose }: {
         </label>
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={save} disabled={saving} data-testid="save-journal-submit">
-            {saving ? "Saving…" : "Save to Journal"}
+          <Button onClick={save} disabled={saving} data-testid="save-capture-submit">
+            {saving ? "Saving…" : cta}
           </Button>
         </div>
       </div>

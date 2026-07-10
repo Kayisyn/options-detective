@@ -183,12 +183,17 @@ function createTradeStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
   // values, and an explicit null target means "no target".
   function createFromCandidate({
     candidate, exportText = null, note = "", paper = false,
-    entryPrice, maxLossTarget, maxProfitTarget,
+    entryPrice, entryQty, maxLossTarget, maxProfitTarget,
   } = {}) {
     if (!candidate || typeof candidate !== "object"
         || typeof candidate.strategyType !== "string"
         || !Array.isArray(candidate.legs) || candidate.legs.length === 0) {
       throw new TypeError("body must include a candidate with strategyType and legs");
+    }
+    // v1.3.3: position size is overridable (paper modal); whole contracts only
+    if (entryQty !== undefined && entryQty !== null
+        && (!Number.isInteger(entryQty) || entryQty <= 0)) {
+      throw new TypeError("entryQty must be a positive whole number of contracts");
     }
     const totalDebit = candidate?.sizing?.totalDebit ?? 0;
     const nowIso = now().toISOString();
@@ -213,7 +218,7 @@ function createTradeStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
       entryPrice: entryPrice === undefined || entryPrice === null
         ? round2(Math.abs(totalDebit) / 100)
         : round2(assertFiniteNumber(entryPrice, "entryPrice", { positive: true })),
-      entryQty: 1,
+      entryQty: entryQty ?? 1,
       multiplier: 100,
       entryDate: nowIso,
       maxLossTarget: maxLossTarget === undefined

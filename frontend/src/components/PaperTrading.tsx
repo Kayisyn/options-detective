@@ -30,25 +30,30 @@ function dteOf(expiration: string | null): number | null {
   return Math.round((Date.parse(`${expiration}T21:00:00Z`) - Date.now()) / 86_400_000);
 }
 
-function EquityCurve({ points }: { points: EquityPoint[] }) {
+function EquityCurve({ points, days }: { points: EquityPoint[]; days: number }) {
   useTheme();
   const line = cssVar("--od-accent-blue", "#3b82f6");
   const grid = cssVar("--od-dark-700", "#2a3050");
   const panel = cssVar("--od-dark-800", "#1a1f3a");
   const axis = cssVar("--od-text-3", "#9ca3af");
+  // short ranges tick by time of day; longer ones by date (v1.3.3)
+  const intraday = days > 0 && days <= 7;
   if (points.length < 2) {
     return (
       <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-dark-600 text-sm text-content-3">
-        The equity curve appears after a few snapshots (open, close or process positions).
+        {days > 0
+          ? "No snapshots in this range yet — try a wider range, or open/close/process positions."
+          : "The equity curve appears after a few snapshots (open, close or process positions)."}
       </div>
     );
   }
   return (
-    <div className="h-48 w-full" data-testid="equity-curve">
+    <div key={days} className="h-48 w-full animate-fade-in" data-testid="equity-curve">
       <ResponsiveContainer>
         <AreaChart data={points} margin={{ top: 8, right: 12, bottom: 0, left: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={grid} opacity={0.2} />
-          <XAxis dataKey="at" tickFormatter={(v: string) => v.slice(5, 10)}
+          <XAxis dataKey="at"
+            tickFormatter={(v: string) => (intraday ? v.slice(11, 16) : v.slice(5, 10))}
             stroke={axis} fontSize={11} minTickGap={40} />
           <YAxis tickFormatter={(v: number) => money(v)} stroke={axis} fontSize={11}
             width={78} domain={["auto", "auto"]} />
@@ -193,20 +198,20 @@ export default function PaperTrading() {
 
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium uppercase tracking-wide text-content-3">Equity curve</h3>
-        <div className="flex gap-1.5">
-          {[30, 90, 0].map((d) => (
+        <div className="flex gap-1.5" data-testid="curve-ranges">
+          {([[1, "1d"], [7, "1w"], [30, "1m"], [90, "3m"], [180, "6m"], [0, "All"]] as const).map(([d, label]) => (
             <button key={d} onClick={() => setCurveDays(d)}
               className={`rounded border px-2 py-1 text-xs transition-all duration-150 ease-out ${
                 curveDays === d
                   ? "border-accent-blue/60 bg-accent-blue/15 text-accent-blue"
                   : "border-dark-600 text-content-3 hover:border-dark-500"
               }`}>
-              {d === 0 ? "All" : `${d}d`}
+              {label}
             </button>
           ))}
         </div>
       </div>
-      <EquityCurve points={s.paperCurve} />
+      <EquityCurve points={s.paperCurve} days={curveDays} />
 
       <h3 className="text-sm font-medium uppercase tracking-wide text-content-3">
         Open positions ({open.length})
