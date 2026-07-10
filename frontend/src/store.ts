@@ -89,6 +89,8 @@ interface AppState {
   savedTrades: JournalTrade[];
   paper: PaperState | null;      // null until first load
   paperCurve: EquityPoint[];
+  paperCurveDays: number;        // sticky range so background refreshes keep it
+  paperMarking: boolean;         // a mark pass is in flight (prevents overlap)
 
   // v2.0 ETF screener
   etfReference: EtfReference | null;
@@ -146,7 +148,7 @@ interface AppState {
   createPaperAccount: (initialBalance: number) => Promise<void>;
   openPaperTrade: (body: NewTradeInput | { candidate: Candidate }) => Promise<boolean>;
   closePaperTrade: (id: string, input: CloseTradeInput) => Promise<boolean>;
-  processPaper: () => Promise<void>;
+  processPaper: (opts?: { quiet?: boolean }) => Promise<void>;
   resetPaper: (initialBalance?: number) => Promise<void>;
 
   loadEtfReference: () => Promise<void>;
@@ -187,6 +189,8 @@ export const useStore = create<AppState>((set, get) => ({
   savedTrades: [],
   paper: null,
   paperCurve: [],
+  paperCurveDays: 90,
+  paperMarking: false,
   etfReference: null,
   etfResult: null,
   etfWatchlist: [],
@@ -448,10 +452,11 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  async loadPaper(days = 90) {
+  async loadPaper(days) {
+    const resolved = days ?? get().paperCurveDays;
     try {
-      const [state, curve] = await Promise.all([api.paperGet(), api.paperCurve(days)]);
-      set({ paper: state, paperCurve: curve.points });
+      const [state, curve] = await Promise.all([api.paperGet(), api.paperCurve(resolved)]);
+      set({ paper: state, paperCurve: curve.points, paperCurveDays: resolved });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }
@@ -491,16 +496,30 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  async processPaper() {
+  // v1.3.2: also runs quietly in the background (on Paper-tab load and every
+  // 60s) so unrealized P&L and the equity curve track the market without a
+  // button press. Quiet runs never toast and never raise the error banner —
+  // a transient quote failure just retries on the next tick.
+  async processPaper(opts = {}) {
+    const { quiet = false } = opts;
+    if (get().paperMarking) return; // a pass is already in flight
+    const openCount = get().paper?.trades.filter(
+      (t) => t.status === "open").length ?? 0;
+    if (quiet && openCount === 0) return; // nothing to mark or settle
+    set({ paperMarking: true });
     try {
       const { warnings } = await api.paperProcess();
       await Promise.all([get().loadPaper(), get().loadJournal()]);
-      get().showToast(warnings.length > 0
-        ? `Processed — ${warnings.length} warning${warnings.length > 1 ? "s" : ""}`
-        : "✓ Marks & expirations processed");
-      if (warnings.length > 0) set({ error: warnings.join(" · ") });
+      if (!quiet) {
+        get().showToast(warnings.length > 0
+          ? `Processed — ${warnings.length} warning${warnings.length > 1 ? "s" : ""}`
+          : "✓ Marks & expirations processed");
+        if (warnings.length > 0) set({ error: warnings.join(" · ") });
+      }
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      if (!quiet) set({ error: err instanceof Error ? err.message : String(err) });
+    } finally {
+      set({ paperMarking: false });
     }
   },
 

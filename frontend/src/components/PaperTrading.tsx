@@ -79,6 +79,20 @@ export default function PaperTrading() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load on mount + range change
   }, [curveDays]);
 
+  // v1.3.2: track the market without a button press — one quiet mark pass on
+  // mount, then every 60s while this view is open (matches the data layer's
+  // 60s quote cache; more often would only re-read the cache). Skipped when
+  // the window is hidden or a pass is already running.
+  useEffect(() => {
+    const st = useStore.getState();
+    st.loadPaper().then(() => useStore.getState().processPaper({ quiet: true }));
+    const timer = setInterval(() => {
+      if (document.hidden) return;
+      useStore.getState().processPaper({ quiet: true });
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
   const paper = s.paper;
   const balance = paper?.balance ?? null;
 
@@ -109,6 +123,8 @@ export default function PaperTrading() {
   const settled = paper.trades.filter((t) => t.status !== "open");
   const stats = paper.stats;
   const totalReturn = balance.accountValue - balance.initialBalance;
+  const latestMarkAt = open.reduce<string | null>(
+    (acc, t) => (t.lastMark && (!acc || t.lastMark.at > acc) ? t.lastMark.at : acc), null);
 
   async function onProcess() {
     setBusy(true);
@@ -126,6 +142,13 @@ export default function PaperTrading() {
             <b className={pnlClass(totalReturn)}>{money(balance.accountValue, 2)}</b>{" "}
             ({totalReturn >= 0 ? "+" : ""}{((totalReturn / balance.initialBalance) * 100).toFixed(2)}%)
             — simulated money, engine marks, cash-settled assignment.
+            {open.length > 0 && (
+              <span className="text-content-3" data-testid="paper-mark-freshness">
+                {" "}Marks auto-refresh every minute
+                {latestMarkAt ? ` · last ${latestMarkAt.slice(11, 16)} UTC` : " · fetching…"}
+                {s.paperMarking && " ⟳"}
+              </span>
+            )}
           </p>
         </div>
         <div className="flex gap-2">
@@ -163,7 +186,7 @@ export default function PaperTrading() {
         <MetricBox label="Unrealized"
           value={balance.unrealizedPnl === null ? "—" : money(balance.unrealizedPnl, 2)}
           highlight={(balance.unrealizedPnl ?? 0) > 0 ? "green" : (balance.unrealizedPnl ?? 0) < 0 ? "red" : "none"}
-          hint="From the latest marks — run Process to refresh" />
+          hint="From theoretical marks, auto-refreshed every minute while this tab is open" />
         <MetricBox label="Win rate" value={stats.winRate === null ? "—" : pct(stats.winRate)}
           hint={`Profit factor ${stats.profitFactor ?? "—"} · ${stats.assigned} assigned`} />
       </div>
@@ -208,6 +231,13 @@ export default function PaperTrading() {
                   <Badge variant={t.side === "debit" ? "blue" : "orange"}>{t.side}</Badge>
                   <span className="font-mono text-sm text-content-2">
                     ${t.entryPrice.toFixed(2)} × {t.entryQty}
+                    {t.lastMark?.mark != null && (
+                      <span title={`Current theoretical value per share (marked ${t.lastMark.at.slice(11, 16)} UTC)`}>
+                        <span className="text-content-3"> → </span>
+                        ${Math.abs(t.lastMark.mark).toFixed(2)}
+                        {t.lastMark.stale && <span className="text-accent-orange" title="Quotes are stale (market closed?)"> ⚠</span>}
+                      </span>
+                    )}
                   </span>
                   <span className="text-xs text-content-3"
                     title="Capital reserved against this position">
@@ -218,7 +248,10 @@ export default function PaperTrading() {
                       {dte <= 0 ? "expiry due" : `${dte}d`}
                     </Badge>
                   )}
-                  <span className={`ml-auto font-mono font-bold tabular-nums ${pnlClass(unrl)}`}>
+                  <span className={`ml-auto font-mono font-bold tabular-nums ${pnlClass(unrl)}`}
+                    title={unrl === null
+                      ? "No pricing model for this position — it was logged manually without a linked candidate, so it can't be repriced. Close it manually at your own exit price."
+                      : "Unrealized P&L at the latest theoretical mark"}>
                     {unrl === null ? "—" : money(unrl)}
                     {unrl !== null && <span className="ml-1 text-[10px] font-normal text-content-3">unrl</span>}
                   </span>
