@@ -79,6 +79,13 @@ function registerIpc() {
   ipcMain.handle("api:paper:process", () => forward("/paper/process", {}));
   ipcMain.handle("api:paper:curve", (_event, { days }) => forward(`/paper/equity-curve?days=${Number(days) || 30}`));
   ipcMain.handle("api:paper:reset", (_event, body) => forward("/paper/reset", body));
+  ipcMain.handle("api:etf:reference", () => forward("/etf-screener/reference"));
+  ipcMain.handle("api:etf:universe", () => forward("/etf-screener/universe"));
+  ipcMain.handle("api:etf:screen", (_event, body) => forward("/etf-screener/screen", body));
+  ipcMain.handle("api:etf:refresh", (_event, body) => forward("/etf-screener/refresh", body));
+  ipcMain.handle("api:etf:detail", (_event, { ticker }) => forward(`/etf-screener/etf/${encodeURIComponent(ticker)}`));
+  ipcMain.handle("api:etf:watchlist:get", () => forward("/etf-screener/watchlist"));
+  ipcMain.handle("api:etf:watchlist:set", (_event, body) => forward("/etf-screener/watchlist", body));
   ipcMain.handle("api:export", (_event, { text }) => {
     clipboard.writeText(String(text ?? ""));
     return true;

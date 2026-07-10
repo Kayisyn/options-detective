@@ -1,7 +1,8 @@
 // Single API seam: inside Electron the preload bridge handles transport
 // (Phase 7); in the browser we go through Vite's /api proxy to Express.
 import type {
-  CalcResult, EquityPoint, JournalTrade, PaperBalance, PaperState,
+  CalcResult, EquityPoint, EtfDetail, EtfFilters, EtfRecord, EtfReference,
+  EtfScreenResult, EtfStrategy, JournalTrade, PaperBalance, PaperState,
   Recommendation, ScreenResult,
 } from "../types";
 
@@ -23,6 +24,13 @@ type Bridge = {
   paperProcess?: () => Promise<{ trades: JournalTrade[]; balance: PaperBalance; warnings: string[] }>;
   paperCurve?: (days: number) => Promise<{ points: EquityPoint[] }>;
   paperReset?: (body: unknown) => Promise<{ archived: number; balance: PaperBalance }>;
+  etfReference?: () => Promise<EtfReference>;
+  etfUniverse?: () => Promise<{ etfs: EtfRecord[] }>;
+  etfScreen?: (body: unknown) => Promise<EtfScreenResult>;
+  etfRefresh?: (body: unknown) => Promise<{ refreshed: number; errors?: string[]; universe: EtfRecord[] }>;
+  etfDetail?: (ticker: string) => Promise<{ etf: EtfDetail }>;
+  etfWatchlist?: () => Promise<{ etfs: EtfRecord[] }>;
+  etfWatchToggle?: (body: unknown) => Promise<{ watchlist: string[] }>;
 };
 
 function bridge(): Bridge | null {
@@ -101,6 +109,30 @@ export const api = {
   paperReset(initialBalance?: number) {
     return bridge()?.paperReset?.({ initialBalance })
       ?? post<{ archived: number; balance: PaperBalance }>("/paper/reset", { initialBalance });
+  },
+  etfReference(): Promise<EtfReference> {
+    return bridge()?.etfReference?.() ?? request("GET", "/etf-screener/reference");
+  },
+  etfUniverse(): Promise<{ etfs: EtfRecord[] }> {
+    return bridge()?.etfUniverse?.() ?? request("GET", "/etf-screener/universe");
+  },
+  etfScreen(body: { filters: EtfFilters; strategy: EtfStrategy; limit?: number }): Promise<EtfScreenResult> {
+    return bridge()?.etfScreen?.(body) ?? post<EtfScreenResult>("/etf-screener/screen", body);
+  },
+  etfRefresh(tickers?: string[]) {
+    return bridge()?.etfRefresh?.({ tickers })
+      ?? post<{ refreshed: number; errors?: string[]; universe: EtfRecord[] }>("/etf-screener/refresh", { tickers });
+  },
+  etfDetail(ticker: string): Promise<{ etf: EtfDetail }> {
+    return bridge()?.etfDetail?.(ticker)
+      ?? request("GET", `/etf-screener/etf/${encodeURIComponent(ticker)}`);
+  },
+  etfWatchlist(): Promise<{ etfs: EtfRecord[] }> {
+    return bridge()?.etfWatchlist?.() ?? request("GET", "/etf-screener/watchlist");
+  },
+  etfWatchToggle(ticker: string, action: "add" | "remove") {
+    return bridge()?.etfWatchToggle?.({ ticker, action })
+      ?? post<{ watchlist: string[] }>("/etf-screener/watchlist", { ticker, action });
   },
   async exportTrade(text: string): Promise<void> {
     const b = bridge();

@@ -6,6 +6,7 @@ Python installation:
     od-math.exe engine              one-shot: JSON request on stdin
     od-math.exe engine --serve      persistent line-delimited JSON
     od-math.exe market_data         market data fetch: JSON on stdin
+    od-math.exe etf_metrics         ETF screener metrics: JSON on stdin
 
 One executable for all entry points keeps a single copy of numpy/scipy in
 the bundle. Exit codes mirror the dev-mode scripts: 0 whenever a JSON
@@ -24,8 +25,11 @@ def main() -> int:
     if command == "market_data":
         import market_data
         return market_data.main()
+    if command == "etf_metrics":
+        import etf_metrics
+        return etf_metrics.main()
     json.dump({"ok": False,
-               "error": "usage: od-math [engine [--serve] | market_data]"},
+               "error": "usage: od-math [engine [--serve] | market_data | etf_metrics]"},
               sys.stdout)
     sys.stdout.write("\n")
     return 2

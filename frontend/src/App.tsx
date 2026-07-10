@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Calculator from "./components/Calculator";
 import Detector from "./components/Detector";
+import EtfScreener from "./components/EtfScreener";
 import Home from "./components/Home";
 import Journal from "./components/Journal";
 import PaperTrading from "./components/PaperTrading";
@@ -19,6 +20,7 @@ const TABS: Array<{ id: View; label: string; hint: string }> = [
   { id: "recommender", label: "3 · Recommender", hint: "Compare and export" },
   { id: "journal", label: "Journal", hint: "Your saved trades" },
   { id: "paper", label: "Paper", hint: "Risk-free simulator with a paper budget" },
+  { id: "etf", label: "ETFs", hint: "Discover ETF option-selling candidates" },
 ];
 
 export default function App() {
@@ -67,6 +69,7 @@ export default function App() {
     recommender: (screenResult?.candidates.length ?? 0) > 0,
     journal: true,
     paper: true,
+    etf: true,
   };
 
   return (
@@ -153,6 +156,7 @@ export default function App() {
           {view === "recommender" && <Recommender />}
           {view === "journal" && <Journal />}
           {view === "paper" && <PaperTrading />}
+          {view === "etf" && <EtfScreener />}
         </ViewTransition>
       </main>
     </div>
