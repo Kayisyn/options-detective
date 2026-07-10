@@ -4,11 +4,12 @@ import { money, num, pct, shortDate, signed, strategyLabel } from "../lib/format
 import PayoffChart from "./shared/PayoffChart";
 import GreeksSummary from "./shared/GreeksSummary";
 import Button from "./ui/Button";
-import { compactFieldClasses } from "./ui/Input";
+import Modal from "./ui/Modal";
+import { FormInput, compactFieldClasses } from "./ui/Input";
 import { CalculatorSkeleton } from "./shared/Skeleton";
 import { useMode } from "../contexts/ModeContext";
 import { BEST_FOR } from "../lib/copy";
-import type { CalcResult, Leg } from "../types";
+import type { CalcResult, Candidate, Leg } from "../types";
 
 // Plain-language readout of the payoff shape. Reads only backend-provided
 // breakevens and curve signs — no finance computed here.
@@ -42,9 +43,11 @@ export default function Calculator() {
   const candidate = s.selected;
   const result = s.calcResult;
   const [draftLegs, setDraftLegs] = useState<Leg[] | null>(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
 
   useEffect(() => {
     setDraftLegs(null); // reset edits whenever a new candidate is opened
+    setShowSaveModal(false);
   }, [candidate?.id]);
 
   if (!candidate) {
@@ -86,10 +89,22 @@ export default function Calculator() {
             indicative marks
           </span>
         )}
-        <Button className="ml-auto" onClick={() => s.recommend()}>
-          Compare candidates →
-        </Button>
+        <div className="ml-auto flex gap-2">
+          {/* v1.3.1 Bug 2: returns to the list this candidate came from
+              (ICS results or the Recommender), never the wrong one */}
+          <Button variant="secondary" onClick={() => s.compareCandidates()}
+            data-testid="compare-candidates">
+            Compare candidates →
+          </Button>
+          <Button onClick={() => setShowSaveModal(true)} data-testid="save-to-journal">
+            Save to Journal
+          </Button>
+        </div>
       </div>
+
+      {showSaveModal && (
+        <SaveToJournalModal candidate={candidate} onClose={() => setShowSaveModal(false)} />
+      )}
 
       {s.status === "calculating" && !result && <CalculatorSkeleton />}
       {s.status === "calculating" && result && (
@@ -233,6 +248,79 @@ export default function Calculator() {
         </div>
       )}
     </section>
+  );
+}
+
+// v1.3.1 Bug 1: save the on-screen strategy to the journal without leaving
+// the Calculator. Pre-filled from the candidate; entry price and targets are
+// editable and ride along as overrides — the full candidate snapshot is
+// still stored, so journal marks keep working.
+function SaveToJournalModal({ candidate, onClose }: {
+  candidate: Candidate; onClose: () => void;
+}) {
+  const saveToJournal = useStore((st) => st.saveToJournal);
+  const isCredit = candidate.sizing.totalDebit < 0;
+  const [entryPrice, setEntryPrice] = useState(
+    (Math.abs(candidate.sizing.totalDebit) / 100).toFixed(2));
+  const [maxLoss, setMaxLoss] = useState(
+    candidate.payoff.maxLoss === null ? "" : String(candidate.payoff.maxLoss));
+  const [maxProfit, setMaxProfit] = useState(
+    candidate.payoff.maxProfit === null ? "" : String(candidate.payoff.maxProfit));
+  const [note, setNote] = useState("");
+  const [priceError, setPriceError] = useState<string | undefined>();
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    const price = Number(entryPrice);
+    if (entryPrice.trim() === "" || !Number.isFinite(price) || price <= 0) {
+      setPriceError("Entry price is required (per share, > 0)");
+      return;
+    }
+    setPriceError(undefined);
+    setSaving(true);
+    const ok = await saveToJournal(candidate, {
+      note,
+      entryPrice: price,
+      maxLossTarget: maxLoss.trim() === "" ? null : Number(maxLoss),
+      maxProfitTarget: maxProfit.trim() === "" ? null : Number(maxProfit),
+    });
+    setSaving(false);
+    if (ok) onClose(); // success toast comes from the store
+  }
+
+  return (
+    <Modal open onClose={onClose} testid="save-journal-modal" maxWidth="max-w-md">
+      <h3 className="mb-1 text-base font-medium">Save to journal</h3>
+      <p className="mb-4 text-sm text-content-3">
+        <span className="font-mono font-semibold text-content-1">{candidate.symbol}</span>
+        {" · "}<span className="capitalize">{strategyLabel(candidate.strategyType)}</span>
+        {" · "}expires {shortDate(candidate.expiration)} · logged as open, dated today
+      </p>
+      <div className="space-y-3">
+        <FormInput label={`Entry price (per share, ${isCredit ? "credit" : "debit"})`}
+          type="number" step="0.01" value={entryPrice} error={priceError}
+          data-testid="save-entry-price"
+          onChange={(e) => setEntryPrice(e.target.value)} />
+        <div className="grid grid-cols-2 gap-3">
+          <FormInput label="Max loss target ($)" type="number" step="1" value={maxLoss}
+            hint="blank = none" onChange={(e) => setMaxLoss(e.target.value)} />
+          <FormInput label="Max profit target ($)" type="number" step="1" value={maxProfit}
+            hint="blank = none" onChange={(e) => setMaxProfit(e.target.value)} />
+        </div>
+        <label className="block">
+          <span className="text-[11px] uppercase tracking-wide text-content-3">Notes (optional)</span>
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2}
+            data-testid="save-note"
+            className="mt-0.5 w-full rounded-sm border border-dark-600 bg-dark-700 px-2 py-1.5 text-sm text-content-1 focus:border-blue-500 focus:outline-none" />
+        </label>
+        <div className="flex justify-end gap-2 pt-1">
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={save} disabled={saving} data-testid="save-journal-submit">
+            {saving ? "Saving…" : "Save to Journal"}
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 

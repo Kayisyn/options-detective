@@ -76,7 +76,7 @@ export default function Recommender() {
             saved={s.savedTrades.some((t) => t.candidate?.id === c.id)}
             onOpen={() => s.openCandidate(c)}
             onExport={() => s.exportTrade(c.id, c.exportText)}
-            onSave={() => s.saveToJournal(c, c.exportText)}
+            onSave={() => s.saveToJournal(c, { exportText: c.exportText })}
           />
         ))}
       </div>

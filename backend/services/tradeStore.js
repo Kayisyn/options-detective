@@ -176,8 +176,15 @@ function createTradeStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
     return trade;
   }
 
-  // One-click logging from the Recommender: candidate snapshot -> open trade.
-  function createFromCandidate({ candidate, exportText = null, note = "", paper = false } = {}) {
+  // One-click logging from the Recommender or the Calculator's save modal:
+  // candidate snapshot -> open trade. v1.3.1: entryPrice / maxLossTarget /
+  // maxProfitTarget may be overridden (the Calculator modal lets the user
+  // adjust them before saving); omitted fields keep the candidate-derived
+  // values, and an explicit null target means "no target".
+  function createFromCandidate({
+    candidate, exportText = null, note = "", paper = false,
+    entryPrice, maxLossTarget, maxProfitTarget,
+  } = {}) {
     if (!candidate || typeof candidate !== "object"
         || typeof candidate.strategyType !== "string"
         || !Array.isArray(candidate.legs) || candidate.legs.length === 0) {
@@ -203,12 +210,18 @@ function createTradeStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
       symbol: String(candidate.symbol ?? "?").toUpperCase(),
       strategy: candidate.strategyType,
       side: totalDebit >= 0 ? "debit" : "credit",
-      entryPrice: round2(Math.abs(totalDebit) / 100),
+      entryPrice: entryPrice === undefined || entryPrice === null
+        ? round2(Math.abs(totalDebit) / 100)
+        : round2(assertFiniteNumber(entryPrice, "entryPrice", { positive: true })),
       entryQty: 1,
       multiplier: 100,
       entryDate: nowIso,
-      maxLossTarget: candidate?.payoff?.maxLoss ?? null,
-      maxProfitTarget: candidate?.payoff?.maxProfit ?? null,
+      maxLossTarget: maxLossTarget === undefined
+        ? candidate?.payoff?.maxLoss ?? null
+        : assertFiniteNumber(maxLossTarget, "maxLossTarget", { allowNull: true }),
+      maxProfitTarget: maxProfitTarget === undefined
+        ? candidate?.payoff?.maxProfit ?? null
+        : assertFiniteNumber(maxProfitTarget, "maxProfitTarget", { allowNull: true }),
       notes: String(note ?? ""),
       tags: [],
       exitPrice: null,
