@@ -20,11 +20,12 @@ function etf(over = {}) {
   };
 }
 
-test("universe is curated Vanguard + iShares with clean reference data", () => {
+test("universe is curated with clean reference data", () => {
   assert.ok(ETF_UNIVERSE.length >= 40, `only ${ETF_UNIVERSE.length} ETFs`);
   assert.equal(new Set(TICKERS).size, TICKERS.length, "duplicate tickers");
+  // v1.3.0 added QQQ + SPY: the most options-liquid ETFs, per the ICS spec
   for (const e of ETF_UNIVERSE) {
-    assert.ok(["Vanguard", "iShares"].includes(e.issuer), e.ticker);
+    assert.ok(["Vanguard", "iShares", "Invesco", "State Street"].includes(e.issuer), e.ticker);
     assert.ok(e.expenseRatio > 0 && e.expenseRatio < 0.02, `${e.ticker} ER`);
     assert.ok(e.aumBillions > 0, `${e.ticker} AUM`);
     assert.ok(["Equity", "Bond", "Commodity"].includes(e.assetClass), e.ticker);
@@ -175,7 +176,6 @@ test("refresh restricts to known tickers, ignores junk", async () => {
   assert.ok(requested.includes("VOO"));
   assert.ok(requested.includes("IWM")); // lowercased input normalized
   assert.ok(!requested.includes("FAKE123")); // not in the curated universe
-  assert.ok(!requested.includes("QQQ")); // Invesco, deliberately excluded
 });
 
 test("watchlist through the screener validates tickers", () => {

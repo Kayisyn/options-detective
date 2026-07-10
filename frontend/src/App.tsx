@@ -3,6 +3,7 @@ import Calculator from "./components/Calculator";
 import Detector from "./components/Detector";
 import EtfScreener from "./components/EtfScreener";
 import Home from "./components/Home";
+import IndexComponentScreener from "./components/IndexComponentScreener";
 import Journal from "./components/Journal";
 import PaperTrading from "./components/PaperTrading";
 import Recommender from "./components/Recommender";
@@ -70,7 +71,11 @@ export default function App() {
     journal: true,
     paper: true,
     etf: true,
+    ics: true, // reached from the ETF screener, not the nav
   };
+
+  // ICS is a drill-down of the ETF screener — keep its tab lit
+  const activeTab = view === "ics" ? "etf" : view;
 
   return (
     <div className="min-h-screen">
@@ -103,7 +108,7 @@ export default function App() {
                 title={tab.hint}
                 disabled={!enabled[tab.id]}
                 className={`rounded-md px-4 py-2 text-sm transition-all duration-150 ease-out ${
-                  view === tab.id
+                  activeTab === tab.id
                     ? "bg-accent-blue text-white shadow-md"
                     : enabled[tab.id]
                       ? "bg-dark-800 text-content-3 hover:bg-dark-700 hover:text-content-1"
@@ -157,6 +162,7 @@ export default function App() {
           {view === "journal" && <Journal />}
           {view === "paper" && <PaperTrading />}
           {view === "etf" && <EtfScreener />}
+          {view === "ics" && <IndexComponentScreener />}
         </ViewTransition>
       </main>
     </div>
