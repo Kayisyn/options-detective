@@ -76,6 +76,29 @@ test("candidate snapshot becomes an open trade with entry from its marks", () =>
   assert.equal(t.candidate.id, CANDIDATE.id);
 });
 
+test("v1.3.1: candidate save honors edited entry/targets, keeps derived defaults", () => {
+  const { store } = tmpStore();
+  // overrides from the Calculator's save modal
+  const edited = store.createFromCandidate({
+    candidate: CANDIDATE, note: "adjusted fill",
+    entryPrice: 3.55, maxLossTarget: 355, maxProfitTarget: null, // null = no target
+  });
+  assert.equal(edited.entryPrice, 3.55);
+  assert.equal(edited.maxLossTarget, 355);
+  assert.equal(edited.maxProfitTarget, null);
+  assert.equal(edited.notes, "adjusted fill");
+  assert.equal(edited.candidate.id, CANDIDATE.id); // snapshot fidelity kept
+
+  // omitted overrides keep candidate-derived values
+  const plain = store.createFromCandidate({ candidate: CANDIDATE });
+  assert.equal(plain.entryPrice, 3.8);
+  assert.equal(plain.maxLossTarget, 380);
+
+  // junk entry price is rejected, not silently accepted
+  assert.throws(() => store.createFromCandidate({ candidate: CANDIDATE, entryPrice: -1 }), TypeError);
+  assert.throws(() => store.createFromCandidate({ candidate: CANDIDATE, entryPrice: "abc" }), TypeError);
+});
+
 test("v1 snapshot entries migrate to open v2 trades on read", () => {
   const { store, dir } = tmpStore();
   fs.writeFileSync(path.join(dir, "trades.json"), JSON.stringify([{

@@ -1,20 +1,22 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useStore } from "../store";
 import { money, pct, shortDate, strategyLabel } from "../lib/format";
 import { cx } from "../lib/cx";
 import Button from "./ui/Button";
 import { Badge, Card } from "./ui/Card";
 import { FormSelect } from "./ui/Input";
-import type { IcsCandidate } from "../types";
+import type { IcsCandidate, IcsViewState } from "../types";
 
 // Index Component Screener (v1.3.0 §4): every holding of the selected ETF is
 // screened by the Detector; this view filters and ranks the merged result.
 // Sector / subset / strategy filters are CLIENT-side over the returned
 // candidate set — instant, no re-screen. Clicking a row opens the Calculator
 // with the full candidate (openCandidate, same path as the Detector).
+// v1.3.1: filters/sort/paging live in the store (icsView) and the scroll
+// position is restored, so a Calculator round-trip lands back exactly here.
 
-type Subset = 10 | 25 | 0; // 0 = all
-type SortKey = "score" | "pop" | "weight" | "maxProfit" | "capital" | "dte";
+type Subset = IcsViewState["subset"];
+type SortKey = IcsViewState["sort"];
 const PAGE = 50;
 
 function sortValue(c: IcsCandidate, key: SortKey): number {
@@ -32,11 +34,22 @@ export default function IndexComponentScreener() {
   const s = useStore();
   const result = s.icsResult;
 
-  const [sectors, setSectors] = useState<string[]>([]);
-  const [subset, setSubset] = useState<Subset>(0);
-  const [strategy, setStrategy] = useState<string>("");
-  const [sort, setSort] = useState<SortKey>("score");
-  const [shown, setShown] = useState(PAGE);
+  const { sectors, subset, strategy, sort, shown } = s.icsView;
+  const patchView = s.patchIcsView;
+  const setSubset = (v: Subset) => patchView({ subset: v, shown: PAGE });
+  const setStrategy = (v: string) => patchView({ strategy: v, shown: PAGE });
+  const setSort = (v: SortKey) => patchView({ sort: v });
+  const setShown = (n: number) => patchView({ shown: n });
+
+  // returning from the Calculator: put the list back where the user left it
+  useEffect(() => {
+    if (result && s.icsScrollY > 0) {
+      const y = s.icsScrollY;
+      const t = setTimeout(() => window.scrollTo(0, y), 80);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
+  }, []);
 
   const sectorOptions = useMemo(() => {
     if (!result) return [];
@@ -58,8 +71,10 @@ export default function IndexComponentScreener() {
   }, [result, sectors, subset, strategy, sort]);
 
   const toggleSector = (sec: string) => {
-    setShown(PAGE);
-    setSectors((cur) => (cur.includes(sec) ? cur.filter((x) => x !== sec) : [...cur, sec]));
+    patchView({
+      sectors: sectors.includes(sec) ? sectors.filter((x) => x !== sec) : [...sectors, sec],
+      shown: PAGE,
+    });
   };
 
   const headerCell = (label: string, key: SortKey | null, align = "text-right") => (
@@ -139,7 +154,7 @@ export default function IndexComponentScreener() {
               <div className="flex gap-1.5">
                 {([10, 25, 0] as Subset[]).map((n) => (
                   <button key={n} data-subset={n}
-                    onClick={() => { setSubset(n); setShown(PAGE); }}
+                    onClick={() => setSubset(n)}
                     className={cx(
                       "rounded border px-2 py-1 text-xs transition-all duration-150 ease-out",
                       subset === n
@@ -170,7 +185,7 @@ export default function IndexComponentScreener() {
               </div>
             )}
             <FormSelect label="Strategy" value={strategy}
-              onChange={(e) => { setStrategy(e.target.value); setShown(PAGE); }}>
+              onChange={(e) => setStrategy(e.target.value)}>
               <option value="">All strategies</option>
               {strategyOptions.map((st) => (
                 <option key={st} value={st}>{strategyLabel(st)}</option>
@@ -200,7 +215,7 @@ export default function IndexComponentScreener() {
               <tbody>
                 {filtered.slice(0, shown).map((c, i) => (
                   <tr key={c.symbol + c.id} data-testid="ics-row"
-                    onClick={() => s.openCandidate(c)}
+                    onClick={() => s.openCandidate(c, "ics")}
                     title="Open in Calculator"
                     className="cursor-pointer border-t border-dark-700 hover:bg-dark-800/50">
                     <td className="px-3 py-2 text-content-3">{i + 1}</td>
@@ -230,7 +245,7 @@ export default function IndexComponentScreener() {
 
           {filtered.length > shown && (
             <div className="text-center">
-              <Button variant="ghost" size="sm" onClick={() => setShown((n) => n + PAGE)} data-testid="ics-more">
+              <Button variant="ghost" size="sm" onClick={() => setShown(shown + PAGE)} data-testid="ics-more">
                 Show {Math.min(PAGE, filtered.length - shown)} more ({filtered.length - shown} left)
               </Button>
             </div>

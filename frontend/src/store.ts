@@ -11,6 +11,7 @@ import {
 import type {
   CalcResult, Candidate, CloseTradeInput, DirectionalView, EquityPoint,
   EtfFilters, EtfReference, EtfScreenResult, EtfStrategy, IcsResult,
+  IcsViewState, JournalSaveOptions,
   JournalTrade, Leg, NewTradeInput, PaperState, Recommendation, ScreenParams,
   ScreenResult,
 } from "./types";
@@ -100,6 +101,11 @@ interface AppState {
   icsResult: IcsResult | null;
   icsBusy: boolean;
   icsError: string | null; // in-view (e.g. "holdings not available"), not the global banner
+  icsView: IcsViewState;   // v1.3.1: filters/sort/paging survive Calculator round-trips
+  icsScrollY: number;      // v1.3.1: restore list position on return
+
+  // v1.3.1: which list view "Compare candidates" returns to
+  calcSource: "recommender" | "ics";
 
   // v1.1 §1: client-side filtering/sorting of screened candidates
   filters: CandidateFilters;
@@ -123,12 +129,13 @@ interface AppState {
   saveWeightProfile: (name: string) => void;
   deleteWeightProfile: (name: string) => void;
   screen: (refresh?: boolean) => Promise<void>;
-  openCandidate: (candidate: Candidate) => Promise<void>;
+  openCandidate: (candidate: Candidate, source?: "recommender" | "ics") => Promise<void>;
+  compareCandidates: () => void;
   recalculate: (legs: Leg[], repriceTheoretical: boolean) => Promise<void>;
   recommend: () => Promise<void>;
   exportTrade: (id: string, text: string) => Promise<void>;
   loadJournal: () => Promise<void>;
-  saveToJournal: (candidate: Candidate, exportText?: string) => Promise<void>;
+  saveToJournal: (candidate: Candidate, opts?: JournalSaveOptions) => Promise<boolean>;
   removeFromJournal: (id: string) => Promise<void>;
   logTrade: (input: NewTradeInput) => Promise<boolean>;
   closeTrade: (id: string, input: CloseTradeInput) => Promise<boolean>;
@@ -151,6 +158,7 @@ interface AppState {
 
   openIcs: (ticker: string) => Promise<void>;
   runIcs: (refresh?: boolean) => Promise<void>;
+  patchIcsView: (patch: Partial<IcsViewState>) => void;
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -187,6 +195,9 @@ export const useStore = create<AppState>((set, get) => ({
   icsResult: null,
   icsBusy: false,
   icsError: null,
+  icsView: { sectors: [], subset: 0, strategy: "", sort: "score", shown: 50 },
+  icsScrollY: 0,
+  calcSource: "recommender",
   filters: EMPTY_FILTERS,
   sort: DEFAULT_SORT,
   weights: readStoredWeights(),
@@ -266,11 +277,13 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  async openCandidate(candidate) {
+  async openCandidate(candidate, source = "recommender") {
     const { capital, riskTolerancePct } = get();
     set({
       selected: candidate, view: "calculator", status: "calculating",
-      error: null, calcResult: null,
+      error: null, calcResult: null, calcSource: source,
+      // remember where the ICS list was scrolled to for the return trip
+      ...(source === "ics" ? { icsScrollY: window.scrollY } : {}),
     });
     try {
       const calcResult = await api.calculate({
@@ -309,6 +322,15 @@ export const useStore = create<AppState>((set, get) => ({
     } catch (err) {
       set({ status: "idle", error: err instanceof Error ? err.message : String(err) });
     }
+  },
+
+  // v1.3.1 Bug 2: "Compare candidates" returns to the list the candidate
+  // came FROM. From the ICS the result set is already in the store — just
+  // navigate back; the old behavior ran the Recommender against whatever
+  // the Detector last screened (wrong list, or a silent no-op).
+  compareCandidates() {
+    if (get().calcSource === "ics") set({ view: "ics" });
+    else void get().recommend();
   },
 
   async recommend() {
@@ -355,13 +377,17 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  async saveToJournal(candidate, exportText) {
+  // v1.3.1: optional edits (entry price, targets, note) ride along with the
+  // candidate snapshot; undefined fields keep the candidate-derived values.
+  async saveToJournal(candidate, opts = {}) {
     try {
-      await api.saveTrade({ candidate, exportText: exportText ?? null });
+      await api.saveTrade({ candidate, exportText: opts.exportText ?? null, ...opts });
       await get().loadJournal();
       get().showToast("✓ Saved to journal");
+      return true;
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
+      return false;
     }
   },
 
@@ -555,7 +581,13 @@ export const useStore = create<AppState>((set, get) => ({
     const sameEtf = get().icsResult?.etf === etf;
     set({
       view: "ics", icsEtf: etf, icsError: null,
-      ...(sameEtf ? {} : { icsResult: null }),
+      // a different ETF starts with a clean list; same ETF keeps
+      // results + filters + scroll (v1.3.1)
+      ...(sameEtf ? {} : {
+        icsResult: null,
+        icsView: { sectors: [], subset: 0, strategy: "", sort: "score", shown: 50 },
+        icsScrollY: 0,
+      }),
     });
     if (!sameEtf) await get().runIcs();
   },
@@ -578,5 +610,9 @@ export const useStore = create<AppState>((set, get) => ({
         icsError: err instanceof Error ? err.message : String(err),
       });
     }
+  },
+
+  patchIcsView(patch) {
+    set((state) => ({ icsView: { ...state.icsView, ...patch } }));
   },
 }));

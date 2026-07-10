@@ -382,6 +382,26 @@ export interface IcsConstraints {
   maxDTE?: number;
 }
 
+// v1.3.1: ICS list UI state lives in the store (not component state) so
+// Calculator round-trips preserve filters, sort and pagination.
+export interface IcsViewState {
+  sectors: string[];
+  subset: 10 | 25 | 0; // 0 = all
+  strategy: string;    // "" = all
+  sort: "score" | "pop" | "weight" | "maxProfit" | "capital" | "dte";
+  shown: number;
+}
+
+// v1.3.1: optional edits from the Calculator's save modal; omitted fields
+// keep the candidate-derived values (backend contract).
+export interface JournalSaveOptions {
+  exportText?: string | null;
+  note?: string;
+  entryPrice?: number;
+  maxLossTarget?: number | null;
+  maxProfitTarget?: number | null;
+}
+
 export interface IcsResult {
   etf: string;
   source: HoldingsSource;
