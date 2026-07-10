@@ -8,6 +8,10 @@ const path = require("path");
 const DEFAULT_DIR = process.env.OD_DATA_DIR || path.join(__dirname, "..", "data");
 const DEFAULT_BALANCE = 50_000;
 const MAX_SNAPSHOTS = 5_000;
+// v1.3.2: the frontend polls marks every minute — identical back-to-back
+// snapshots inside this window are skipped so a closed market doesn't
+// paint 1,440 flat points a day. Any value CHANGE always records.
+const DEDUPE_WINDOW_MS = 15 * 60 * 1000;
 
 function round2(x) {
   return Math.round(x * 100) / 100;
@@ -61,11 +65,22 @@ function createPaperStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
 
   function addSnapshot(snapshot) {
     const state = load();
-    state.snapshots.push({ at: now().toISOString(), ...snapshot });
+    const last = state.snapshots[state.snapshots.length - 1];
+    const nowDate = now();
+    if (last
+        && last.accountValue === snapshot.accountValue
+        && last.realizedPnl === snapshot.realizedPnl
+        && last.unrealizedPnl === snapshot.unrealizedPnl
+        && last.openCount === snapshot.openCount
+        && nowDate.getTime() - Date.parse(last.at) < DEDUPE_WINDOW_MS) {
+      return false; // nothing moved — don't spam the curve
+    }
+    state.snapshots.push({ at: nowDate.toISOString(), ...snapshot });
     if (state.snapshots.length > MAX_SNAPSHOTS) {
       state.snapshots = state.snapshots.slice(-MAX_SNAPSHOTS);
     }
     persist(state);
+    return true;
   }
 
   function listSnapshots(sinceMs = 0) {

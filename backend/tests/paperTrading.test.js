@@ -192,6 +192,36 @@ test("reset archives paper trades and restarts the curve", async () => {
   assert.equal(paper.equityCurve(0).length, 1); // fresh baseline only
 });
 
+test("v1.3.2: identical snapshots inside the window are deduped, changes always record", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "od-paper-"));
+  let t = Date.parse("2026-07-10T14:00:00Z");
+  const store = createPaperStore({ dir, now: () => new Date(t) });
+  store.setBudget(50_000);
+  const snap = (v) => ({ accountValue: v, realizedPnl: 0, unrealizedPnl: null, openCount: 1 });
+
+  assert.equal(store.addSnapshot(snap(50_000)), true);   // first
+  t += 60_000;
+  assert.equal(store.addSnapshot(snap(50_000)), false);  // 1 min later, unchanged -> skipped
+  t += 60_000;
+  assert.equal(store.addSnapshot(snap(49_870)), true);   // value moved -> recorded
+  t += 60_000;
+  assert.equal(store.addSnapshot(snap(49_870)), false);  // unchanged again -> skipped
+  t += 16 * 60_000;
+  assert.equal(store.addSnapshot(snap(49_870)), true);   // window elapsed -> heartbeat point
+  assert.equal(store.listSnapshots(0).length, 3);
+});
+
+test("v1.3.2: minute-polling process() does not spam the curve when marks are unchanged", async () => {
+  const { paper } = rig({ price: 320 });
+  paper.setBudget(30_000);
+  paper.open({ candidate: { ...CSP_CANDIDATE, sizing: { totalDebit: 380, capitalRequired: 380 } } });
+  await paper.process(); // first pass: unrealized appears -> new curve point
+  const after1 = paper.equityCurve(0).length;
+  await paper.process(); // same fake quotes/marks -> deduped
+  await paper.process();
+  assert.equal(paper.equityCurve(0).length, after1);
+});
+
 test("paper trades stay isolated from the real journal accounting", () => {
   const { paper, tradeStore } = rig();
   paper.setBudget(10_000);
