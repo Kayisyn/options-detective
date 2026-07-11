@@ -433,3 +433,36 @@ export interface Recommendation {
   weights: Record<string, number>;
   warnings?: string[];
 }
+
+// v1.5.0 sidebars: one cached backend fetch feeds breadth, trending,
+// watchlist quotes and headlines (GET /market/pulse).
+export interface PulseQuote {
+  price: number;
+  prevClose: number;
+  changePct: number;
+}
+
+export interface PulseNewsItem {
+  title: string;
+  url: string | null;
+  publisher: string | null;
+  publishedAt: string | null;
+}
+
+export interface MarketPulse {
+  breadth: {
+    score: number;
+    advancers: number;
+    decliners: number;
+    unchanged: number;
+    counted: number;
+  } | null;
+  trending: {
+    gainers: Array<PulseQuote & { symbol: string }>;
+    losers: Array<PulseQuote & { symbol: string }>;
+  };
+  watch: Record<string, PulseQuote>;
+  news: PulseNewsItem[];
+  errors?: Record<string, string>;
+  asOf: string;
+}

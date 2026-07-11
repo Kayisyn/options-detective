@@ -88,6 +88,8 @@ function registerIpc() {
   ipcMain.handle("api:etf:watchlist:set", (_event, body) => forward("/etf-screener/watchlist", body));
   ipcMain.handle("api:ics:holdings", (_event, { ticker }) => forward(`/screener/etf/${encodeURIComponent(ticker)}/holdings`));
   ipcMain.handle("api:ics:batch", (_event, body) => forward("/screener/batch", body));
+  ipcMain.handle("api:market:pulse", (_event, { watch }) =>
+    forward(`/market/pulse${watch ? `?watch=${encodeURIComponent(watch)}` : ""}`));
   ipcMain.handle("api:export", (_event, { text }) => {
     clipboard.writeText(String(text ?? ""));
     return true;

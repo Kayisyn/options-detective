@@ -31,4 +31,5 @@ contextBridge.exposeInMainWorld("optionsDetective", {
   etfWatchToggle: (payload) => ipcRenderer.invoke("api:etf:watchlist:set", payload),
   icsHoldings: (ticker) => ipcRenderer.invoke("api:ics:holdings", { ticker }),
   icsBatch: (payload) => ipcRenderer.invoke("api:ics:batch", payload),
+  marketPulse: (watch) => ipcRenderer.invoke("api:market:pulse", { watch }),
 });

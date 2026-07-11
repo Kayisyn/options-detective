@@ -8,7 +8,7 @@ const path = require("path");
 
 const MATH_DIR = path.join(__dirname, "..", "math");
 
-const ENTRIES = new Set(["engine", "market_data", "etf_metrics", "etf_holdings"]);
+const ENTRIES = new Set(["engine", "market_data", "etf_metrics", "etf_holdings", "market_pulse"]);
 
 function pythonBin() {
   const venvWin = path.join(MATH_DIR, ".venv", "Scripts", "python.exe");

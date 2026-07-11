@@ -3,7 +3,8 @@
 import type {
   CalcResult, EquityPoint, EtfDetail, EtfFilters, EtfRecord, EtfReference,
   EtfScreenResult, EtfStrategy, HoldingsInfo, IcsConstraints, IcsResult,
-  JournalTrade, PaperBalance, PaperState, Recommendation, ScreenResult,
+  JournalTrade, MarketPulse, PaperBalance, PaperState, Recommendation,
+  ScreenResult,
 } from "../types";
 
 type Bridge = {
@@ -33,6 +34,7 @@ type Bridge = {
   etfWatchToggle?: (body: unknown) => Promise<{ watchlist: string[] }>;
   icsHoldings?: (ticker: string) => Promise<HoldingsInfo>;
   icsBatch?: (body: unknown) => Promise<IcsResult>;
+  marketPulse?: (watch: string) => Promise<MarketPulse>;
 };
 
 function bridge(): Bridge | null {
@@ -142,6 +144,11 @@ export const api = {
   },
   icsBatch(body: { etf: string; constraints?: IcsConstraints; refresh?: boolean }): Promise<IcsResult> {
     return bridge()?.icsBatch?.(body) ?? post<IcsResult>("/screener/batch", body);
+  },
+  marketPulse(watch: string[]): Promise<MarketPulse> {
+    const joined = watch.join(",");
+    return bridge()?.marketPulse?.(joined)
+      ?? request("GET", `/market/pulse${joined ? `?watch=${encodeURIComponent(joined)}` : ""}`);
   },
   async exportTrade(text: string): Promise<void> {
     const b = bridge();

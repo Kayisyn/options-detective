@@ -12,8 +12,8 @@ import type {
   CalcResult, Candidate, CloseTradeInput, DirectionalView, EquityPoint,
   EtfFilters, EtfReference, EtfScreenResult, EtfStrategy, IcsResult,
   IcsViewState, JournalSaveOptions,
-  JournalTrade, Leg, NewTradeInput, PaperState, Recommendation, ScreenParams,
-  ScreenResult,
+  JournalTrade, Leg, MarketPulse, NewTradeInput, PaperState, Recommendation,
+  ScreenParams, ScreenResult,
 } from "./types";
 
 export type View = "home" | "detector" | "calculator" | "recommender" | "journal" | "paper" | "etf" | "ics";
@@ -21,6 +21,38 @@ export type View = "home" | "detector" | "calculator" | "recommender" | "journal
 const LAST_SCREEN_KEY = "od.lastScreen";
 const WEIGHTS_KEY = "od.weights.v1";
 const PROFILES_KEY = "od.weightProfiles.v1";
+const FX_KEY = "od.fx.v1"; // v1.5.0 visual-effects prefs
+
+interface FxPrefs {
+  particles: boolean;
+  particleCount: number; // 50-300
+}
+
+const DEFAULT_FX: FxPrefs = { particles: true, particleCount: 200 };
+
+function readStoredFx(): FxPrefs {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(FX_KEY) ?? "null");
+    if (!parsed || typeof parsed !== "object") return { ...DEFAULT_FX };
+    const count = Number((parsed as FxPrefs).particleCount);
+    return {
+      particles: typeof (parsed as FxPrefs).particles === "boolean"
+        ? (parsed as FxPrefs).particles : DEFAULT_FX.particles,
+      particleCount: Number.isFinite(count)
+        ? Math.min(300, Math.max(50, Math.round(count))) : DEFAULT_FX.particleCount,
+    };
+  } catch {
+    return { ...DEFAULT_FX };
+  }
+}
+
+function writeStoredFx(fx: FxPrefs) {
+  try {
+    localStorage.setItem(FX_KEY, JSON.stringify(fx));
+  } catch {
+    // private mode: prefs live for the session only
+  }
+}
 
 export interface WeightProfile {
   name: string;
@@ -109,6 +141,17 @@ interface AppState {
   // v1.3.1: which list view "Compare candidates" returns to
   calcSource: "recommender" | "ics";
 
+  // v1.5.0 sidebars: shared market pulse + open/collapsed state (session
+  // only, deliberately not persisted yet per the brief)
+  pulse: MarketPulse | null;
+  pulseBusy: boolean;
+  leftSidebarOpen: boolean;
+  rightSidebarOpen: boolean;
+
+  // v1.5.0 visual effects (persisted)
+  fxParticles: boolean;
+  fxParticleCount: number;
+
   // v1.1 §1: client-side filtering/sorting of screened candidates
   filters: CandidateFilters;
   sort: SortSpec;
@@ -164,6 +207,11 @@ interface AppState {
   openIcs: (ticker: string) => Promise<void>;
   runIcs: (refresh?: boolean) => Promise<void>;
   patchIcsView: (patch: Partial<IcsViewState>) => void;
+
+  loadPulse: () => Promise<void>;
+  toggleSidebar: (side: "left" | "right") => void;
+  prefillScreener: (symbol: string) => void;
+  setFx: (patch: Partial<{ particles: boolean; particleCount: number }>) => void;
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -205,6 +253,12 @@ export const useStore = create<AppState>((set, get) => ({
   icsView: { sectors: [], subset: 0, strategy: "", sort: "score", shown: 50 },
   icsScrollY: 0,
   calcSource: "recommender",
+  pulse: null,
+  pulseBusy: false,
+  leftSidebarOpen: true,
+  rightSidebarOpen: true,
+  fxParticles: readStoredFx().particles,
+  fxParticleCount: readStoredFx().particleCount,
   filters: EMPTY_FILTERS,
   sort: DEFAULT_SORT,
   weights: readStoredWeights(),
@@ -594,6 +648,42 @@ export const useStore = create<AppState>((set, get) => ({
   async analyzeEtfInDetector(ticker) {
     set({ symbol: ticker.toUpperCase(), view: "detector" });
     await get().screen();
+  },
+
+  // v1.5.0 sidebars ---------------------------------------------------------
+
+  // One cached backend fetch per minute feeds breadth, trending, watchlist
+  // quotes and headlines. Failures stay silent — the sidebar shows its
+  // last data (or placeholders), never the global error banner.
+  async loadPulse() {
+    if (get().pulseBusy) return;
+    set({ pulseBusy: true });
+    try {
+      const pulse = await api.marketPulse(get().etfWatchlist);
+      set({ pulse });
+    } catch {
+      // sidebar data is ambient; a failed poll is not an app error
+    } finally {
+      set({ pulseBusy: false });
+    }
+  },
+
+  toggleSidebar: (side) => set(side === "left"
+    ? { leftSidebarOpen: !get().leftSidebarOpen }
+    : { rightSidebarOpen: !get().rightSidebarOpen }),
+
+  // sidebar click-through: put the symbol in the Screener without firing
+  // a screen yet — the user confirms parameters first
+  prefillScreener: (symbol) => set({ symbol: symbol.toUpperCase(), view: "detector" }),
+
+  setFx: (patch) => {
+    const next = {
+      particles: patch.particles ?? get().fxParticles,
+      particleCount: Math.min(300, Math.max(50,
+        Math.round(patch.particleCount ?? get().fxParticleCount))),
+    };
+    writeStoredFx(next);
+    set({ fxParticles: next.particles, fxParticleCount: next.particleCount });
   },
 
   // v1.3.0 ICS: expand an ETF's holdings and batch-screen all of them.

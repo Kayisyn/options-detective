@@ -22,10 +22,11 @@ interface SettingsPanelProps {
 // sections inside each tab stagger in 50ms apart. Selection applies
 // instantly and persists.
 
-type TabId = "appearance" | "scoring" | "complexity";
+type TabId = "appearance" | "customization" | "scoring" | "complexity";
 
 const SETTINGS_TABS: Array<{ id: TabId; label: string }> = [
   { id: "appearance", label: "Appearance" },
+  { id: "customization", label: "Customization" },
   { id: "scoring", label: "Scoring weights" },
   { id: "complexity", label: "Complexity" },
 ];
@@ -72,6 +73,56 @@ function AppearanceTab() {
             <div className="text-xs text-content-3">{t.hint}</div>
           </button>
         ))}
+      </div>
+    </Section>
+  );
+}
+
+// v1.5.0: visual-effects controls (particle background)
+function CustomizationTab() {
+  const fxParticles = useStore((s) => s.fxParticles);
+  const fxParticleCount = useStore((s) => s.fxParticleCount);
+  const setFx = useStore((s) => s.setFx);
+  return (
+    <Section index={0}>
+      <div className="rounded-md bg-dark-700/50 p-4" data-testid="fx-settings">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-medium">Particle background</div>
+            <div className="text-xs text-content-3">
+              Cursor-reactive drifting particles behind the app. Disabled
+              automatically when your OS asks for reduced motion.
+            </div>
+          </div>
+          <Button
+            variant={fxParticles ? "secondary" : "ghost"}
+            size="sm"
+            data-testid="fx-particles-toggle"
+            onClick={() => setFx({ particles: !fxParticles })}
+          >
+            {fxParticles ? "On" : "Off"}
+          </Button>
+        </div>
+        <label className={cx(
+          "mt-4 flex items-center gap-3 text-sm",
+          !fxParticles && "pointer-events-none opacity-50",
+        )}>
+          <span className="w-32 shrink-0 text-content-2">Particle count</span>
+          <input
+            type="range"
+            min={50}
+            max={300}
+            step={10}
+            value={fxParticleCount}
+            onChange={(e) => setFx({ particleCount: Number(e.target.value) })}
+            data-testid="fx-particle-count"
+            className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-dark-600"
+            style={{ accentColor: "rgb(var(--od-accent-primary))" }}
+          />
+          <span className="w-10 text-right font-mono text-xs text-content-2">
+            {fxParticleCount}
+          </span>
+        </label>
       </div>
     </Section>
   );
@@ -299,6 +350,7 @@ export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
       <div className="settings-scroll min-h-0 flex-1 overflow-y-auto px-6 py-4">
         <ViewTransition viewKey={tab}>
           {tab === "appearance" && <AppearanceTab />}
+          {tab === "customization" && <CustomizationTab />}
           {tab === "scoring" && <ScoringTab />}
           {tab === "complexity" && <ComplexityTab />}
         </ViewTransition>

@@ -9,7 +9,9 @@ import PaperTrading from "./components/PaperTrading";
 import Recommender from "./components/Recommender";
 import HelpDrawer from "./components/shared/HelpDrawer";
 import Onboarding, { ONBOARDED_KEY } from "./components/shared/Onboarding";
+import ParticleField from "./components/shared/ParticleField";
 import SettingsPanel from "./components/shared/SettingsPanel";
+import { LeftSidebar, RightSidebar } from "./components/shared/Sidebars";
 import ViewTransition from "./components/shared/ViewTransition";
 import { useMode } from "./contexts/ModeContext";
 import { useStore, type View } from "./store";
@@ -54,6 +56,9 @@ export default function App() {
   const settingsOpen = useStore((s) => s.settingsOpen);
   const setSettingsOpen = useStore((s) => s.setSettingsOpen);
   const openHelp = useStore((s) => s.openHelp);
+  const loadPulse = useStore((s) => s.loadPulse);
+  const loadJournal = useStore((s) => s.loadJournal);
+  const loadEtfWatchlist = useStore((s) => s.loadEtfWatchlist);
   const { expertMode, toggleMode } = useMode();
   const [onboardingOpen, setOnboardingOpen] = useState(() => {
     try {
@@ -83,6 +88,19 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [setView, openHelp]);
 
+  // v1.5.0 sidebars: journal + watchlist give the left panels their rows,
+  // then the market pulse polls every 60s (matching the backend cache TTL)
+  // while the window is visible.
+  useEffect(() => {
+    loadJournal();
+    loadEtfWatchlist().then(() => loadPulse());
+    const interval = setInterval(() => {
+      if (!document.hidden) loadPulse();
+    }, 60_000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
+  }, []);
+
   const enabled: Record<View, boolean> = {
     home: true,
     detector: true,
@@ -99,6 +117,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
+      <ParticleField />
       <Onboarding open={onboardingOpen} onClose={() => setOnboardingOpen(false)} />
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <HelpDrawer onReplayWalkthrough={() => setOnboardingOpen(true)} />
@@ -174,18 +193,24 @@ export default function App() {
           {error}
         </div>
       )}
-      <main className="mx-auto max-w-7xl overflow-x-hidden p-6">
-        <ViewTransition viewKey={view}>
-          {view === "home" && <Home />}
-          {view === "detector" && <Detector />}
-          {view === "calculator" && <Calculator />}
-          {view === "recommender" && <Recommender />}
-          {view === "journal" && <Journal />}
-          {view === "paper" && <PaperTrading />}
-          {view === "etf" && <EtfScreener />}
-          {view === "ics" && <IndexComponentScreener />}
-        </ViewTransition>
-      </main>
+      <div className="mx-auto flex max-w-[1880px] items-start gap-4 px-6">
+        <LeftSidebar />
+        <main className="min-w-0 flex-1 overflow-x-hidden py-6">
+          <div className="mx-auto max-w-7xl">
+            <ViewTransition viewKey={view}>
+              {view === "home" && <Home />}
+              {view === "detector" && <Detector />}
+              {view === "calculator" && <Calculator />}
+              {view === "recommender" && <Recommender />}
+              {view === "journal" && <Journal />}
+              {view === "paper" && <PaperTrading />}
+              {view === "etf" && <EtfScreener />}
+              {view === "ics" && <IndexComponentScreener />}
+            </ViewTransition>
+          </div>
+        </main>
+        <RightSidebar />
+      </div>
     </div>
   );
 }
