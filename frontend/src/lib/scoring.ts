@@ -25,7 +25,7 @@ export const COMPONENT_META: Record<ScoreComponentKey, {
   pop: {
     label: "POP",
     explain: "Probability of any profit at expiry, straight from the lognormal model. 62% POP contributes 0.62 to this slot.",
-    color: "bg-accent-blue",
+    color: "bg-accent-primary",
   },
   ror: {
     label: "Risk/reward",
@@ -40,7 +40,7 @@ export const COMPONENT_META: Record<ScoreComponentKey, {
   capEff: {
     label: "Capital efficiency",
     explain: "Max profit per dollar of capital tied up, capped at 1. Cheap defined-risk spreads score high; buy-writes score low.",
-    color: "bg-accent-purple",
+    color: "bg-accent-blue",
   },
   liquidity: {
     label: "Liquidity",

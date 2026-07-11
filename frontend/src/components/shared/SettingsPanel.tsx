@@ -15,9 +15,9 @@ interface SettingsPanelProps {
   onClose: () => void;
 }
 
-// Appearance settings (updated brief §4.2): six theme cards with live
-// swatch previews; selection applies instantly and persists. Complexity
-// mode lives here too, mirroring the header toggle.
+// Appearance settings, v1.4.0: obsidian theme plus colorblind-safe
+// variants, with live swatch previews; selection applies instantly and
+// persists. Complexity mode lives here too, mirroring the header toggle.
 export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const { theme, setTheme } = useTheme();
   const { expertMode, toggleMode } = useMode();
@@ -56,9 +56,9 @@ export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               title={t.hint}
               data-theme-card={t.id}
               className={cx(
-                "rounded-md border-2 p-2 text-left transition-all duration-150 ease-out",
+                "rounded-md border-2 p-2 text-left transition-all duration-150 ease-out-quad",
                 theme === t.id
-                  ? "border-accent-blue shadow-glow"
+                  ? "border-accent-primary shadow-glow"
                   : "border-dark-600 hover:border-dark-500",
               )}
             >
@@ -120,9 +120,9 @@ export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                 title={p.hint}
                 data-preset={p.id}
                 className={cx(
-                  "rounded border px-2 py-1 text-xs transition-all duration-150 ease-out",
+                  "rounded border px-2 py-1 text-xs transition-all duration-150 ease-out-quad",
                   weightsEqual(weights, p.weights)
-                    ? "border-accent-blue/60 bg-accent-blue/15 text-accent-blue"
+                    ? "border-accent-primary/60 bg-accent-primary/15 text-accent-primary-text"
                     : "border-dark-600 text-content-3 hover:border-dark-500 hover:text-content-2",
                 )}
               >
@@ -144,7 +144,7 @@ export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                   onChange={(e) => setWeights({ ...weights, [k]: Number(e.target.value) })}
                   data-weight-slider={k}
                   className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-dark-600"
-                  style={{ accentColor: "rgb(var(--od-accent-blue))" }}
+                  style={{ accentColor: "rgb(var(--od-accent-primary))" }}
                 />
                 <span className="w-10 text-right font-mono text-xs text-content-2">
                   {weights[k].toFixed(2)}
@@ -177,7 +177,7 @@ export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               onChange={(e) => setProfileName(e.target.value)}
               placeholder="Profile name (e.g. My high-POP setup)"
               data-testid="profile-name"
-              className="flex-1 rounded-sm border border-dark-600 bg-dark-800 px-2 py-1.5 text-xs text-content-1 placeholder:text-content-3 focus:border-blue-500 focus:outline-none"
+              className="flex-1 rounded-sm border border-dark-600 bg-dark-800 px-2 py-1.5 text-xs text-content-1 placeholder:text-content-3 focus:border-accent-primary focus:outline-none"
             />
             <Button size="xs" disabled={profileName.trim() === ""}
               onClick={() => { saveWeightProfile(profileName); setProfileName(""); }}>
@@ -189,7 +189,7 @@ export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               {profiles.map((p) => (
                 <span key={p.name}
                   className="inline-flex items-center gap-1 rounded border border-dark-600 px-2 py-1 text-xs text-content-2">
-                  <button className="hover:text-accent-blue" title="Apply this profile"
+                  <button className="hover:text-accent-primary-text" title="Apply this profile"
                     onClick={() => setWeights({ ...p.weights })}>
                     {p.name}
                   </button>
@@ -223,7 +223,6 @@ export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
         </div>
 
         <p className="mt-4 text-xs text-content-3">
-          Shortcut: <span className="font-mono">Ctrl+Shift+D</span> flips dark/light.
           Settings apply instantly and persist on this machine.
         </p>
       </>

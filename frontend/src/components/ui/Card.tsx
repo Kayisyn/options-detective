@@ -2,15 +2,17 @@ import type { HTMLAttributes, ReactNode } from "react";
 import { cx } from "../../lib/cx";
 import Hint from "./Hint";
 
-// Card family per ux-design-polish-brief §2.2 / §2.5. Surfaces ride the
-// dark-* CSS variables so the Phase 4 light theme adapts them for free.
+// Card family, v1.4.0 obsidian overhaul: every card is a glassmorphic
+// surface (glass fill, 30px backdrop blur, 1px glass edge, soft shadow —
+// .card-glass in index.css). Interactive cards get the violet hover glow +
+// scale 1.01; rank-#1 cards get the violet glow border.
 
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  /** hover scale/shadow/border feedback + press-in (clickable cards) */
+  /** hover scale/glow feedback + press-in (clickable cards) */
   interactive?: boolean;
-  /** rank-#1 treatment: accent-blue glow border (§4.1) */
+  /** rank-#1 treatment: violet glow border */
   glow?: boolean;
-  /** staggered entrance: animation-delay in ms (§3.2) */
+  /** staggered entrance: animation-delay in ms */
   enterDelayMs?: number;
 }
 
@@ -20,12 +22,10 @@ export function Card({
   return (
     <div
       className={cx(
-        "rounded-lg border bg-dark-800 p-4 shadow-md",
-        glow ? "border-accent-blue/60 shadow-glow" : "border-dark-700",
+        "card-glass p-4",
+        glow && "border-accent-primary/60 shadow-glow",
         interactive && cx(
-          "cursor-pointer transition-all duration-200 ease-out",
-          "hover:scale-[1.01] hover:shadow-lg active:scale-[0.98]",
-          !glow && "hover:border-dark-600",
+          "card-glass-hover cursor-pointer active:scale-[0.99]",
         ),
         enterDelayMs !== undefined && "animate-card-enter",
         className,
@@ -42,7 +42,7 @@ export function CardHeader({ className, ...rest }: HTMLAttributes<HTMLDivElement
   return (
     <div
       className={cx(
-        "mb-3 flex items-center justify-between gap-3 border-b border-dark-700 pb-3",
+        "mb-3 flex items-center justify-between gap-3 border-b border-white/10 pb-3",
         className,
       )}
       {...rest}
@@ -66,7 +66,8 @@ const HIGHLIGHTS: Record<Highlight, string> = {
   green: "text-accent-green",
   red: "text-accent-red",
   orange: "text-accent-orange",
-  none: "text-content-1",
+  // brand emphasis: neutral metrics read in the AA-safe violet tint
+  none: "text-accent-primary-text",
 };
 
 export function MetricBox({ label, value, highlight = "none", hint }: {
@@ -76,22 +77,23 @@ export function MetricBox({ label, value, highlight = "none", hint }: {
   hint?: string;
 }) {
   const box = (
-    <div className={cx("rounded bg-dark-700/50 p-2.5", hint && "cursor-help")}>
+    <div className={cx("rounded-md bg-dark-700/50 p-2.5", hint && "cursor-help")}>
       <div className="text-xs uppercase tracking-wide text-content-3">{label}</div>
       <div className={cx("mt-0.5 font-mono font-bold tabular-nums", HIGHLIGHTS[highlight])}>
         {value}
       </div>
     </div>
   );
-  // long-hover explainer (§5.2) instead of the native title tooltip
+  // long-hover explainer instead of the native title tooltip
   return hint ? <Hint text={hint} className="block">{box}</Hint> : box;
 }
 
 // ---- Badge -----------------------------------------------------------------
 
-type BadgeVariant = "blue" | "green" | "red" | "orange" | "neutral";
+type BadgeVariant = "violet" | "blue" | "green" | "red" | "orange" | "neutral";
 
 const BADGES: Record<BadgeVariant, string> = {
+  violet: "bg-accent-primary text-white border-accent-primary",
   blue: "bg-accent-blue/15 text-accent-blue border-accent-blue/30",
   green: "bg-accent-green/15 text-accent-green border-accent-green/30",
   red: "bg-accent-red/15 text-accent-red border-accent-red/30",
@@ -105,7 +107,7 @@ export function Badge({ variant = "neutral", className, ...rest }: {
   return (
     <span
       className={cx(
-        // badge-pulse (§5.1): one gentle pulse when the badge appears
+        // one gentle pulse when the badge appears
         "animate-badge-pulse inline-flex items-center rounded border px-2 py-1 text-xs font-medium",
         BADGES[variant],
         className,

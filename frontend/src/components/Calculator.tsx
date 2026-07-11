@@ -52,8 +52,8 @@ export default function Calculator() {
 
   if (!candidate) {
     return (
-      <div className="rounded-lg border border-dashed border-slate-700 p-10 text-center text-slate-500">
-        Pick a candidate in the Detector first.
+      <div className="rounded-lg border border-dashed border-dark-600 p-10 text-center text-content-3">
+        Pick a candidate in the Screener first.
       </div>
     );
   }
@@ -75,11 +75,11 @@ export default function Calculator() {
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-lg font-medium capitalize">
+      <div className="card-glass flex flex-wrap items-center gap-3 px-4 py-3">
+        <h2 className="text-lg font-semibold capitalize">
           {strategyLabel(candidate.strategyType)}
         </h2>
-        <span className="text-sm text-slate-400">
+        <span className="text-sm text-content-3">
           {candidate.symbol} · expires {shortDate(candidate.expiration)} ({candidate.daysToExpiry}d)
           · spot {money(candidate.meta.spot, 2)}
         </span>
@@ -97,12 +97,12 @@ export default function Calculator() {
             Compare candidates →
           </Button>
           <Button variant="secondary" onClick={() => setCaptureMode("paper")}
-            title="Open this position in the risk-free paper simulator"
+            title="Open this position in the risk-free Sandbox simulator"
             data-testid="log-paper-trade">
-            Log as Paper Trade
+            Log to Sandbox
           </Button>
           <Button onClick={() => setCaptureMode("journal")} data-testid="save-to-journal">
-            Save to Journal
+            Save to Position Log
           </Button>
         </div>
       </div>
@@ -114,7 +114,7 @@ export default function Calculator() {
 
       {s.status === "calculating" && !result && <CalculatorSkeleton />}
       {s.status === "calculating" && result && (
-        <div className="rounded-md bg-dark-800 px-4 py-2 text-sm text-content-2">
+        <div className="card-glass px-4 py-2 text-sm text-content-2">
           Recalculating…
         </div>
       )}
@@ -130,12 +130,12 @@ export default function Calculator() {
               maxLoss={result.payoff.maxLoss}
             />
             {narrative(result, candidate.symbol) && (
-              <p className="mt-2 text-sm text-accent-blue/90">
+              <p className="mt-2 text-sm text-accent-primary-text">
                 {narrative(result, candidate.symbol)}
               </p>
             )}
             {!expertMode && (
-              <div className="mt-3 rounded-md border border-dark-700 bg-dark-800 p-4 text-sm text-content-2"
+              <div className="card-glass mt-3 p-4 text-sm text-content-2"
                 data-testid="beginner-explainer">
                 <h3 className="mb-1 text-xs font-medium uppercase tracking-wide text-content-3">
                   Understanding the payoff
@@ -182,18 +182,18 @@ export default function Calculator() {
             )}
             {expertMode && <GreeksSummary greeks={result.netGreeks} />}
 
-            <div className="rounded-lg border border-slate-800">
-              <div className="border-b border-slate-800 px-3 py-2 text-xs uppercase tracking-wide text-slate-500">
-                Legs — edit strikes to explore
+            <div className="card-glass overflow-hidden p-0">
+              <div className="border-b border-white/10 px-3 py-2 text-xs uppercase tracking-wide text-content-3">
+                Legs: edit strikes to explore
               </div>
               <table className="w-full text-sm">
                 <tbody>
                   {legs.map((leg, i) => (
-                    <tr key={`${leg.type}-${i}`} className="border-b border-slate-800/60 last:border-0">
+                    <tr key={`${leg.type}-${i}`} className="border-b border-white/5 last:border-0">
                       <td className="px-3 py-2 capitalize">{leg.type.replace(/_/g, " ")}</td>
                       <td className="px-3 py-2">
                         {leg.type.endsWith("stock") ? (
-                          <span className="text-slate-500">—</span>
+                          <span className="text-content-3">—</span>
                         ) : (
                           <input
                             type="number"
@@ -212,16 +212,16 @@ export default function Calculator() {
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-2 tabular-nums text-slate-400">
+                      <td className="px-3 py-2 tabular-nums text-content-3">
                         {leg.greeks ? `Δ ${num(leg.greeks.delta)}` : ""}
                       </td>
-                      <td className="px-3 py-2 tabular-nums text-slate-500">×{leg.qty}</td>
+                      <td className="px-3 py-2 tabular-nums text-content-3">×{leg.qty}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               {dirty && (
-                <div className="flex gap-2 border-t border-slate-800 px-3 py-2">
+                <div className="flex gap-2 border-t border-white/10 px-3 py-2">
                   <Button size="xs" onClick={() => recalculate()}
                     title="Reprice adjusted legs at Black-Scholes theoretical value and recompute everything">
                     Recalculate (theoretical)
@@ -258,7 +258,7 @@ export default function Calculator() {
 }
 
 // v1.3.1 Bug 1 (+ v1.3.3 paper mode): capture the on-screen strategy into
-// the journal or the paper simulator without leaving the Calculator.
+// the Position Log or the Sandbox without leaving the Trade Analyzer.
 // Pre-filled from the candidate; entry price, size and targets are editable
 // and ride along as overrides — the full candidate snapshot is still stored,
 // so marks and paper settlement keep working. Paper mode reserves capital
@@ -305,18 +305,18 @@ function TradeCaptureModal({ candidate, mode, onClose }: {
     if (ok) onClose(); // success toast comes from the store
   }
 
-  const cta = paper ? "Log as Paper Trade" : "Save to Journal";
+  const cta = paper ? "Log to Sandbox" : "Save to Position Log";
   return (
     <Modal open onClose={onClose} testid="trade-capture-modal" maxWidth="max-w-md">
       <h3 className="mb-1 text-base font-medium">
-        {paper ? "Log as paper trade" : "Save to journal"}
+        {paper ? "Log to Sandbox" : "Save to Position Log"}
       </h3>
       <p className="mb-4 text-sm text-content-3">
         <span className="font-mono font-semibold text-content-1">{candidate.symbol}</span>
         {" · "}<span className="capitalize">{strategyLabel(candidate.strategyType)}</span>
         {" · "}expires {shortDate(candidate.expiration)}
         {paper
-          ? " · reserves capital from your paper budget"
+          ? " · reserves capital from your sandbox budget"
           : " · logged as open, dated today"}
       </p>
       <div className="space-y-3">
@@ -341,7 +341,7 @@ function TradeCaptureModal({ candidate, mode, onClose }: {
           <span className="text-[11px] uppercase tracking-wide text-content-3">Notes (optional)</span>
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2}
             data-testid="save-note"
-            className="mt-0.5 w-full rounded-sm border border-dark-600 bg-dark-700 px-2 py-1.5 text-sm text-content-1 focus:border-blue-500 focus:outline-none" />
+            className="mt-0.5 w-full rounded-md border border-white/15 bg-dark-700 px-2 py-1.5 text-sm text-content-1 focus:border-accent-primary focus:outline-none" />
         </label>
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
@@ -359,18 +359,18 @@ function Stat({ label, value, hint, tone, onInfo }: {
   onInfo?: () => void;
 }) {
   return (
-    <div className="cursor-help rounded-md bg-dark-800 p-3" title={hint}>
+    <div className="cursor-help rounded-md bg-dark-700/50 p-3" title={hint}>
       <div className="text-xs uppercase tracking-wide text-content-3">
         {label}
         {onInfo && (
           <button onClick={onInfo} title="Open in the glossary" aria-label={`Glossary: ${label}`}
-            className="ml-1 text-content-3/70 transition-colors duration-150 hover:text-accent-blue">
+            className="ml-1 text-content-3/70 transition-colors duration-150 hover:text-accent-primary-text">
             ⓘ
           </button>
         )}
       </div>
       <div className={`mt-0.5 font-mono font-medium tabular-nums ${
-        tone === "good" ? "text-accent-green" : tone === "bad" ? "text-accent-red" : ""
+        tone === "good" ? "text-accent-green" : tone === "bad" ? "text-accent-red" : "text-accent-primary-text"
       }`}>
         {value}
       </div>

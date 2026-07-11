@@ -62,7 +62,7 @@ export default function FilterPanel({ filters, onPatch, onClear, expertMode, act
 
   return (
     <aside
-      className="w-full shrink-0 space-y-4 rounded-lg border border-dark-700 bg-dark-800 p-4 lg:w-60"
+      className="card-glass h-fit w-full shrink-0 space-y-4 p-4 lg:w-60"
       data-testid="filter-panel"
     >
       <div className="flex items-center justify-between">
@@ -82,9 +82,9 @@ export default function FilterPanel({ filters, onPatch, onClear, expertMode, act
               onClick={() => toggleStrategy(s)}
               data-strategy-chip={s}
               className={cx(
-                "rounded border px-2 py-1 text-xs capitalize transition-all duration-150 ease-out",
+                "rounded border px-2 py-1 text-xs capitalize transition-all duration-150 ease-out-quad",
                 filters.strategies.includes(s)
-                  ? "border-accent-blue/60 bg-accent-blue/15 text-accent-blue"
+                  ? "border-accent-primary/60 bg-accent-primary/15 text-accent-primary-text"
                   : "border-dark-600 text-content-3 hover:border-dark-500 hover:text-content-2",
               )}
             >

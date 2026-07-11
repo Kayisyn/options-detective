@@ -8,8 +8,9 @@ import SortControl from "./shared/SortControl";
 import { RecommenderSkeleton } from "./shared/Skeleton";
 import { useMode } from "../contexts/ModeContext";
 
-// View 3: top candidates ranked by composite score, trade-off facts,
-// broker-format export to clipboard.
+// Optimal Strategies view (renamed from Recommender, v1.4.0): the top
+// strategy under the active sort is featured full-width with the violet
+// glow; the rest rank below. Trade-off facts and broker export unchanged.
 export default function Recommender() {
   const s = useStore();
   const { expertMode } = useMode();
@@ -19,7 +20,7 @@ export default function Recommender() {
   const [sort, setSort] = useState<SortSpec>(DEFAULT_SORT);
 
   useEffect(() => {
-    s.loadJournal(); // so Save buttons reflect what's already journaled
+    s.loadJournal(); // so Save buttons reflect what's already logged
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   }, []);
 
@@ -27,7 +28,7 @@ export default function Recommender() {
     return (
       <section className="space-y-4">
         <div>
-          <h2 className="text-lg font-medium">Top candidates</h2>
+          <h2 className="text-lg font-semibold">Optimal strategies</h2>
           <p className="text-sm text-content-3">Ranking…</p>
         </div>
         <RecommenderSkeleton />
@@ -36,8 +37,8 @@ export default function Recommender() {
   }
   if (!rec) {
     return (
-      <div className="rounded-lg border border-dashed border-slate-700 p-10 text-center text-slate-500">
-        Run a screen in the Detector, then compare candidates here.
+      <div className="rounded-lg border border-dashed border-dark-600 p-10 text-center text-content-3">
+        Run a screen in the Screener, then compare the optimal strategies here.
       </div>
     );
   }
@@ -49,47 +50,60 @@ export default function Recommender() {
     .map(([k, v]) => `${k} ${Math.round(v * 100)}%`)
     .join(" · ") + (customWeights ? " (custom)" : "");
 
+  const sorted = sortCandidates(rec.ranked, sort);
+  const [top, ...rest] = sorted;
+
+  const cardProps = (c: typeof sorted[number]) => ({
+    candidate: c,
+    exported: s.exportedId === c.id,
+    saved: s.savedTrades.some((t) => t.candidate?.id === c.id),
+    onOpen: () => s.openCandidate(c),
+    onExport: () => s.exportTrade(c.id, c.exportText),
+    onSave: () => s.saveToJournal(c, { exportText: c.exportText }),
+  });
+
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-lg font-medium">Top candidates</h2>
+          <h2 className="text-lg font-semibold">Optimal strategies</h2>
           {expertMode ? (
             <p className="text-sm text-content-3" title="How the composite score is weighted">
               Ranked by composite score: {weightLine}
             </p>
           ) : (
             <p className="text-sm text-content-3">
-              Best first — each card says what the strategy is good for.
+              Best first. Each card says what the strategy is good for.
             </p>
           )}
         </div>
         <SortControl sort={sort} onChange={setSort} />
       </div>
 
+      {top && (
+        <div data-testid="top-strategy">
+          <div className="mb-1.5 text-xs font-medium uppercase tracking-wide text-accent-primary-text">
+            Top strategy
+          </div>
+          <CandidateCard featured {...cardProps(top)} />
+        </div>
+      )}
+
       <div className="grid gap-3 lg:grid-cols-2">
-        {sortCandidates(rec.ranked, sort).map((c) => (
-          <CandidateCard
-            key={c.id}
-            candidate={c}
-            exported={s.exportedId === c.id}
-            saved={s.savedTrades.some((t) => t.candidate?.id === c.id)}
-            onOpen={() => s.openCandidate(c)}
-            onExport={() => s.exportTrade(c.id, c.exportText)}
-            onSave={() => s.saveToJournal(c, { exportText: c.exportText })}
-          />
+        {rest.map((c) => (
+          <CandidateCard key={c.id} {...cardProps(c)} />
         ))}
       </div>
 
       {rec.tradeoffs.length > 0 && (
-        <div className="rounded-lg border border-slate-800 p-4">
-          <h3 className="text-sm font-medium uppercase tracking-wide text-slate-500">
+        <div className="card-glass p-4">
+          <h3 className="text-sm font-medium uppercase tracking-wide text-content-3">
             Trade-offs
           </h3>
-          <ul className="mt-2 space-y-2 text-sm text-slate-300">
+          <ul className="mt-2 space-y-2 text-sm text-content-2">
             {rec.tradeoffs.flatMap((t) => t.facts).map((fact) => (
               <li key={fact} className="flex gap-2">
-                <span className="text-sky-500">›</span>
+                <span className="text-accent-primary-text">›</span>
                 {fact}
               </li>
             ))}
@@ -97,7 +111,7 @@ export default function Recommender() {
         </div>
       )}
 
-      <details className="text-xs text-slate-600">
+      <details className="text-xs text-content-3">
         <summary className="cursor-pointer">How to read this</summary>
         <p className="mt-1 max-w-2xl">
           Every number comes from the deterministic math engine — POP {pct(0.62)} means the
@@ -108,10 +122,10 @@ export default function Recommender() {
         </p>
       </details>
 
-      <div className="text-xs text-slate-600">
-        {rec.ranked[0] && (
-          <>Top pick: {strategyLabel(rec.ranked[0].strategyType)} expiring {shortDate(rec.ranked[0].expiration)},
-          needs {money(rec.ranked[0].sizing.capitalRequired)}.</>
+      <div className="text-xs text-content-3">
+        {sorted[0] && (
+          <>Top pick: {strategyLabel(sorted[0].strategyType)} expiring {shortDate(sorted[0].expiration)},
+          needs {money(sorted[0].sizing.capitalRequired)}.</>
         )}
       </div>
     </section>

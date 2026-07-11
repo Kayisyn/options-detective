@@ -90,7 +90,7 @@ export default function IndexComponentScreener() {
   if (!s.icsEtf) {
     return (
       <section className="rounded-lg border border-dashed border-dark-600 p-8 text-center text-content-3">
-        Pick an ETF in the <button className="text-accent-blue underline" onClick={() => s.setView("etf")}>ETF Screener</button> and
+        Pick an ETF in the <button className="text-accent-primary-text underline" onClick={() => s.setView("etf")}>Asset Screener</button> and
         hit “Expand holdings” to screen options across all of its components.
       </section>
     );
@@ -101,7 +101,7 @@ export default function IndexComponentScreener() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <button className="mb-1 text-xs text-content-3 hover:text-content-1" onClick={() => s.setView("etf")}>
-            ← ETF Screener
+            ← Asset Screener
           </button>
           <h2 className="text-lg font-medium">
             {s.icsEtf} — component screener
@@ -136,7 +136,7 @@ export default function IndexComponentScreener() {
         <Card className="space-y-3 p-6 text-center" data-testid="ics-loading">
           <div className="text-content-2">Screening every holding of {s.icsEtf}…</div>
           <div className="mx-auto h-1.5 w-64 overflow-hidden rounded-full bg-dark-700">
-            <div className="h-full w-1/3 animate-pulse rounded-full bg-accent-blue" />
+            <div className="h-full w-1/3 animate-skeleton rounded-full bg-accent-primary" />
           </div>
           <div className="text-xs text-content-3">
             First run fetches live option chains for each holding (typically 30–90s).
@@ -156,9 +156,9 @@ export default function IndexComponentScreener() {
                   <button key={n} data-subset={n}
                     onClick={() => setSubset(n)}
                     className={cx(
-                      "rounded border px-2 py-1 text-xs transition-all duration-150 ease-out",
+                      "rounded border px-2 py-1 text-xs transition-all duration-150 ease-out-quad",
                       subset === n
-                        ? "border-accent-blue/60 bg-accent-blue/15 text-accent-blue"
+                        ? "border-accent-primary/60 bg-accent-primary/15 text-accent-primary-text"
                         : "border-dark-600 text-content-3 hover:border-dark-500 hover:text-content-2",
                     )}>
                     {n === 0 ? "All" : `Top ${n}`}
@@ -173,9 +173,9 @@ export default function IndexComponentScreener() {
                   {sectorOptions.map((sec) => (
                     <button key={sec} onClick={() => toggleSector(sec)}
                       className={cx(
-                        "rounded border px-2 py-1 text-xs transition-all duration-150 ease-out",
+                        "rounded border px-2 py-1 text-xs transition-all duration-150 ease-out-quad",
                         sectors.includes(sec)
-                          ? "border-accent-blue/60 bg-accent-blue/15 text-accent-blue"
+                          ? "border-accent-primary/60 bg-accent-primary/15 text-accent-primary-text"
                           : "border-dark-600 text-content-3 hover:border-dark-500 hover:text-content-2",
                       )}>
                       {sec}
@@ -196,7 +196,7 @@ export default function IndexComponentScreener() {
             </div>
           </Card>
 
-          <div className="overflow-hidden rounded-lg border border-dark-700" data-testid="ics-results">
+          <div className="card-glass overflow-hidden p-0" data-testid="ics-results">
             <table className="w-full text-sm">
               <thead className="bg-dark-800 text-xs uppercase tracking-wide text-content-3">
                 <tr>
@@ -216,7 +216,7 @@ export default function IndexComponentScreener() {
                 {filtered.slice(0, shown).map((c, i) => (
                   <tr key={c.symbol + c.id} data-testid="ics-row"
                     onClick={() => s.openCandidate(c, "ics")}
-                    title="Open in Calculator"
+                    title="Open in the Trade Analyzer"
                     className="cursor-pointer border-t border-dark-700 hover:bg-dark-800/50">
                     <td className="px-3 py-2 text-content-3">{i + 1}</td>
                     <td className="px-3 py-2 font-mono font-semibold">{c.symbol}</td>
@@ -231,7 +231,7 @@ export default function IndexComponentScreener() {
                       <span className="text-accent-red">{c.payoff.maxLoss == null ? "∞" : money(c.payoff.maxLoss)}</span>
                     </td>
                     <td className="px-3 py-2 text-right font-mono text-content-3">{money(c.sizing.capitalRequired)}</td>
-                    <td className="px-3 py-2 text-right font-mono font-bold text-accent-blue">{c.compositeScore.toFixed(1)}</td>
+                    <td className="px-3 py-2 text-right font-mono font-bold text-accent-primary-text">{c.compositeScore.toFixed(1)}</td>
                   </tr>
                 ))}
               </tbody>

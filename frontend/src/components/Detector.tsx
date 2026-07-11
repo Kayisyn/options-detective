@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useStore } from "../store";
 import { money, num, pct, shortDate, signed, strategyLabel } from "../lib/format";
 import Button from "./ui/Button";
@@ -68,7 +68,6 @@ export default function Detector() {
   const result = s.screenResult;
   const screening = s.status === "screening";
   const [detailsId, setDetailsId] = useState<string | null>(null);
-  const [scrolled, setScrolled] = useState(false);
 
   // filtered + sorted view of the screened set. Rank chips show the
   // composite rank under the ACTIVE weights, so custom weights visibly
@@ -81,20 +80,9 @@ export default function Detector() {
       .map((c, i) => [c.id, i + 1]));
   const activePreset = WEIGHT_PRESETS.find((p) => weightsEqual(s.weights, p.weights));
 
-  // §5.2 scroll indicator: bounce until the user scrolls, re-arm per screen
-  useEffect(() => {
-    setScrolled(false);
-    function onScroll() {
-      setScrolled(true);
-      window.removeEventListener("scroll", onScroll);
-    }
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [result]);
-
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="card-glass flex flex-wrap items-end gap-3 p-4">
         <FormInput
           label="Symbol"
           placeholder="AAPL, SPY, NVDA"
@@ -129,7 +117,7 @@ export default function Detector() {
             type="checkbox"
             checked={s.definedRiskOnly}
             onChange={(e) => s.setIntent({ definedRiskOnly: e.target.checked })}
-            className="accent-blue-600"
+            className="accent-accent-primary"
           />
           Defined risk only
         </label>
@@ -145,11 +133,11 @@ export default function Detector() {
           variant="ghost"
           size="sm"
           onClick={() => s.setView("etf")}
-          title="Don't know what to screen? Discover ETF candidates"
+          title="Don't know what to screen? Discover candidates in the Asset Screener"
           className="mb-1"
           data-testid="discover-etfs"
         >
-          Discover ETFs →
+          Asset Screener →
         </Button>
         {result && (
           <Button
@@ -169,7 +157,7 @@ export default function Detector() {
 
       {!screening && result && (
         <>
-          <div className="flex flex-wrap items-center gap-4 rounded-md bg-dark-800 px-4 py-3 text-sm">
+          <div className="card-glass flex flex-wrap items-center gap-4 px-4 py-3 text-sm">
             <span className="font-mono text-base font-semibold">{result.symbol}</span>
             <span className="font-mono font-bold tabular-nums">{money(result.price, 2)}</span>
             {expertMode && (
@@ -179,7 +167,7 @@ export default function Detector() {
                   onClick={() => s.openHelp("iv-rank")}
                   aria-label="Glossary: IV rank"
                   title="Open in the glossary"
-                  className="ml-1 text-content-3/70 transition-colors duration-150 hover:text-accent-blue"
+                  className="ml-1 text-content-3/70 transition-colors duration-150 hover:text-accent-primary-text"
                 >
                   ⓘ
                 </button>
@@ -227,7 +215,7 @@ export default function Detector() {
                     key={chip.id}
                     onClick={() => s.patchFilters(chip.patch)}
                     data-testid="filter-chip"
-                    className="inline-flex items-center gap-1 rounded border border-accent-blue/40 bg-accent-blue/10 px-2 py-1 text-xs capitalize text-accent-blue transition-all duration-150 ease-out hover:bg-accent-blue/20"
+                    className="inline-flex items-center gap-1 rounded border border-accent-primary/50 bg-accent-primary/15 px-2 py-1 text-xs capitalize text-accent-primary-text transition-all duration-150 ease-out-quad hover:bg-accent-primary/25"
                     title="Remove this filter"
                   >
                     {chip.label} <span aria-hidden>✕</span>
@@ -269,7 +257,7 @@ export default function Detector() {
               >
                 <CardHeader>
                   <div className="flex items-center gap-2.5">
-                    <span className="rounded bg-dark-700 px-2 py-0.5 text-xs font-semibold text-accent-blue"
+                    <span className="rounded bg-accent-primary px-2 py-0.5 text-xs font-semibold text-white"
                       title="Composite-score rank from the screen">
                       #{rankById.get(c.id)}
                     </span>
@@ -298,7 +286,7 @@ export default function Detector() {
                       {pct(c.probability.pop)} POP
                     </Badge>
                     {expertMode && (
-                      <span className="font-mono font-bold tabular-nums text-accent-blue"
+                      <span className="font-mono font-bold tabular-nums text-accent-primary-text"
                         title={customWeights
                           ? "Composite score under YOUR weights — open Settings → Scoring to adjust"
                           : "Composite: POP 30% · risk/reward 20% · theta 20% · capital efficiency 15% · liquidity 15%"}>
@@ -349,7 +337,7 @@ export default function Detector() {
                   <div className="mt-3 border-t border-dark-700 pt-3 text-sm text-content-2"
                     onClick={(e) => e.stopPropagation()}>
                     {!expertMode && (
-                      <p className="mb-1 text-accent-blue">
+                      <p className="mb-1 text-accent-primary-text">
                         Best for: {BEST_FOR[c.strategyType]}
                       </p>
                     )}
@@ -382,15 +370,6 @@ export default function Detector() {
             </div>
           </div>
 
-          {visible.length > 6 && !scrolled && (
-            <div
-              data-testid="scroll-indicator"
-              className="animate-bounce-down pointer-events-none fixed bottom-4 left-1/2 z-40 -translate-x-1/2 text-content-3"
-              aria-hidden
-            >
-              ▼
-            </div>
-          )}
         </>
       )}
 

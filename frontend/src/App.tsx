@@ -14,15 +14,34 @@ import ViewTransition from "./components/shared/ViewTransition";
 import { useMode } from "./contexts/ModeContext";
 import { useStore, type View } from "./store";
 
+// v1.4.0 naming: view ids stay stable (routes, tests, stored state); only
+// the labels change. Detector -> Screener, Calculator -> Trade Analyzer,
+// Recommender -> Optimal Strategies, Journal -> Position Log,
+// Paper -> Sandbox, ETFs -> Asset Screener.
 const TABS: Array<{ id: View; label: string; hint: string }> = [
   { id: "home", label: "Home", hint: "Start page" },
-  { id: "detector", label: "1 · Detector", hint: "Screen opportunities" },
-  { id: "calculator", label: "2 · Calculator", hint: "Analyze the math" },
-  { id: "recommender", label: "3 · Recommender", hint: "Compare and export" },
-  { id: "journal", label: "Journal", hint: "Your saved trades" },
-  { id: "paper", label: "Paper", hint: "Risk-free simulator with a paper budget" },
-  { id: "etf", label: "ETFs", hint: "Discover ETF option-selling candidates" },
+  { id: "detector", label: "Screener", hint: "Screen option opportunities" },
+  { id: "calculator", label: "Analyzer", hint: "Analyze the trade math" },
+  { id: "recommender", label: "Recommendations", hint: "Optimal strategies, compared and exportable" },
+  { id: "journal", label: "Position Log", hint: "Your saved positions" },
+  { id: "paper", label: "Sandbox", hint: "Risk-free simulator with a practice budget" },
+  { id: "etf", label: "Assets", hint: "Asset Screener — discover ETF option-selling candidates" },
 ];
+
+// Minimal geometric obelisk mark (two strokes, violet gradient).
+function ObeliskMark() {
+  return (
+    <svg width="18" height="24" viewBox="0 0 18 24" aria-hidden className="shrink-0">
+      <defs>
+        <linearGradient id="obelisk-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#A34AFF" />
+          <stop offset="1" stopColor="#9733FF" />
+        </linearGradient>
+      </defs>
+      <path d="M6 24 L7 6 L9 0 L11 6 L12 24 Z" fill="url(#obelisk-grad)" />
+    </svg>
+  );
+}
 
 export default function App() {
   const view = useStore((s) => s.view);
@@ -43,8 +62,8 @@ export default function App() {
     }
   });
 
-  // Keyboard shortcuts (§5.5): Ctrl+K jumps to screening, Ctrl+Shift+?
-  // reopens the walkthrough. Ctrl+Shift+D lives in ThemeProvider.
+  // Keyboard shortcuts: Ctrl+K jumps to the Screener, Ctrl+Shift+?
+  // reopens the walkthrough.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === "k") {
@@ -71,10 +90,10 @@ export default function App() {
     journal: true,
     paper: true,
     etf: true,
-    ics: true, // reached from the ETF screener, not the nav
+    ics: true, // reached from the Asset Screener, not the nav
   };
 
-  // ICS is a drill-down of the ETF screener — keep its tab lit
+  // ICS is a drill-down of the Asset Screener — keep its tab lit
   const activeTab = view === "ics" ? "etf" : view;
 
   return (
@@ -84,55 +103,56 @@ export default function App() {
       <HelpDrawer onReplayWalkthrough={() => setOnboardingOpen(true)} />
       {toast && (
         <div
-          className="fixed left-1/2 top-4 z-[60] -translate-x-1/2 animate-toast-in rounded-md border border-accent-green/40 bg-dark-800 px-4 py-2 text-sm text-accent-green shadow-lg"
+          className="card-glass fixed left-1/2 top-4 z-[60] -translate-x-1/2 animate-toast-in border-accent-green/40 px-4 py-2 text-sm text-accent-green"
           data-testid="toast"
         >
           {toast}
         </div>
       )}
-      <header className="border-b border-dark-700 px-6 py-4">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-glass backdrop-blur-glass">
+        <div className="mx-auto flex min-h-14 max-w-7xl flex-wrap items-center justify-between gap-y-1 px-6 py-1.5">
           <button
             onClick={() => setView("home")}
-            className="text-xl font-semibold tracking-tight transition-colors duration-150 hover:text-accent-blue"
+            className="flex items-center gap-2 text-lg font-bold tracking-tight transition-colors duration-150 hover:text-accent-primary-text"
             title="Home"
             data-testid="logo"
           >
-            Options Detective
+            <ObeliskMark />
+            Option Obelisk
           </button>
-          <nav className="flex items-center gap-2">
+          <nav className="flex flex-wrap items-center gap-1">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => enabled[tab.id] && setView(tab.id)}
                 title={tab.hint}
                 disabled={!enabled[tab.id]}
-                className={`rounded-md px-4 py-2 text-sm transition-all duration-150 ease-out ${
+                className={`rounded-md px-3 py-1.5 text-sm transition-all duration-150 ease-out-quad ${
                   activeTab === tab.id
-                    ? "bg-accent-blue text-white shadow-md"
+                    ? "bg-accent-primary text-white shadow-violet-glow"
                     : enabled[tab.id]
-                      ? "bg-dark-800 text-content-3 hover:bg-dark-700 hover:text-content-1"
-                      : "cursor-not-allowed bg-dark-800 text-content-3/40"
+                      ? "text-content-3 hover:bg-dark-700 hover:text-content-1"
+                      : "cursor-not-allowed text-content-3/40"
                 }`}
               >
                 {tab.label}
               </button>
             ))}
-            <span className="mx-1 h-6 w-px bg-dark-600" />
+            <span className="mx-2 h-6 w-px bg-white/10" />
             <button
               onClick={toggleMode}
               title="Switch complexity level — beginner hides greeks behind plain-language summaries"
               data-testid="mode-toggle"
-              className="rounded-md bg-dark-800 px-3 py-2 text-sm text-content-2 transition-all duration-150 ease-out hover:bg-dark-700"
+              className="rounded-md px-3 py-1.5 text-sm text-content-3 transition-all duration-150 ease-out-quad hover:bg-dark-700 hover:text-content-1"
             >
               {expertMode ? "Expert" : "Beginner"}
             </button>
             <button
               onClick={() => setSettingsOpen(true)}
-              title="Settings — themes and complexity"
+              title="Settings — theme, scoring and complexity"
               data-testid="settings-button"
               aria-label="Settings"
-              className="rounded-md bg-dark-800 px-3 py-2 text-sm text-content-2 transition-all duration-150 ease-out hover:bg-dark-700"
+              className="rounded-md px-3 py-1.5 text-sm text-content-3 transition-all duration-150 ease-out-quad hover:bg-dark-700 hover:text-content-1"
             >
               ⚙
             </button>
@@ -141,7 +161,7 @@ export default function App() {
               title="Help & glossary (Ctrl+Shift+?)"
               data-testid="help-button"
               aria-label="Help"
-              className="rounded-md bg-dark-800 px-3 py-2 text-sm text-content-2 transition-all duration-150 ease-out hover:bg-dark-700"
+              className="rounded-md px-3 py-1.5 text-sm text-content-3 transition-all duration-150 ease-out-quad hover:bg-dark-700 hover:text-content-1"
             >
               ?
             </button>
@@ -149,11 +169,11 @@ export default function App() {
         </div>
       </header>
       {error && (
-        <div className="mx-auto mt-4 max-w-6xl rounded-md border border-red-800 bg-red-950/60 px-4 py-2 text-sm text-red-200">
+        <div className="card-glass mx-auto mt-4 max-w-7xl border-accent-red/40 px-4 py-2 text-sm text-accent-red">
           {error}
         </div>
       )}
-      <main className="mx-auto max-w-6xl overflow-x-hidden p-6">
+      <main className="mx-auto max-w-7xl overflow-x-hidden p-6">
         <ViewTransition viewKey={view}>
           {view === "home" && <Home />}
           {view === "detector" && <Detector />}

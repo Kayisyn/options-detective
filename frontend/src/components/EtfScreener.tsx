@@ -7,9 +7,10 @@ import { Badge, Card, MetricBox } from "./ui/Card";
 import { FormInput, FormSelect } from "./ui/Input";
 import type { EtfFilters, EtfRecord, EtfStrategy } from "../types";
 
-// ETF Screener (v2.0 §2.6): preset buttons, filter panel, ranked results
-// with score breakdowns, watchlist, and "Analyze in Detector". All metrics
-// are backend-fetched; this view filters/ranks presentation only.
+// Asset Screener (renamed from ETF Screener, v1.4.0): preset buttons,
+// filter panel, ranked results with score breakdowns, watchlist, and
+// "Analyze in Screener". All metrics are backend-fetched; this view
+// filters/ranks presentation only.
 
 const STRATEGY_LABEL: Record<EtfStrategy, string> = {
   covered_call: "Covered call",
@@ -38,9 +39,9 @@ function ChipRow<T extends string>({ options, selected, onToggle }: {
       {options.map((opt) => (
         <button key={opt} onClick={() => onToggle(opt)}
           className={cx(
-            "rounded border px-2 py-1 text-xs transition-all duration-150 ease-out",
+            "rounded border px-2 py-1 text-xs transition-all duration-150 ease-out-quad",
             selected.includes(opt)
-              ? "border-accent-blue/60 bg-accent-blue/15 text-accent-blue"
+              ? "border-accent-primary/60 bg-accent-primary/15 text-accent-primary-text"
               : "border-dark-600 text-content-3 hover:border-dark-500 hover:text-content-2",
           )}>
           {opt}
@@ -94,7 +95,7 @@ export default function EtfScreener() {
     <section className="space-y-4" data-testid="etf-screener">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-lg font-medium">ETF Screener</h2>
+          <h2 className="text-lg font-semibold">Asset Screener</h2>
           <p className="text-sm text-content-3">
             Discover {ref?.count ?? "50+"} Vanguard &amp; iShares ETFs ripe for
             option selling. Reference data is static; prices, IV and premiums
@@ -114,7 +115,7 @@ export default function EtfScreener() {
         {ref?.presets.map((p) => (
           <button key={p.id} onClick={() => applyPreset(p.id)} title={p.hint}
             data-preset={p.id}
-            className="rounded-md border border-dark-600 bg-dark-800 px-3 py-2 text-sm text-content-2 transition-all duration-150 ease-out hover:border-accent-blue/50 hover:text-content-1">
+            className="rounded-md border border-white/15 bg-glass-light px-3 py-2 text-sm text-content-2 transition-all duration-150 ease-out-quad hover:border-accent-primary/60 hover:text-content-1">
             {p.name}
           </button>
         ))}
@@ -182,7 +183,7 @@ export default function EtfScreener() {
             </FormSelect>
           </div>
 
-          <div className="overflow-hidden rounded-lg border border-dark-700" data-testid="etf-results">
+          <div className="card-glass overflow-hidden p-0" data-testid="etf-results">
             <table className="w-full text-sm">
               <thead className="bg-dark-800 text-xs uppercase tracking-wide text-content-3">
                 <tr>
@@ -216,7 +217,7 @@ export default function EtfScreener() {
                       <td className="px-3 py-2 text-right font-mono text-accent-green">{num2(e.annualizedCallPremiumPct, "%")}</td>
                       <td className="px-3 py-2 text-right font-mono">{e.ivRank == null ? "—" : e.ivRank}</td>
                       <td className="px-3 py-2 text-right font-mono text-content-3">{e.callVolume == null ? "—" : e.callVolume.toLocaleString()}</td>
-                      <td className="px-3 py-2 text-right font-mono font-bold text-accent-blue">{(e.score ?? 0).toFixed(1)}</td>
+                      <td className="px-3 py-2 text-right font-mono font-bold text-accent-primary-text">{(e.score ?? 0).toFixed(1)}</td>
                       <td className="px-3 py-2 text-content-3">{expanded === e.ticker ? "▲" : "▾"}</td>
                     </tr>
                     {expanded === e.ticker && (
@@ -238,7 +239,7 @@ export default function EtfScreener() {
                                 <div key={b.key} className="flex items-center gap-2 text-xs">
                                   <span className="w-40 text-content-3">{b.label}</span>
                                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-dark-700">
-                                    <div className="h-full bg-accent-blue" style={{ width: `${b.component * 100}%` }} />
+                                    <div className="h-full bg-accent-primary" style={{ width: `${b.component * 100}%` }} />
                                   </div>
                                   <span className="w-10 text-right font-mono text-content-2">{b.points.toFixed(1)}</span>
                                 </div>
@@ -248,7 +249,7 @@ export default function EtfScreener() {
                           <div className="flex flex-wrap gap-2">
                             <Button size="xs" data-testid="etf-analyze"
                               onClick={(ev) => { ev.stopPropagation(); s.analyzeEtfInDetector(e.ticker); }}>
-                              Analyze in Detector →
+                              Analyze in Screener →
                             </Button>
                             <Button variant="secondary" size="xs" data-testid="etf-expand-holdings"
                               title="Screen option strategies across every holding of this ETF"
@@ -282,8 +283,9 @@ export default function EtfScreener() {
           <h3 className="mb-1 text-sm font-medium uppercase tracking-wide text-content-3">Watchlist</h3>
           <div className="flex flex-wrap gap-2" data-testid="etf-watchlist">
             {s.etfWatchlist.map((t) => (
-              <Badge key={t} variant="blue" className="cursor-pointer"
-                onClick={() => s.analyzeEtfInDetector(t)} title="Analyze in Detector">
+              <Badge key={t} variant="neutral"
+                className="card-glass cursor-pointer p-2 font-mono text-accent-primary-text transition-all duration-150 ease-out-quad hover:border-accent-primary/50"
+                onClick={() => s.analyzeEtfInDetector(t)} title="Analyze in Screener">
                 {t}
               </Badge>
             ))}

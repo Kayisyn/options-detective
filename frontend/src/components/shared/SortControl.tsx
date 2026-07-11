@@ -20,7 +20,7 @@ export default function SortControl({ sort, onChange, className }: {
           const option = SORT_OPTIONS.find((o) => o.key === key)!;
           onChange({ key, dir: option.defaultDir });
         }}
-        className="rounded-sm border border-dark-600 bg-dark-700 px-2 py-1.5 text-sm text-content-1 transition-all duration-150 ease-out focus:border-blue-500 focus:outline-none"
+        className="rounded-sm border border-dark-600 bg-dark-700 px-2 py-1.5 text-sm text-content-1 transition-all duration-150 ease-out focus:border-accent-primary focus:outline-none"
         data-testid="sort-select"
       >
         {SORT_OPTIONS.map((o) => (

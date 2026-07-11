@@ -52,7 +52,7 @@ export default function CountUp({ to, format, durationMs = 200, className }: {
 
   return (
     <span
-      className={cx(flashing && "animate-value-flash rounded-sm", className)}
+      className={cx(flashing && "animate-value-flash inline-block rounded-sm", className)}
       onAnimationEnd={() => setFlashing(false)}
       data-testid="countup"
     >
