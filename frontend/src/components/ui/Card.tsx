@@ -12,17 +12,22 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   interactive?: boolean;
   /** rank-#1 treatment: violet glow border */
   glow?: boolean;
+  /** v1.5.0 liquid-glass shimmer (opt-in: hero/stat/panel surfaces, not
+      100-row result lists — keeps the compositor layer count sane) */
+  liquid?: boolean;
   /** staggered entrance: animation-delay in ms */
   enterDelayMs?: number;
 }
 
 export function Card({
-  interactive = false, glow = false, enterDelayMs, className, style, ...rest
+  interactive = false, glow = false, liquid = false, enterDelayMs, className,
+  style, ...rest
 }: CardProps) {
   return (
     <div
       className={cx(
         "card-glass p-4",
+        liquid && "liquid-glass",
         glow && "border-accent-primary/60 shadow-glow",
         interactive && cx(
           "card-glass-hover cursor-pointer active:scale-[0.99]",

@@ -1,5 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cx } from "../../lib/cx";
+import { motionDisabled } from "../../lib/motionPref";
 
 // Button system, v1.4.0 obsidian overhaul: violet primary CTAs with hover
 // glow, press scale 0.95 + ripple. Radius scale rule: interactive controls
@@ -10,8 +11,9 @@ export type ButtonSize = "xs" | "sm" | "md" | "lg";
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: cx(
-    "od-btn-primary bg-accent-primary text-on-accent shadow-glass",
-    "hover:bg-accent-primary-hover hover:scale-[1.02] hover:shadow-accent-glow",
+    // v1.5.0: od-halo = breathing neon halo + inner shimmer (index.css)
+    "od-btn-primary od-halo bg-accent-primary text-on-accent shadow-glass",
+    "hover:bg-accent-primary-hover hover:scale-[1.02]",
     "active:scale-[0.95]",
     "disabled:bg-dark-600 disabled:text-content-2",
   ),
@@ -44,11 +46,15 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: ButtonSize;
 }
 
-// Ripple: spawn an expanding circle at the click point. Plain DOM on
-// purpose — the ripple is fire-and-forget and outside React's interest.
+// Ripple: spawn an expanding circle at the click point, inside a clipped
+// overlay layer (the button root can't be overflow-hidden anymore — the
+// v1.5.0 halo glow has to escape the box). Plain DOM on purpose — the
+// ripple is fire-and-forget and outside React's interest.
 function spawnRipple(e: React.PointerEvent<HTMLButtonElement>) {
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (motionDisabled()) return;
   const button = e.currentTarget;
+  const layer = button.querySelector("[data-ripple-layer]");
+  if (!layer) return;
   const rect = button.getBoundingClientRect();
   const size = Math.max(rect.width, rect.height);
   const ripple = document.createElement("span");
@@ -61,13 +67,14 @@ function spawnRipple(e: React.PointerEvent<HTMLButtonElement>) {
   ripple.style.height = `${size}px`;
   ripple.style.left = `${e.clientX - rect.left - size / 2}px`;
   ripple.style.top = `${e.clientY - rect.top - size / 2}px`;
-  button.appendChild(ripple);
+  layer.appendChild(ripple);
   ripple.addEventListener("animationend", () => ripple.remove());
   setTimeout(() => ripple.remove(), 500); // backstop
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = "primary", size = "md", className, type = "button", onPointerDown, ...rest },
+  { variant = "primary", size = "md", className, type = "button", onPointerDown,
+    children, ...rest },
   ref,
 ) {
   return (
@@ -79,7 +86,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
         onPointerDown?.(e);
       }}
       className={cx(
-        "relative overflow-hidden",
+        "relative",
         "inline-flex items-center justify-center gap-2 rounded-md font-medium",
         "transition-all duration-150 ease-out-quad",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/60",
@@ -90,7 +97,14 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
         className,
       )}
       {...rest}
-    />
+    >
+      {children}
+      <span
+        aria-hidden
+        data-ripple-layer
+        className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]"
+      />
+    </button>
   );
 });
 

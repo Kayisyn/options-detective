@@ -224,6 +224,9 @@ export default function PaperTrading() {
                 const expanded = expandedId === t.id;
                 return (
                   <Card key={t.id} interactive data-testid="paper-row"
+                    className={unrl !== null
+                      ? unrl > 0 ? "glow-pnl-win" : unrl < 0 ? "glow-pnl-loss" : ""
+                      : ""}
                     onClick={() => setExpandedId(expanded ? null : t.id)}>
                     <div className="flex flex-wrap items-center gap-3">
                       <span className="w-16 font-mono font-semibold">{t.symbol}</span>

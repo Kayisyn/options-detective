@@ -8,6 +8,7 @@ import {
   COMPONENT_KEYS, DEFAULT_WEIGHTS, effectiveScore, weightsEqual,
   type ScoreWeights,
 } from "./lib/scoring";
+import { applyMotionPref, type MotionPref } from "./lib/motionPref";
 import type {
   CalcResult, Candidate, CloseTradeInput, DirectionalView, EquityPoint,
   EtfFilters, EtfReference, EtfScreenResult, EtfStrategy, IcsResult,
@@ -26,25 +27,32 @@ const FX_KEY = "od.fx.v1"; // v1.5.0 visual-effects prefs
 interface FxPrefs {
   particles: boolean;
   particleCount: number; // 50-300
+  motion: MotionPref;    // system | on | off
 }
 
-const DEFAULT_FX: FxPrefs = { particles: true, particleCount: 200 };
+const DEFAULT_FX: FxPrefs = { particles: true, particleCount: 200, motion: "system" };
 
 function readStoredFx(): FxPrefs {
   try {
     const parsed = JSON.parse(localStorage.getItem(FX_KEY) ?? "null");
     if (!parsed || typeof parsed !== "object") return { ...DEFAULT_FX };
     const count = Number((parsed as FxPrefs).particleCount);
+    const motion = (parsed as FxPrefs).motion;
     return {
       particles: typeof (parsed as FxPrefs).particles === "boolean"
         ? (parsed as FxPrefs).particles : DEFAULT_FX.particles,
       particleCount: Number.isFinite(count)
         ? Math.min(300, Math.max(50, Math.round(count))) : DEFAULT_FX.particleCount,
+      motion: motion === "on" || motion === "off" ? motion : "system",
     };
   } catch {
     return { ...DEFAULT_FX };
   }
 }
+
+// stamp <html class="motion-off"> before the first render so entrance
+// animations resolve correctly from frame one
+applyMotionPref(readStoredFx().motion);
 
 function writeStoredFx(fx: FxPrefs) {
   try {
@@ -151,6 +159,7 @@ interface AppState {
   // v1.5.0 visual effects (persisted)
   fxParticles: boolean;
   fxParticleCount: number;
+  fxMotion: MotionPref;
 
   // v1.1 §1: client-side filtering/sorting of screened candidates
   filters: CandidateFilters;
@@ -211,7 +220,7 @@ interface AppState {
   loadPulse: () => Promise<void>;
   toggleSidebar: (side: "left" | "right") => void;
   prefillScreener: (symbol: string) => void;
-  setFx: (patch: Partial<{ particles: boolean; particleCount: number }>) => void;
+  setFx: (patch: Partial<{ particles: boolean; particleCount: number; motion: MotionPref }>) => void;
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -259,6 +268,7 @@ export const useStore = create<AppState>((set, get) => ({
   rightSidebarOpen: true,
   fxParticles: readStoredFx().particles,
   fxParticleCount: readStoredFx().particleCount,
+  fxMotion: readStoredFx().motion,
   filters: EMPTY_FILTERS,
   sort: DEFAULT_SORT,
   weights: readStoredWeights(),
@@ -677,13 +687,19 @@ export const useStore = create<AppState>((set, get) => ({
   prefillScreener: (symbol) => set({ symbol: symbol.toUpperCase(), view: "detector" }),
 
   setFx: (patch) => {
-    const next = {
+    const next: FxPrefs = {
       particles: patch.particles ?? get().fxParticles,
       particleCount: Math.min(300, Math.max(50,
         Math.round(patch.particleCount ?? get().fxParticleCount))),
+      motion: patch.motion ?? get().fxMotion,
     };
     writeStoredFx(next);
-    set({ fxParticles: next.particles, fxParticleCount: next.particleCount });
+    applyMotionPref(next.motion);
+    set({
+      fxParticles: next.particles,
+      fxParticleCount: next.particleCount,
+      fxMotion: next.motion,
+    });
   },
 
   // v1.3.0 ICS: expand an ETF's holdings and batch-screen all of them.

@@ -53,7 +53,7 @@ export default function Home() {
 
   return (
     <section className="mx-auto max-w-4xl space-y-8 py-8" data-testid="home">
-      <Card className="p-8 text-center" enterDelayMs={0}>
+      <Card liquid className="p-8 text-center" enterDelayMs={0}>
         <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">
           Option Obelisk
         </h1>
@@ -76,13 +76,13 @@ export default function Home() {
 
       {balance && (
         <div className="grid grid-cols-3 gap-3" data-testid="home-stats">
-          <Card enterDelayMs={50} className="text-center">
+          <Card liquid enterDelayMs={50} className="text-center">
             <div className="font-mono text-2xl font-bold text-accent-primary-text">
               {money(balance.accountValue, 2)}
             </div>
             <div className="mt-1 text-xs uppercase tracking-wide text-content-3">Sandbox balance</div>
           </Card>
-          <Card enterDelayMs={100} className="text-center">
+          <Card liquid enterDelayMs={100} className="text-center">
             <div className={`font-mono text-2xl font-bold ${
               balance.realizedPnl > 0 ? "text-accent-green"
                 : balance.realizedPnl < 0 ? "text-accent-red" : "text-accent-primary-text"
@@ -91,7 +91,7 @@ export default function Home() {
             </div>
             <div className="mt-1 text-xs uppercase tracking-wide text-content-3">Realized P&L</div>
           </Card>
-          <Card enterDelayMs={150} className="text-center">
+          <Card liquid enterDelayMs={150} className="text-center">
             <div className="font-mono text-2xl font-bold text-accent-primary-text">
               {winRate === null ? "—" : pct(winRate)}
             </div>
@@ -102,15 +102,15 @@ export default function Home() {
 
       {!balance && s.savedTrades.length > 0 && (
         <div className="grid grid-cols-3 gap-3" data-testid="home-stats">
-          <Card enterDelayMs={50} className="text-center">
+          <Card liquid enterDelayMs={50} className="text-center">
             <div className="font-mono text-2xl font-bold text-accent-primary-text">{s.savedTrades.length}</div>
             <div className="mt-1 text-xs uppercase tracking-wide text-content-3">Positions logged</div>
           </Card>
-          <Card enterDelayMs={100} className="text-center">
+          <Card liquid enterDelayMs={100} className="text-center">
             <div className="text-2xl font-semibold capitalize">{mostUsed}</div>
             <div className="mt-1 text-xs uppercase tracking-wide text-content-3">Most used</div>
           </Card>
-          <Card enterDelayMs={150} className="text-center">
+          <Card liquid enterDelayMs={150} className="text-center">
             <div className="font-mono text-2xl font-semibold">
               {lastScreen ? lastScreen.symbol : "—"}
             </div>
@@ -123,7 +123,7 @@ export default function Home() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         {FEATURES.map((f, i) => (
-          <Card key={f.title} enterDelayMs={200 + i * 50}>
+          <Card liquid key={f.title} enterDelayMs={200 + i * 50}>
             <div className="flex items-start gap-3">
               <span className="emoji-icon text-2xl">{f.icon}</span>
               <div>

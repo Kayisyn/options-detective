@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { cx } from "../../lib/cx";
+import { motionDisabled } from "../../lib/motionPref";
 
 // Number counter (§5.1): first appearance counts 0 -> value over ~200ms;
 // later updates count from the previous value AND flash briefly. Only the
@@ -7,8 +8,7 @@ import { cx } from "../../lib/cx";
 // backend and is what the animation lands on.
 
 function reducedMotion(): boolean {
-  return typeof matchMedia !== "undefined"
-    && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return motionDisabled();
 }
 
 export default function CountUp({ to, format, durationMs = 200, className }: {

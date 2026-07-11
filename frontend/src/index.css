@@ -104,12 +104,143 @@ body::before {
   .card-glass-hover {
     @apply transition-all duration-200 ease-out-quad hover:scale-[1.01];
   }
-  .card-glass-hover:hover {
+  /* v1.5.0 interactive focus glow: hover/focus reads as a violet (white
+     on B&W) halo around the surface. */
+  .card-glass-hover:hover,
+  .card-glass-hover:focus-visible {
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.08),
-      0 8px 32px rgb(151 51 255 / 0.25);
-    border-color: rgb(163 74 255 / 0.35);
+      0 0 25px rgb(var(--od-accent-primary) / 0.35),
+      0 8px 32px rgb(var(--od-accent-primary) / 0.2);
+    border-color: rgb(var(--od-accent-primary-hover) / 0.35);
   }
+
+  /* ==========================================================
+     v1.5.0 liquid glass. Two statically-painted gradient phases
+     crossfade on a 3s cycle — the shimmer appears to flow across
+     the surface, but the browser only composites opacity (the
+     gradients are never repainted, nothing needs overflow
+     clipping, tooltips escape cards untouched). Color rides the
+     accent token: violet on obsidian, white on Black & White.
+     ========================================================== */
+  .liquid-glass {
+    position: relative;
+  }
+  .liquid-glass::before,
+  .liquid-glass::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      100deg,
+      transparent 0%,
+      rgb(var(--od-accent-primary) / 0.10) 22%,
+      transparent 45%,
+      rgb(var(--od-accent-primary) / 0.07) 70%,
+      transparent 95%
+    );
+    background-size: 200% 100%;
+  }
+  .liquid-glass::before {
+    background-position: 0% 0;
+    animation: liquid-phase-a 3s ease-in-out infinite;
+  }
+  .liquid-glass::after {
+    background-position: 66% 0;
+    animation: liquid-phase-b 3s ease-in-out infinite;
+  }
+
+  /* Primary-CTA treatment: breathing neon halo (::before, box-shadow
+     painted once, only its opacity animates) + a single-phase inner
+     shimmer (::after). Pairs with .liquid-btn-ripple for press feedback. */
+  .od-halo {
+    position: relative;
+    /* own stacking context: the z:-1 halo pseudo must sit just under the
+       button fill, never behind an opaque ancestor (B&W cards have no
+       backdrop-filter context) */
+    isolation: isolate;
+  }
+  .od-halo::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: -1;
+    box-shadow:
+      0 0 20px rgb(var(--od-accent-primary) / 0.45),
+      0 0 40px rgb(var(--od-accent-primary) / 0.22);
+    animation: halo-breathe 3s ease-in-out infinite;
+  }
+  .od-halo:disabled::before,
+  .od-halo:disabled::after {
+    animation: none;
+    opacity: 0;
+  }
+  .od-halo:hover::before,
+  .od-halo:focus-visible::before {
+    box-shadow:
+      0 0 30px rgb(var(--od-accent-primary) / 0.5),
+      0 0 60px rgb(var(--od-accent-primary) / 0.25);
+    animation-play-state: paused;
+    opacity: 1;
+  }
+  .od-halo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      transparent 0%,
+      rgb(255 255 255 / 0.14) 30%,
+      transparent 55%,
+      rgb(255 255 255 / 0.08) 80%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: liquid-phase-a 3s ease-in-out infinite;
+  }
+
+  /* v1.5.0 contextual P&L glow: winners radiate green, losers red
+     (grayscale bright/dim on B&W). Static shadows — painted once. */
+  .glow-pnl-win {
+    border-color: rgb(var(--od-accent-green) / 0.3) !important;
+    box-shadow:
+      0 0 20px rgb(var(--od-accent-green) / 0.35),
+      inset 0 0 15px rgb(var(--od-accent-green) / 0.08);
+  }
+  .glow-pnl-loss {
+    border-color: rgb(var(--od-accent-red) / 0.3) !important;
+    box-shadow:
+      0 0 20px rgb(var(--od-accent-red) / 0.35),
+      inset 0 0 15px rgb(var(--od-accent-red) / 0.08);
+  }
+}
+
+@keyframes liquid-phase-a {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+@keyframes liquid-phase-b {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 1; }
+}
+@keyframes halo-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+/* focused input: the glow slowly breathes (one element at a time, so the
+   box-shadow repaint is negligible) */
+@keyframes input-glow {
+  0%, 100% { box-shadow: 0 0 12px rgb(var(--od-accent-primary) / 0.35); }
+  50% { box-shadow: 0 0 24px rgb(var(--od-accent-primary) / 0.55); }
+}
+.od-input:focus {
+  animation: input-glow 3s ease-in-out infinite;
 }
 
 /* ============================================================
@@ -210,37 +341,51 @@ body::before {
   background: rgb(var(--od-dark-500));
 }
 
-/* Respect OS motion preferences: keep the (near-instant) animations so
-   animationend still fires for the view-transition state machine, but kill
-   the movement and the pulse. */
-@media (prefers-reduced-motion: reduce) {
-  .animate-view-exit,
-  .animate-view-enter,
-  .animate-card-enter,
-  .animate-modal-enter,
-  .animate-modal-exit,
-  .animate-drawer-enter,
-  .animate-drawer-exit,
-  .animate-toast-in,
-  .animate-fade-in,
-  .animate-shake,
-  .animate-valid-check,
-  .animate-badge-pulse,
-  .animate-ripple,
-  .animate-value-flash {
-    animation-duration: 1ms !important;
-    animation-delay: 0ms !important;
-  }
-  .animate-pulse,
-  .animate-skeleton,
-  .animate-stripe-slide {
-    animation: none;
-  }
-  .card-glass-hover,
-  .card-glass-hover:hover {
-    transform: none;
-  }
-  .settings-tab-underline {
-    transition-duration: 1ms;
-  }
+/* Motion kill switch. v1.5.0: keyed off a `motion-off` class on <html>
+   instead of the raw media query — lib/motionPref.ts resolves the user's
+   in-app preference (system / always on / off) against
+   prefers-reduced-motion and stamps the class. Near-instant durations keep
+   animationend firing for the view-transition state machine, but kill the
+   movement and the pulse. */
+:root.motion-off .animate-view-exit,
+:root.motion-off .animate-view-enter,
+:root.motion-off .animate-card-enter,
+:root.motion-off .animate-modal-enter,
+:root.motion-off .animate-modal-exit,
+:root.motion-off .animate-drawer-enter,
+:root.motion-off .animate-drawer-exit,
+:root.motion-off .animate-toast-in,
+:root.motion-off .animate-fade-in,
+:root.motion-off .animate-shake,
+:root.motion-off .animate-valid-check,
+:root.motion-off .animate-badge-pulse,
+:root.motion-off .animate-ripple,
+:root.motion-off .animate-value-flash {
+  animation-duration: 1ms !important;
+  animation-delay: 0ms !important;
+}
+:root.motion-off .animate-pulse,
+:root.motion-off .animate-skeleton,
+:root.motion-off .animate-stripe-slide {
+  animation: none;
+}
+:root.motion-off .card-glass-hover,
+:root.motion-off .card-glass-hover:hover {
+  transform: none;
+}
+:root.motion-off .settings-tab-underline {
+  transition-duration: 1ms;
+}
+/* v1.5.0: liquid shimmer, breathing halos and the focused-input pulse
+   all stop; the static base treatment stays. */
+:root.motion-off .liquid-glass::before,
+:root.motion-off .liquid-glass::after,
+:root.motion-off .od-halo::before,
+:root.motion-off .od-halo::after,
+:root.motion-off .od-input:focus {
+  animation: none;
+}
+:root.motion-off .liquid-glass::after,
+:root.motion-off .od-halo::after {
+  opacity: 0.3;
 }

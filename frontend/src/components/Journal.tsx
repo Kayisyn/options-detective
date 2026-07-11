@@ -190,13 +190,10 @@ export default function Journal() {
             const pnl = displayPnl(t);
             const expanded = expandedId === t.id;
             const settled = t.status !== "open";
-            // winners get a green edge glow, losers red; settled rows fade back
-            const outcome = settled && pnl.value !== null
-              ? pnl.value > 0
-                ? "border-accent-green/40 shadow-[0_0_16px_rgb(var(--od-accent-green)/0.12)]"
-                : pnl.value < 0
-                  ? "border-accent-red/40 shadow-[0_0_16px_rgb(var(--od-accent-red)/0.12)]"
-                  : ""
+            // v1.5.0 contextual P&L glow: winners radiate green, losers red —
+            // open rows glow by their live mark, settled rows by the outcome
+            const outcome = pnl.value !== null
+              ? pnl.value > 0 ? "glow-pnl-win" : pnl.value < 0 ? "glow-pnl-loss" : ""
               : "";
             return (
               <Card key={t.id} interactive data-testid="journal-row"

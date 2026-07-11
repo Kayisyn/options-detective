@@ -78,13 +78,45 @@ function AppearanceTab() {
   );
 }
 
-// v1.5.0: visual-effects controls (particle background)
+// v1.5.0: visual-effects controls (motion preference + particle background)
 function CustomizationTab() {
   const fxParticles = useStore((s) => s.fxParticles);
   const fxParticleCount = useStore((s) => s.fxParticleCount);
+  const fxMotion = useStore((s) => s.fxMotion);
   const setFx = useStore((s) => s.setFx);
+  const osReduced = typeof matchMedia !== "undefined"
+    && matchMedia("(prefers-reduced-motion: reduce)").matches;
   return (
     <Section index={0}>
+      <div className="mb-3 rounded-md bg-dark-700/50 p-4" data-testid="motion-settings">
+        <div className="text-sm font-medium">Animations</div>
+        <div className="mt-0.5 text-xs text-content-3">
+          {osReduced
+            ? "Your OS asks for reduced motion, so animations are off in “System” mode. Pick “Always on” to see the app’s transitions, glow and shimmer anyway."
+            : "Follow the OS setting, or force animations on or off for this app."}
+        </div>
+        <div className="mt-3 flex gap-1.5">
+          {([
+            { id: "system", label: "System" },
+            { id: "on", label: "Always on" },
+            { id: "off", label: "Off" },
+          ] as const).map((opt) => (
+            <button
+              key={opt.id}
+              data-motion-pref={opt.id}
+              onClick={() => setFx({ motion: opt.id })}
+              className={cx(
+                "rounded border px-2.5 py-1.5 text-xs transition-all duration-150 ease-out-quad",
+                fxMotion === opt.id
+                  ? "border-accent-primary/60 bg-accent-primary/15 text-accent-primary-text"
+                  : "border-dark-600 text-content-3 hover:border-dark-500 hover:text-content-2",
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="rounded-md bg-dark-700/50 p-4" data-testid="fx-settings">
         <div className="flex items-center justify-between">
           <div>

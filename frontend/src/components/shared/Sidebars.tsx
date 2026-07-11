@@ -9,7 +9,7 @@ import type { PulseQuote } from "../../types";
 // (one backend fetch per minute) — the panels only render it. Desktop only
 // (hidden below xl); each panel folds, and the whole rail collapses.
 
-const PANEL = "card-glass p-3";
+const PANEL = "card-glass liquid-glass p-3";
 const HEADING = "flex w-full items-center justify-between text-xs font-medium uppercase tracking-wide text-content-3 hover:text-content-1 transition-colors duration-150";
 
 function Panel({ title, children, defaultOpen = true, testid }: {

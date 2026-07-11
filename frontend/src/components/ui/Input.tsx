@@ -7,7 +7,8 @@ import { cx } from "../../lib/cx";
 // 150ms ease-out.
 
 const BASE_FIELD = cx(
-  "rounded-md border bg-dark-700 text-content-1 placeholder:text-content-2/30",
+  // od-input: v1.5.0 breathing focus glow (index.css)
+  "od-input rounded-md border bg-dark-700 text-content-1 placeholder:text-content-2/30",
   "transition-all duration-150 ease-out-quad",
   "hover:border-dark-500",
   "focus:border-accent-primary focus:shadow-accent-glow focus:outline-none focus:ring-1 focus:ring-accent-primary/30",

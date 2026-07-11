@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useStore } from "../../store";
 import { useTheme } from "../../contexts/ThemeContext";
+import { motionDisabled } from "../../lib/motionPref";
 
 // v1.5.0 cursor-reactive particle background. One fixed canvas behind the
 // content: 50-300 soft dots (Settings → Customization) in the theme accent,
@@ -48,13 +49,14 @@ const PARALLAX_MAX = 8;     // px shift of the deepest layer
 export default function ParticleField() {
   const enabled = useStore((s) => s.fxParticles);
   const count = useStore((s) => s.fxParticleCount);
+  const motionPref = useStore((s) => s.fxMotion); // re-run when it changes
   const { theme } = useTheme();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !enabled) return undefined;
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
+    if (motionDisabled()) return undefined;
     const ctx = canvas.getContext("2d");
     if (!ctx) return undefined;
 
@@ -157,7 +159,7 @@ export default function ParticleField() {
       ctx.clearRect(0, 0, width, height);
       particles = [];
     };
-  }, [enabled, count, theme]);
+  }, [enabled, count, theme, motionPref]);
 
   if (!enabled) return null;
   return (

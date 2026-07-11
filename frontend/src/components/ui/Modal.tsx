@@ -54,7 +54,7 @@ export default function Modal({
     >
       <div
         className={cx(
-          "card-glass w-full border-accent-primary/30 shadow-glow",
+          "card-glass liquid-glass w-full border-accent-primary/30 shadow-glow",
           flush ? "flex max-h-[85vh] flex-col overflow-hidden" : "p-6",
           maxWidth,
           closing ? "animate-modal-exit" : "animate-modal-enter",
