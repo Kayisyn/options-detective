@@ -72,7 +72,7 @@ export default function HelpDrawer({ onReplayWalkthrough }: {
     <div className="fixed inset-0 z-50 bg-black/50" onClick={requestClose} data-testid="help-drawer">
       <aside
         className={cx(
-          "absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-dark-600 bg-dark-800 shadow-xl",
+          "absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-white/15 bg-glass shadow-glass backdrop-blur-glass",
           closing ? "animate-drawer-exit" : "animate-drawer-enter",
         )}
         onClick={(e) => e.stopPropagation()}
@@ -90,7 +90,7 @@ export default function HelpDrawer({ onReplayWalkthrough }: {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search terms… (delta, POP, condor)"
             data-testid="glossary-search"
-            className="w-full rounded-md border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-content-1 placeholder:text-content-3 transition-all duration-150 ease-out focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+            className="w-full rounded-md border border-white/15 bg-dark-700 px-3 py-2 text-sm text-content-1 placeholder:text-content-3 transition-all duration-150 ease-out focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-accent-primary/30"
           />
           {showTabs && (
             <div className="mt-3 flex flex-wrap gap-1.5">
@@ -100,9 +100,9 @@ export default function HelpDrawer({ onReplayWalkthrough }: {
                   onClick={() => setActiveSection(s.id)}
                   data-glossary-tab={s.id}
                   className={cx(
-                    "rounded border px-2 py-1 text-xs transition-all duration-150 ease-out",
+                    "rounded border px-2 py-1 text-xs transition-all duration-150 ease-out-quad",
                     activeSection === s.id
-                      ? "border-accent-blue/60 bg-accent-blue/15 text-accent-blue"
+                      ? "border-accent-primary/60 bg-accent-primary/15 text-accent-primary-text"
                       : "border-dark-600 text-content-3 hover:border-dark-500 hover:text-content-2",
                   )}
                 >
@@ -132,14 +132,14 @@ export default function HelpDrawer({ onReplayWalkthrough }: {
                     className={cx(
                       "rounded-md p-3",
                       topic === entry.id
-                        ? "bg-accent-blue/10 ring-1 ring-accent-blue/40"
+                        ? "bg-accent-primary/10 ring-1 ring-accent-primary/40"
                         : "bg-dark-700/40",
                     )}
                   >
                     <h4 className="font-semibold text-content-1">{entry.term}</h4>
                     <p className="mt-1 text-sm text-content-2">{entry.body}</p>
                     {entry.useCase && (
-                      <p className="mt-1.5 text-xs text-accent-blue">↳ {entry.useCase}</p>
+                      <p className="mt-1.5 text-xs text-accent-primary-text">↳ {entry.useCase}</p>
                     )}
                     {entry.link && (
                       <a

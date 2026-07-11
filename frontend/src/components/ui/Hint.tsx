@@ -30,7 +30,7 @@ export default function Hint({ text, children, className }: {
         <span
           role="tooltip"
           data-testid="hint-tooltip"
-          className="pointer-events-none absolute bottom-full left-1/2 z-40 mb-1.5 w-56 -translate-x-1/2 animate-fade-in rounded-md border border-dark-600 bg-dark-800 p-2 text-xs font-normal normal-case tracking-normal text-content-2 shadow-lg"
+          className="card-glass pointer-events-none absolute bottom-full left-1/2 z-40 mb-1.5 w-56 -translate-x-1/2 animate-fade-in rounded-md p-2 text-xs font-normal normal-case tracking-normal text-content-2"
         >
           {text}
         </span>

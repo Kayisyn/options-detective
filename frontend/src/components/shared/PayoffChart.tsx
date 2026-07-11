@@ -25,7 +25,7 @@ function cssVar(name: string, fallback: string): string {
 
 function themeColors() {
   return {
-    line: cssVar("--od-accent-blue", "#3b82f6"),
+    line: cssVar("--od-accent-primary", "#9733FF"),
     profit: cssVar("--od-accent-green", "#10b981"),
     loss: cssVar("--od-accent-red", "#ef4444"),
     breakeven: cssVar("--od-accent-orange", "#f59e0b"),

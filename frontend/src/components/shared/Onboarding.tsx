@@ -14,11 +14,11 @@ const STEPS = [
   },
   {
     title: "2 · Click a candidate",
-    text: "The Calculator opens with the payoff chart, dollar greeks, breakevens and probabilities. Edit strikes to explore — adjustments are repriced instantly.",
+    text: "The Trade Analyzer opens with the payoff chart, dollar greeks, breakevens and probabilities. Edit strikes to explore — adjustments are repriced instantly.",
   },
   {
     title: "3 · Review & export",
-    text: "Compare the top five with plain trade-off facts, then export a broker-ready order ticket to your clipboard, or save it to your journal.",
+    text: "Compare the optimal strategies with plain trade-off facts, then export a broker-ready order ticket to your clipboard, or save it to your Position Log.",
   },
 ];
 
@@ -41,7 +41,7 @@ export default function Onboarding({ open, onClose }: {
 
   return (
     <Modal open={open} onClose={() => dismiss(false)} testid="onboarding" maxWidth="max-w-lg">
-      <h2 className="text-lg font-semibold">Welcome to Options Detective</h2>
+      <h2 className="text-lg font-semibold">Welcome to Option Obelisk</h2>
       <p className="mt-1 text-sm text-content-3">
         Three views, one flow. Every number you will see comes from a
         deterministic math engine — nothing is estimated by an AI.
@@ -53,7 +53,7 @@ export default function Onboarding({ open, onClose }: {
             className="animate-card-enter rounded-lg bg-dark-700/60 p-3"
             style={{ animationDelay: `${i * 120}ms` }}
           >
-            <div className="text-sm font-medium text-accent-blue">{step.title}</div>
+            <div className="text-sm font-medium text-accent-primary-text">{step.title}</div>
             <p className="mt-1 text-sm text-content-2">{step.text}</p>
           </div>
         ))}
@@ -64,7 +64,7 @@ export default function Onboarding({ open, onClose }: {
         software, not investment advice.{" "}
         <button
           onClick={() => { dismiss(false); openHelp(); }}
-          className="text-accent-blue underline decoration-accent-blue/40 underline-offset-2 hover:brightness-110"
+          className="text-accent-primary-text underline decoration-accent-primary/40 underline-offset-2 hover:brightness-110"
           data-testid="onboarding-glossary-link"
         >
           Learn the concepts in the glossary →

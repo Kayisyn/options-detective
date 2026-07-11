@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cx } from "../../lib/cx";
 
-// Modal shell (§5.3): enters with slide-up + scale 0.95 -> 1 over 200ms
-// ease-out, exits with the reverse over 150ms ease-in, then unmounts.
-// Backdrop click and Escape both close.
+// Modal shell, v1.4.0: glassmorphic panel with a violet edge glow. Enters
+// with slide-up + scale 0.95 -> 1 over 250ms ease-out, exits with the
+// reverse over 150ms ease-in, then unmounts. Backdrop click and Escape
+// both close.
 export default function Modal({ open, onClose, children, testid, maxWidth = "max-w-xl" }: {
   open: boolean;
   onClose: () => void;
@@ -42,13 +43,13 @@ export default function Modal({ open, onClose, children, testid, maxWidth = "max
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6 backdrop-blur-sm animate-fade-in"
       onClick={requestClose}
       data-testid={testid}
     >
       <div
         className={cx(
-          "w-full rounded-lg border border-dark-600 bg-dark-800 p-6 shadow-xl",
+          "card-glass w-full border-accent-primary/30 p-6 shadow-glow",
           maxWidth,
           closing ? "animate-modal-exit" : "animate-modal-enter",
         )}

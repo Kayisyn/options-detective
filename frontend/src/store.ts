@@ -390,7 +390,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       await api.saveTrade({ candidate, exportText: opts.exportText ?? null, ...opts });
       await get().loadJournal();
-      get().showToast("✓ Saved to journal");
+      get().showToast("✓ Saved to Position Log");
       return true;
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
@@ -469,7 +469,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       await api.paperBudget(initialBalance);
       await get().loadPaper();
-      get().showToast("✓ Paper account ready");
+      get().showToast("✓ Sandbox account ready");
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }
@@ -479,7 +479,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const { balance } = await api.paperOpen(body);
       await Promise.all([get().loadPaper(), get().loadJournal()]);
-      get().showToast(`✓ Paper trade opened — $${balance.available.toFixed(0)} available`);
+      get().showToast(`✓ Sandbox trade opened — $${balance.available.toFixed(0)} available`);
       return true;
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
@@ -491,7 +491,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const { trade } = await api.paperClose(id, input);
       await Promise.all([get().loadPaper(), get().loadJournal()]);
-      get().showToast(`✓ Paper close — P&L $${(trade.actualPnl ?? 0).toFixed(2)}`);
+      get().showToast(`✓ Sandbox close — P&L $${(trade.actualPnl ?? 0).toFixed(2)}`);
       return true;
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
@@ -530,7 +530,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const { archived } = await api.paperReset(initialBalance);
       await Promise.all([get().loadPaper(), get().loadJournal()]);
-      get().showToast(`✓ Paper account reset — ${archived} position${archived === 1 ? "" : "s"} archived`);
+      get().showToast(`✓ Sandbox reset — ${archived} position${archived === 1 ? "" : "s"} archived`);
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }

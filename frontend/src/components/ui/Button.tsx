@@ -1,34 +1,34 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cx } from "../../lib/cx";
 
-// Button system per ux-design-polish-brief §2.1, theme-aware since Phase 4:
-// colors ride the accent CSS variables, hover/active shades come from
-// brightness so every theme keeps correct feedback. 150ms ease-out.
+// Button system, v1.4.0 obsidian overhaul: violet primary CTAs with hover
+// glow, press scale 0.95 + ripple. Radius scale rule: interactive controls
+// are 8px (rounded-md), containers are 12px (rounded-lg).
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
 export type ButtonSize = "xs" | "sm" | "md" | "lg";
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: cx(
-    "bg-accent-blue text-white shadow-md",
-    "hover:brightness-110 hover:scale-[1.02] hover:shadow-lg",
-    "active:brightness-90 active:scale-[0.98]",
-    "disabled:bg-gray-600",
+    "bg-accent-primary text-white shadow-glass",
+    "hover:bg-accent-primary-hover hover:scale-[1.02] hover:shadow-violet-glow",
+    "active:scale-[0.95]",
+    "disabled:bg-dark-600",
   ),
   secondary: cx(
-    "border-2 border-accent-blue bg-transparent text-accent-blue",
-    "hover:bg-accent-blue/10 hover:brightness-110",
-    "active:brightness-90",
+    "border border-accent-primary/60 bg-accent-primary/10 text-accent-primary-text",
+    "hover:border-accent-primary hover:bg-accent-primary/20 hover:text-content-1",
+    "active:scale-[0.97]",
   ),
   ghost: cx(
     "bg-transparent text-content-2",
     "hover:bg-dark-700 hover:text-content-1",
-    "active:text-accent-blue",
+    "active:text-accent-primary-text",
   ),
   destructive: cx(
-    "bg-accent-red text-white shadow-md",
+    "bg-accent-red text-white shadow-glass",
     "hover:brightness-110 hover:shadow-lg",
-    "active:brightness-90 active:scale-[0.98]",
+    "active:brightness-90 active:scale-[0.95]",
   ),
 };
 
@@ -44,7 +44,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: ButtonSize;
 }
 
-// §5.1 ripple: spawn an expanding circle at the click point. Plain DOM on
+// Ripple: spawn an expanding circle at the click point. Plain DOM on
 // purpose — the ripple is fire-and-forget and outside React's interest.
 function spawnRipple(e: React.PointerEvent<HTMLButtonElement>) {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -76,11 +76,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
       }}
       className={cx(
         "relative overflow-hidden",
-        "inline-flex items-center justify-center gap-2 rounded-sm font-medium",
-        "transition-all duration-150 ease-out",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/50",
+        "inline-flex items-center justify-center gap-2 rounded-md font-medium",
+        "transition-all duration-150 ease-out-quad",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/60",
         "disabled:cursor-not-allowed disabled:opacity-50",
-        "disabled:hover:scale-100 disabled:hover:shadow-md disabled:hover:brightness-100",
+        "disabled:hover:scale-100 disabled:hover:shadow-none disabled:hover:brightness-100",
         VARIANTS[variant],
         SIZES[size],
         className,

@@ -10,8 +10,10 @@ import { FormInput, FormSelect } from "./ui/Input";
 import Modal from "./ui/Modal";
 import type { CloseTradeInput, JournalTrade, NewTradeInput, TradeSide } from "../types";
 
-// Journal view, v1.1 Phase A: trade logging, live marks, close workflow
-// with realized P&L, tags, filters/sorts, analytics, CSV export.
+// Position Log view (renamed from Journal, v1.4.0): trade logging, live
+// marks, close workflow with realized P&L, tags, filters/sorts, analytics,
+// CSV export. Winner/loser positions carry green/red border glows; closed
+// positions fade back.
 
 type StatusFilter = "all" | "open" | "closed";
 type ScopeFilter = "all" | "real" | "paper";
@@ -81,7 +83,7 @@ export default function Journal() {
     <section className="space-y-4" data-testid="journal">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-lg font-medium">Trade journal</h2>
+          <h2 className="text-lg font-semibold">Position log</h2>
           <p className="text-sm text-content-3">
             Marks are Black-Scholes theoretical values at the latest quote;
             MAE/MFE are watermarks of marks observed here, not tick data.
@@ -89,7 +91,7 @@ export default function Journal() {
         </div>
         <div className="flex gap-2">
           <Button size="sm" onClick={() => setLogOpen(true)} data-testid="log-trade-button">
-            Log trade
+            Log New Trade
           </Button>
           <Button variant="secondary" size="sm" onClick={onRefreshMarks}
             disabled={marksBusy || stats.open === 0} data-testid="refresh-marks">
@@ -102,88 +104,103 @@ export default function Journal() {
         </div>
       </div>
 
-      {s.savedTrades.length > 0 && (
-        <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8" data-testid="journal-stats">
-            <MetricBox label="Trades" value={String(stats.total)} />
-            <MetricBox label="Open" value={String(stats.open)} />
-            <MetricBox label="Win rate" value={stats.winRate === null ? "—" : pct(stats.winRate)}
-              hint="Winners among closed trades" />
-            <MetricBox label="Realized P&L" value={money(stats.totalPnl)}
-              highlight={stats.totalPnl > 0 ? "green" : stats.totalPnl < 0 ? "red" : "none"} />
-            <MetricBox label="Avg win" value={stats.avgWin === null ? "—" : money(stats.avgWin)} highlight="green" />
-            <MetricBox label="Avg loss" value={stats.avgLoss === null ? "—" : money(stats.avgLoss)} highlight="red" />
-            <MetricBox label="Best" value={stats.largestWin === null ? "—" : money(stats.largestWin)} highlight="green" />
-            <MetricBox label="Worst" value={stats.largestLoss === null ? "—" : money(stats.largestLoss)} highlight="red" />
-          </div>
-          {(stats.byStrategy.length > 0 || stats.bySymbol.length > 0) && (
-            <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-content-3">
-              {stats.byStrategy.length > 0 && (
-                <span>
-                  P&L by strategy:{" "}
-                  {stats.byStrategy.slice(0, 4).map((b) => (
-                    <span key={b.key} className="mr-2 capitalize">
-                      {strategyLabel(b.key)} <b className={pnlClass(b.pnl)}>{money(b.pnl)}</b>
-                    </span>
-                  ))}
-                </span>
-              )}
-              {stats.bySymbol.length > 0 && (
-                <span>
-                  By symbol:{" "}
-                  {stats.bySymbol.slice(0, 4).map((b) => (
-                    <span key={b.key} className="mr-2 font-mono">
-                      {b.key} <b className={pnlClass(b.pnl)}>{money(b.pnl)}</b>
-                    </span>
-                  ))}
-                </span>
-              )}
+      <div className="flex flex-col gap-4 lg:flex-row">
+        {s.savedTrades.length > 0 && (
+          <aside className="card-glass h-fit w-full shrink-0 p-4 lg:w-64" data-testid="journal-stats">
+            <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-content-3">
+              Stats
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              <MetricBox label="Trades" value={String(stats.total)} />
+              <MetricBox label="Open" value={String(stats.open)} />
+              <MetricBox label="Win rate" value={stats.winRate === null ? "—" : pct(stats.winRate)}
+                hint="Winners among closed trades" />
+              <MetricBox label="Realized P&L" value={money(stats.totalPnl)}
+                highlight={stats.totalPnl > 0 ? "green" : stats.totalPnl < 0 ? "red" : "none"} />
+              <MetricBox label="Avg win" value={stats.avgWin === null ? "—" : money(stats.avgWin)} highlight="green" />
+              <MetricBox label="Avg loss" value={stats.avgLoss === null ? "—" : money(stats.avgLoss)} highlight="red" />
+              <MetricBox label="Best" value={stats.largestWin === null ? "—" : money(stats.largestWin)} highlight="green" />
+              <MetricBox label="Worst" value={stats.largestLoss === null ? "—" : money(stats.largestLoss)} highlight="red" />
             </div>
-          )}
-        </>
-      )}
+            {(stats.byStrategy.length > 0 || stats.bySymbol.length > 0) && (
+              <div className="mt-3 space-y-1 border-t border-white/10 pt-3 text-xs text-content-3">
+                {stats.byStrategy.length > 0 && (
+                  <div>
+                    P&L by strategy:{" "}
+                    {stats.byStrategy.slice(0, 4).map((b) => (
+                      <span key={b.key} className="mr-2 capitalize">
+                        {strategyLabel(b.key)} <b className={pnlClass(b.pnl)}>{money(b.pnl)}</b>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {stats.bySymbol.length > 0 && (
+                  <div>
+                    By symbol:{" "}
+                    {stats.bySymbol.slice(0, 4).map((b) => (
+                      <span key={b.key} className="mr-2 font-mono">
+                        {b.key} <b className={pnlClass(b.pnl)}>{money(b.pnl)}</b>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </aside>
+        )}
 
-      <div className="flex flex-wrap items-end gap-3">
-        <FormSelect label="Status" value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}>
-          <option value="all">All</option>
-          <option value="open">Open</option>
-          <option value="closed">Settled</option>
-        </FormSelect>
-        <FormSelect label="Scope" value={scope} data-testid="scope-filter"
-          onChange={(e) => setScope(e.target.value as ScopeFilter)}>
-          <option value="all">Real + paper</option>
-          <option value="real">Real only</option>
-          <option value="paper">Paper only</option>
-        </FormSelect>
-        <FormInput label="Symbol" placeholder="AAPL" value={symbolFilter}
-          onChange={(e) => setSymbolFilter(e.target.value.toUpperCase())}
-          className="w-28 font-mono uppercase" />
-        <FormSelect label="Sort" value={sort}
-          onChange={(e) => setSort(e.target.value as JournalSort)}>
-          <option value="newest">Newest first</option>
-          <option value="oldest">Oldest first</option>
-          <option value="pnlDesc">P&L high → low</option>
-          <option value="pnlAsc">P&L low → high</option>
-          <option value="symbol">Symbol A→Z</option>
-        </FormSelect>
-        <span className="pb-3 text-xs text-content-3">
-          {visible.length} of {s.savedTrades.length}
-        </span>
-      </div>
+        <div className="min-w-0 flex-1 space-y-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <FormSelect label="Status" value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}>
+              <option value="all">All</option>
+              <option value="open">Open</option>
+              <option value="closed">Settled</option>
+            </FormSelect>
+            <FormSelect label="Scope" value={scope} data-testid="scope-filter"
+              onChange={(e) => setScope(e.target.value as ScopeFilter)}>
+              <option value="all">Real + sandbox</option>
+              <option value="real">Real only</option>
+              <option value="paper">Sandbox only</option>
+            </FormSelect>
+            <FormInput label="Symbol" placeholder="AAPL" value={symbolFilter}
+              onChange={(e) => setSymbolFilter(e.target.value.toUpperCase())}
+              className="w-28 font-mono uppercase" />
+            <FormSelect label="Sort" value={sort}
+              onChange={(e) => setSort(e.target.value as JournalSort)}>
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="pnlDesc">P&L high → low</option>
+              <option value="pnlAsc">P&L low → high</option>
+              <option value="symbol">Symbol A→Z</option>
+            </FormSelect>
+            <span className="pb-3 text-xs text-content-3">
+              {visible.length} of {s.savedTrades.length}
+            </span>
+          </div>
 
-      {s.savedTrades.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-dark-600 p-10 text-center text-content-3">
-          No trades yet. <b>Log trade</b> to enter one manually, or save a
-          candidate from the Recommender.
-        </div>
-      ) : (
-        <div className="space-y-2">
+          {s.savedTrades.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-dark-600 p-10 text-center text-content-3">
+              No positions yet. <b>Log New Trade</b> to enter one manually, or
+              save a candidate from the Recommendations view.
+            </div>
+          ) : (
+            <div className="space-y-2">
           {visible.map((t) => {
             const pnl = displayPnl(t);
             const expanded = expandedId === t.id;
+            const settled = t.status !== "open";
+            // winners get a green edge glow, losers red; settled rows fade back
+            const outcome = settled && pnl.value !== null
+              ? pnl.value > 0
+                ? "border-accent-green/40 shadow-[0_0_16px_rgb(var(--od-accent-green)/0.12)]"
+                : pnl.value < 0
+                  ? "border-accent-red/40 shadow-[0_0_16px_rgb(var(--od-accent-red)/0.12)]"
+                  : ""
+              : "";
             return (
               <Card key={t.id} interactive data-testid="journal-row"
+                className={`${settled ? "opacity-70" : ""} ${outcome}`}
                 onClick={() => setExpandedId(expanded ? null : t.id)}>
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="w-16 font-mono font-semibold">{t.symbol}</span>
@@ -193,8 +210,8 @@ export default function Journal() {
                     {t.status}
                   </Badge>
                   {t.paper && (
-                    <Badge variant="blue" title="Simulated position — paper budget, not real money">
-                      paper
+                    <Badge variant="violet" title="Simulated position — Sandbox budget, not real money">
+                      sandbox
                     </Badge>
                   )}
                   <span className="font-mono text-sm text-content-2">
@@ -260,8 +277,10 @@ export default function Journal() {
               </Card>
             );
           })}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <LogTradeModal open={logOpen} onClose={() => setLogOpen(false)}
         onSubmit={async (input) => {
@@ -295,7 +314,7 @@ function NotesEditor({ trade, onSave }: {
       <label className="min-w-56 flex-1">
         <span className="text-[11px] uppercase tracking-wide text-content-3">Notes</span>
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
-          className="mt-0.5 w-full rounded-sm border border-dark-600 bg-dark-700 px-2 py-1.5 text-sm text-content-1 focus:border-blue-500 focus:outline-none" />
+          className="mt-0.5 w-full rounded-md border border-white/15 bg-dark-700 px-2 py-1.5 text-sm text-content-1 focus:border-accent-primary focus:outline-none" />
       </label>
       <FormInput label="Tags (comma-sep)" value={tags}
         onChange={(e) => setTags(e.target.value)} className="w-52" />
@@ -338,7 +357,7 @@ function LogTradeModal({ open, onClose, onSubmit }: {
           <span className="text-xs uppercase tracking-wide text-content-3">Strategy</span>
           <input list="od-strategies" value={form.strategy}
             onChange={(e) => patch({ strategy: e.target.value })}
-            className="mt-1 block w-full rounded-md border-2 border-dark-600 bg-dark-700 px-3 py-2.5 text-sm text-content-1 focus:border-blue-500 focus:outline-none" />
+            className="mt-1 block w-full rounded-md border border-white/15 bg-dark-700 px-3 py-2.5 text-sm text-content-1 focus:border-accent-primary focus:outline-none" />
           <datalist id="od-strategies">
             {ALL_STRATEGY_TYPES.map((st) => <option key={st} value={st} />)}
           </datalist>
@@ -366,7 +385,7 @@ function LogTradeModal({ open, onClose, onSubmit }: {
         <FormInput label="Tags (comma-sep)" value={form.tags}
           onChange={(e) => patch({ tags: e.target.value })} />
         <FormInput label="Expiration" type="date" value={form.expiration}
-          hint="Enables automatic expiry/assignment processing (paper trades)"
+          hint="Enables automatic expiry/assignment processing (sandbox trades)"
           onChange={(e) => patch({ expiration: e.target.value })} />
         <FormInput label="Assignment strike" type="number" step="0.5" value={form.assignmentStrike}
           hint="Short strike for CSP/covered-call assignment logic"
@@ -374,16 +393,16 @@ function LogTradeModal({ open, onClose, onSubmit }: {
           onChange={(e) => patch({ assignmentStrike: e.target.value })} />
       </div>
       <label className="mt-3 flex items-center gap-2 text-sm text-content-2"
-        title="Simulated position against your paper budget — capital is reserved, P&L tracked, no real money">
+        title="Simulated position against your Sandbox budget — capital is reserved, P&L tracked, no real money">
         <input type="checkbox" checked={form.paper} data-testid="paper-toggle"
           onChange={(e) => patch({ paper: e.target.checked })}
-          className="accent-blue-600" />
-        Paper trade (simulated budget)
+          className="accent-accent-primary" />
+        Sandbox trade (simulated budget)
       </label>
       <label className="mt-3 block">
         <span className="text-xs uppercase tracking-wide text-content-3">Notes</span>
         <textarea value={form.notes} onChange={(e) => patch({ notes: e.target.value })} rows={2}
-          className="mt-1 w-full rounded-md border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-content-1 focus:border-blue-500 focus:outline-none" />
+          className="mt-1 w-full rounded-md border border-white/15 bg-dark-700 px-3 py-2 text-sm text-content-1 focus:border-accent-primary focus:outline-none" />
       </label>
       <div className="mt-4 flex gap-2">
         <Button className="flex-1" disabled={!valid} data-testid="log-submit"

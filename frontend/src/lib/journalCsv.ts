@@ -40,7 +40,7 @@ export function downloadCsv(trades: JournalTrade[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `options-detective-journal-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `option-obelisk-position-log-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }

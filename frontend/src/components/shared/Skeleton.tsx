@@ -1,16 +1,16 @@
 import { cx } from "../../lib/cx";
 
-// Loading skeletons per brief §3.4 + §5.2: whole placeholders breathe with
-// the Tailwind pulse; sibling cards are offset by 100ms so the pulse rolls
-// through the list as a wave. A striped progress bar sits above the
-// Detector skeleton while the screen is actually running.
+// Loading skeletons: glassmorphic placeholders breathe with a gentle 1.5s
+// pulse; sibling cards are offset by 100ms so the pulse rolls through the
+// list as a wave. A violet striped progress bar sits above the Screener
+// skeleton while the screen is actually running.
 
 export function Skeleton({ className, pulse = true }: {
   className?: string;
   pulse?: boolean;
 }) {
   return (
-    <div className={cx(pulse && "animate-pulse", "rounded-md bg-dark-700", className)} />
+    <div className={cx(pulse && "animate-skeleton", "rounded-md bg-dark-700", className)} />
   );
 }
 
@@ -21,7 +21,7 @@ export function ProgressStripes() {
       <div
         className="animate-stripe-slide h-full w-full"
         style={{
-          background: "repeating-linear-gradient(45deg, rgb(var(--od-accent-blue)) 0 10px, rgb(var(--od-accent-blue) / 0.55) 10px 20px)",
+          background: "repeating-linear-gradient(45deg, rgb(var(--od-accent-primary)) 0 10px, rgb(var(--od-accent-primary) / 0.55) 10px 20px)",
           backgroundSize: "20px 20px",
         }}
       />
@@ -32,7 +32,7 @@ export function ProgressStripes() {
 export function CandidateCardSkeleton({ delayMs = 0 }: { delayMs?: number }) {
   return (
     <div
-      className="animate-pulse rounded-lg border border-dark-700 bg-dark-800 p-4 shadow-md"
+      className="card-glass animate-skeleton p-4"
       style={{ animationDelay: `${delayMs}ms` }}
       data-testid="card-skeleton"
     >

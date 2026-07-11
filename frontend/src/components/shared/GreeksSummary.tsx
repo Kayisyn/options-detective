@@ -48,7 +48,7 @@ export default function GreeksSummary({ greeks }: { greeks: Greeks }) {
                 data-greek-info={key}
                 aria-label={`Glossary: ${key}`}
                 title="Open in the glossary"
-                className="ml-1 text-content-3/70 transition-colors duration-150 hover:text-accent-blue"
+                className="ml-1 text-content-3/70 transition-colors duration-150 hover:text-accent-primary-text"
               >
                 ⓘ
               </button>

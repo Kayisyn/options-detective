@@ -3,112 +3,127 @@
 @tailwind utilities;
 
 /* ============================================================
-   Theme tokens (ux-design-polish-brief-updated §4.2).
-   Six themes, selected by a theme-* class on <html>; dark is the
-   default (:root with no class). Every surface, text tier and accent
-   rides these variables, so components never change per theme.
+   Option Obelisk theme tokens (v1.4.0 obsidian overhaul).
+   Pure-black obsidian surfaces (no blue tint) + vibrant violet
+   primary. Three themes, selected by a theme-* class on <html>;
+   obsidian is the default (:root with no class, id "dark" so
+   stored preferences keep working). Every surface, text tier and
+   accent rides these variables.
 
-   Accent SLOTS are semantic: green = profit/positive, red = loss/
-   negative, blue = primary actions, orange = warnings. The colorblind
-   themes recolor the slots (e.g. deuteranopia: profit becomes blue,
-   loss becomes yellow) — components keep using the same class names.
+   Accent SLOTS stay semantic: primary = CTAs/highlights/active
+   states, green = profit, red = loss, blue = info, orange =
+   warnings. The colorblind themes recolor the profit/loss slots
+   (deuteranopia: profit -> blue, loss -> yellow) on the same
+   obsidian surfaces — components keep using the same classes.
+
+   Violet contrast discipline: #9733FF is ~4.0:1 on obsidian, so
+   raw primary is reserved for CTA fills (white text on it is
+   4.9:1) and large display numbers. Small violet TEXT uses
+   --od-accent-primary-text (#B266FF, ~5.9:1) to hold WCAG AA.
    ============================================================ */
 :root,
 :root.theme-dark {
-  --od-dark-900: 10 14 39;    /* #0a0e27 */
-  --od-dark-800: 26 31 58;    /* #1a1f3a */
-  --od-dark-700: 42 48 80;    /* #2a3050 */
-  --od-dark-600: 58 66 106;
-  --od-dark-500: 76 86 132;
+  --od-dark-900: 10 10 15;    /* #0a0a0f obsidian black */
+  --od-dark-800: 21 21 31;    /* #15151f deep charcoal */
+  --od-dark-700: 37 37 53;    /* #252535 obsidian surface */
+  --od-dark-600: 54 54 76;    /* #36364c borders */
+  --od-dark-500: 76 76 102;   /* #4c4c66 raised borders */
   --od-text-1: 255 255 255;
-  --od-text-2: 209 213 219;
-  --od-text-3: 156 163 175;
-  --od-accent-blue: 59 130 246;   /* #3b82f6 */
-  --od-accent-green: 16 185 129;  /* #10b981 */
-  --od-accent-red: 239 68 68;     /* #ef4444 */
-  --od-accent-orange: 245 158 11; /* #f59e0b */
-}
-
-:root.theme-light {
-  --od-dark-900: 249 250 251;
-  --od-dark-800: 243 244 246;
-  --od-dark-700: 229 231 235;
-  --od-dark-600: 209 213 219;
-  --od-dark-500: 156 163 175;
-  --od-text-1: 31 41 55;
-  --od-text-2: 55 65 81;
-  --od-text-3: 107 114 128;
-  /* darker accents for contrast on light surfaces */
-  --od-accent-blue: 30 64 175;    /* #1e40af */
-  --od-accent-green: 4 120 87;    /* #047857 */
-  --od-accent-red: 153 27 27;     /* #991b1b */
-  --od-accent-orange: 180 83 9;   /* #b45309 */
-}
-
-:root.theme-neon {
-  --od-dark-900: 10 14 39;
-  --od-dark-800: 26 31 58;
-  --od-dark-700: 42 48 80;
-  --od-dark-600: 58 66 106;
-  --od-dark-500: 76 86 132;
-  --od-text-1: 255 255 255;
-  --od-text-2: 209 213 219;
-  --od-text-3: 156 163 175;
-  --od-accent-blue: 6 182 212;    /* cyan #06b6d4 */
-  --od-accent-green: 16 185 129;
-  --od-accent-red: 217 70 239;    /* magenta #d946ef */
-  --od-accent-orange: 250 204 21;
-}
-
-:root.theme-professional {
-  --od-dark-900: 31 41 55;    /* #1f2937 */
-  --od-dark-800: 55 65 81;    /* #374151 */
-  --od-dark-700: 75 85 99;
-  --od-dark-600: 107 114 128;
-  --od-dark-500: 156 163 175;
-  --od-text-1: 255 255 255;
-  --od-text-2: 229 231 235;
-  --od-text-3: 209 213 219;
-  --od-accent-blue: 37 99 235;    /* #2563eb */
-  --od-accent-green: 5 150 105;   /* muted #059669 */
-  --od-accent-red: 220 38 38;     /* muted #dc2626 */
-  --od-accent-orange: 217 119 6;
+  --od-text-2: 240 240 240;   /* #f0f0f0 white subtle */
+  --od-text-3: 158 158 178;   /* #9e9eb2 tertiary / hints */
+  --od-accent-primary: 151 51 255;       /* #9733FF violet */
+  --od-accent-primary-hover: 163 74 255; /* #A34AFF */
+  --od-accent-primary-text: 178 102 255; /* #B266FF AA-safe small text */
+  --od-accent-blue: 59 130 246;   /* info #3b82f6 */
+  --od-accent-green: 16 185 129;  /* profit #10b981 */
+  --od-accent-red: 239 68 68;     /* loss #ef4444 */
+  --od-accent-orange: 251 191 36; /* warning #fbbf24 */
+  --od-glass-fill: 15 15 21;      /* rgba(15,15,21,.8) glass base */
 }
 
 /* Red-blind safe: profit reads as blue, loss as yellow. */
 :root.theme-deuteranopia {
-  --od-dark-900: 10 14 39;
-  --od-dark-800: 26 31 58;
-  --od-dark-700: 42 48 80;
-  --od-dark-600: 58 66 106;
-  --od-dark-500: 76 86 132;
-  --od-text-1: 255 255 255;
-  --od-text-2: 209 213 219;
-  --od-text-3: 156 163 175;
-  --od-accent-blue: 34 211 238;   /* cyan for primary */
   --od-accent-green: 59 130 246;  /* profit -> blue #3b82f6 */
   --od-accent-red: 251 191 36;    /* loss -> yellow #fbbf24 */
   --od-accent-orange: 249 115 22;
+  --od-accent-blue: 34 211 238;   /* info -> cyan, keeps distance from profit */
 }
 
 /* Red-green blind safe: profit as sky blue, loss as light red. */
 :root.theme-protanopia {
-  --od-dark-900: 10 14 39;
-  --od-dark-800: 26 31 58;
-  --od-dark-700: 42 48 80;
-  --od-dark-600: 58 66 106;
-  --od-dark-500: 76 86 132;
-  --od-text-1: 255 255 255;
-  --od-text-2: 209 213 219;
-  --od-text-3: 156 163 175;
-  --od-accent-blue: 129 140 248;  /* indigo for primary */
   --od-accent-green: 14 165 233;  /* profit -> sky #0ea5e9 */
   --od-accent-red: 248 113 113;   /* loss -> #f87171 */
   --od-accent-orange: 251 191 36;
+  --od-accent-blue: 129 140 248;  /* info -> indigo */
 }
 
 body {
   @apply bg-dark-900 font-sans text-content-1 antialiased;
+}
+
+/* Ambient depth layer: two large, very faint violet radials fixed behind
+   the content. This is what the glass cards actually refract — without it
+   backdrop-blur over a flat page is invisible. pointer-events-none + fixed
+   so it never repaints on scroll. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 600px at 12% -10%, rgb(151 51 255 / 0.09), transparent 60%),
+    radial-gradient(1100px 700px at 105% 110%, rgb(151 51 255 / 0.07), transparent 55%),
+    radial-gradient(700px 500px at 85% 15%, rgb(255 255 255 / 0.02), transparent 60%);
+}
+
+@layer components {
+  /* Glassmorphic surface: obsidian glass fill, 30px refraction blur,
+     1px glass edge + inset top highlight for the physical-edge read. */
+  .card-glass {
+    @apply rounded-lg border border-white/15 bg-glass backdrop-blur-glass;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.06),
+      0 8px 32px rgb(0 0 0 / 0.2);
+  }
+  .card-glass-hover {
+    @apply transition-all duration-200 ease-out-quad hover:scale-[1.01];
+  }
+  .card-glass-hover:hover {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.08),
+      0 8px 32px rgb(151 51 255 / 0.25);
+    border-color: rgb(163 74 255 / 0.35);
+  }
+}
+
+/* Solid fallback when the user asks for reduced transparency. */
+@media (prefers-reduced-transparency: reduce) {
+  .card-glass {
+    background-color: rgb(var(--od-dark-800));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  body::before {
+    display: none;
+  }
+}
+
+/* Dark scrollbars so the chrome doesn't break the obsidian shell. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: rgb(var(--od-dark-900));
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--od-dark-600));
+  border-radius: 5px;
+  border: 2px solid rgb(var(--od-dark-900));
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--od-dark-500));
 }
 
 /* Respect OS motion preferences: keep the (near-instant) animations so
@@ -133,8 +148,12 @@ body {
     animation-delay: 0ms !important;
   }
   .animate-pulse,
-  .animate-bounce-down,
+  .animate-skeleton,
   .animate-stripe-slide {
     animation: none;
+  }
+  .card-glass-hover,
+  .card-glass-hover:hover {
+    transform: none;
   }
 }

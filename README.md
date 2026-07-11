@@ -1,8 +1,10 @@
-# Options Detective
+# Option Obelisk
 
-Desktop options-analysis app for semi-technical traders. Three integrated
-layers: **Detector** (screener) → **Calculator** (math engine) →
-**Recommender** (strategy advisor).
+Desktop options-analysis app for semi-technical traders (formerly Options
+Detective). Three integrated layers: **Screener** (candidate detection) →
+**Trade Analyzer** (math engine) → **Optimal Strategies** (strategy
+advisor), plus a **Position Log**, a risk-free **Sandbox** simulator, and
+an **Asset Screener** for ETF discovery.
 
 Stack: Electron + React/Tailwind (frontend), Node.js/Express (backend),
 Python + scipy (math engine, called as a subprocess).
@@ -94,16 +96,16 @@ cd frontend; npm run build
 cd ../backend; npm run build:math          # -> backend/math/dist/od-math/
 
 # 3. One-click Windows installer (electron-builder, NSIS)
-cd ../electron; npm run dist               # -> electron/release/Options-Detective-Setup-*.exe
+cd ../electron; npm run dist               # -> electron/release/Option-Obelisk-Setup-*.exe
 ```
 
 The installer is per-user (no admin prompt), installs to
-`%LOCALAPPDATA%\Programs\Options Detective`, and launches on finish. The
-trade journal lives in the user-data folder, not the install folder. The
+`%LOCALAPPDATA%\Programs\Option Obelisk`, and launches on finish. The
+position log lives in the user-data folder, not the install folder. The
 binary is unsigned, so SmartScreen will ask for "More info → Run anyway"
 on first launch.
 
-**For users: download `Options-Detective-Setup-<version>.exe`, run it, done.**
+**For users: download `Option-Obelisk-Setup-<version>.exe`, run it, done.**
 No Python, no Node, no terminal.
 
 ## Running the desktop app

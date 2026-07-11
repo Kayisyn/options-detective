@@ -2,26 +2,27 @@ import { useEffect, useRef, useState } from "react";
 import type { InputHTMLAttributes, SelectHTMLAttributes } from "react";
 import { cx } from "../../lib/cx";
 
-// Form controls per ux-design-polish-brief §2.3. All state changes 150ms
-// ease-out, focus gets the glow treatment (border + ring + shadow).
+// Form controls, v1.4.0 obsidian overhaul: obsidian-surface fields with a
+// glass border; focus gets the violet glow treatment. All state changes
+// 150ms ease-out.
 
 const BASE_FIELD = cx(
-  "rounded-md border-2 bg-dark-700 text-content-1 placeholder:text-content-3",
-  "transition-all duration-150 ease-out",
+  "rounded-md border bg-dark-700 text-content-1 placeholder:text-content-2/30",
+  "transition-all duration-150 ease-out-quad",
   "hover:border-dark-500",
-  "focus:border-blue-500 focus:shadow-lg focus:outline-none focus:ring-1 focus:ring-blue-500/30",
+  "focus:border-accent-primary focus:shadow-violet-glow focus:outline-none focus:ring-1 focus:ring-accent-primary/30",
   "disabled:cursor-not-allowed disabled:opacity-50",
 );
 
-// Compact single-line fields embedded in tables (Calculator strike editor).
+// Compact single-line fields embedded in tables (Trade Analyzer strike editor).
 export const compactFieldClasses = cx(
-  BASE_FIELD, "border", "border-dark-600 px-2 py-1 text-sm tabular-nums",
+  BASE_FIELD, "border-white/15 px-2 py-1 text-sm tabular-nums",
 );
 
 function stateClasses(error?: string, success?: boolean) {
-  if (error) return "border-red-600 focus:border-red-500 focus:ring-red-500/30";
-  if (success) return "border-green-600";
-  return "border-dark-600";
+  if (error) return "border-accent-red/70 focus:border-accent-red focus:ring-accent-red/30 focus:shadow-none";
+  if (success) return "border-accent-green/70";
+  return "border-white/15";
 }
 
 interface FieldShellProps {
@@ -36,11 +37,11 @@ interface FieldShellProps {
 function FieldShell({ label, hint, error, className, children }: FieldShellProps) {
   return (
     <label className={cx("group block", className)} title={hint}>
-      <span className="text-xs uppercase tracking-wide text-content-3 transition-colors duration-150 group-focus-within:text-blue-400">
+      <span className="text-xs uppercase tracking-wide text-content-3 transition-colors duration-150 group-focus-within:text-accent-primary-text">
         {label}
       </span>
       {children}
-      {error && <span className="mt-1 block text-xs text-red-400">{error}</span>}
+      {error && <span className="mt-1 block text-xs text-accent-red">{error}</span>}
     </label>
   );
 }
@@ -56,7 +57,7 @@ export interface FormInputProps extends InputHTMLAttributes<HTMLInputElement> {
 export function FormInput({
   label, hint, error, success, containerClassName, className, ...rest
 }: FormInputProps) {
-  // §5.1 validation feedback: shake once when a NEW error appears,
+  // validation feedback: shake once when a NEW error appears,
   // scale-in a checkmark when the field turns valid.
   const [shaking, setShaking] = useState(false);
   const prevError = useRef<string | undefined>(error);
