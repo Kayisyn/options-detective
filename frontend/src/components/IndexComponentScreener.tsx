@@ -5,6 +5,7 @@ import { cx } from "../lib/cx";
 import Button from "./ui/Button";
 import { Badge, Card } from "./ui/Card";
 import { FormSelect } from "./ui/Input";
+import { ProgressStripes } from "./shared/Skeleton";
 import type { IcsCandidate, IcsViewState } from "../types";
 
 // Index Component Screener (v1.3.0 §4): every holding of the selected ETF is
@@ -135,8 +136,8 @@ export default function IndexComponentScreener() {
       {s.icsBusy && !result && (
         <Card className="space-y-3 p-6 text-center" data-testid="ics-loading">
           <div className="text-content-2">Screening every holding of {s.icsEtf}…</div>
-          <div className="mx-auto h-1.5 w-64 overflow-hidden rounded-full bg-dark-700">
-            <div className="h-full w-1/3 animate-skeleton rounded-full bg-accent-primary" />
+          <div className="mx-auto w-64">
+            <ProgressStripes />
           </div>
           <div className="text-xs text-content-3">
             First run fetches live option chains for each holding (typically 30–90s).

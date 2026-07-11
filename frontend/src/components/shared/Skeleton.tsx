@@ -14,15 +14,18 @@ export function Skeleton({ className, pulse = true }: {
   );
 }
 
-// §5.2 progress bar: animated stripe pattern while work is in flight.
+// v1.5.0 loading bar: a thin glowing line sweeps left-to-right-to-left on
+// a 2s cycle (transform-only). Replaces the striped bar; keeps the export
+// name and testid so all call sites stay wired.
 export function ProgressStripes() {
   return (
-    <div className="h-1.5 overflow-hidden rounded-full" data-testid="progress-stripes">
+    <div className="relative h-[3px] overflow-hidden" data-testid="progress-stripes">
       <div
-        className="animate-stripe-slide h-full w-full"
+        className="animate-loader-slide absolute inset-y-0 w-1/3 rounded-full"
         style={{
-          background: "repeating-linear-gradient(45deg, rgb(var(--od-accent-primary)) 0 10px, rgb(var(--od-accent-primary) / 0.55) 10px 20px)",
-          backgroundSize: "20px 20px",
+          background:
+            "linear-gradient(90deg, transparent, rgb(var(--od-accent-primary) / 0.9) 50%, transparent)",
+          boxShadow: "0 0 10px rgb(var(--od-accent-primary) / 0.8)",
         }}
       />
     </div>
@@ -72,7 +75,16 @@ export function DetectorSkeleton() {
 
 export function CalculatorSkeleton() {
   return (
-    <div className="grid gap-4 lg:grid-cols-5" data-testid="calculator-skeleton">
+    <div className="space-y-4" data-testid="calculator-skeleton">
+      <ProgressStripes />
+      <CalculatorSkeletonBody />
+    </div>
+  );
+}
+
+function CalculatorSkeletonBody() {
+  return (
+    <div className="grid gap-4 lg:grid-cols-5">
       <div className="space-y-3 lg:col-span-3">
         <Skeleton className="h-72" />
         <div className="grid grid-cols-4 gap-3">
@@ -94,10 +106,13 @@ export function CalculatorSkeleton() {
 
 export function RecommenderSkeleton() {
   return (
-    <div className="grid gap-3 lg:grid-cols-2" data-testid="recommender-skeleton">
-      {Array.from({ length: 4 }, (_, i) => (
-        <CandidateCardSkeleton key={i} delayMs={i * 100} />
-      ))}
+    <div className="space-y-4" data-testid="recommender-skeleton">
+      <ProgressStripes />
+      <div className="grid gap-3 lg:grid-cols-2">
+        {Array.from({ length: 4 }, (_, i) => (
+          <CandidateCardSkeleton key={i} delayMs={i * 100} />
+        ))}
+      </div>
     </div>
   );
 }

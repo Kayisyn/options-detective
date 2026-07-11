@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useStore } from "../store";
 import { money, pct, strategyLabel } from "../lib/format";
 import { ALL_STRATEGY_TYPES } from "../lib/copy";
-import { journalStats } from "../lib/journalStats";
+import { accountImpactPct, journalStats, pctReturn } from "../lib/journalStats";
 import { confirmationText, downloadCsv } from "../lib/journalCsv";
 import Button from "./ui/Button";
-import { Badge, Card, MetricBox } from "./ui/Card";
+import { Badge, Card, MetricBox, PctBadge } from "./ui/Card";
 import { FormInput, FormSelect } from "./ui/Input";
 import Modal from "./ui/Modal";
 import type { CloseTradeInput, JournalTrade, NewTradeInput, TradeSide } from "../types";
@@ -64,6 +64,8 @@ export default function Journal() {
 
   useEffect(() => {
     s.loadJournal();
+    // account-impact % on sandbox rows needs the paper balance
+    if (s.paper === null) s.loadPaper();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   }, []);
 
@@ -84,6 +86,13 @@ export default function Journal() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Position log</h2>
+          {stats.winRate !== null && (
+            <p className="font-mono text-sm tabular-nums text-accent-primary-text"
+              data-testid="journal-winrate">
+              {pct(stats.winRate)} win rate ({stats.wins} {stats.wins === 1 ? "win" : "wins"},{" "}
+              {stats.losses} {stats.losses === 1 ? "loss" : "losses"})
+            </p>
+          )}
           <p className="text-sm text-content-3">
             Marks are Black-Scholes theoretical values at the latest quote;
             MAE/MFE are watermarks of marks observed here, not tick data.
@@ -195,6 +204,8 @@ export default function Journal() {
             const outcome = pnl.value !== null
               ? pnl.value > 0 ? "glow-pnl-win" : pnl.value < 0 ? "glow-pnl-loss" : ""
               : "";
+            const returnPct = pctReturn(t);
+            const impactPct = accountImpactPct(t, s.paper?.balance?.accountValue);
             return (
               <Card key={t.id} interactive data-testid="journal-row"
                 className={`${settled ? "opacity-70" : ""} ${outcome}`}
@@ -216,12 +227,24 @@ export default function Journal() {
                   </span>
                   <span className="text-xs text-content-3">{t.entryDate.slice(0, 10)}</span>
                   {t.tags.map((tag) => <Badge key={tag} variant="neutral">{tag}</Badge>)}
-                  <span className={`ml-auto font-mono font-bold tabular-nums ${pnlClass(pnl.value)}`}
-                    title={pnl.realized ? "Realized P&L" : "Unrealized P&L from the latest mark"}>
-                    {pnl.value === null ? "—" : money(pnl.value)}
-                    {!pnl.realized && pnl.value !== null && (
-                      <span className="ml-1 text-[10px] font-normal text-content-3">unrl</span>
+                  <span className="ml-auto flex items-center gap-2">
+                    {returnPct !== null && (
+                      <PctBadge value={returnPct}
+                        title={pnl.realized
+                          ? "Total % return on the entry premium/debit"
+                          : "Live % return on the entry premium/debit (from the latest mark)"} />
                     )}
+                    {impactPct !== null && (
+                      <PctBadge value={impactPct} muted suffix="of acct"
+                        title="Capital this position reserves, as % of the sandbox account" />
+                    )}
+                    <span className={`font-mono font-bold tabular-nums ${pnlClass(pnl.value)}`}
+                      title={pnl.realized ? "Realized P&L" : "Unrealized P&L from the latest mark"}>
+                      {pnl.value === null ? "—" : money(pnl.value)}
+                      {!pnl.realized && pnl.value !== null && (
+                        <span className="ml-1 text-[10px] font-normal text-content-3">unrl</span>
+                      )}
+                    </span>
                   </span>
                 </div>
 

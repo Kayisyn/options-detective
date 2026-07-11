@@ -107,8 +107,10 @@ test("manual close realizes P&L into the balance", () => {
   assert.equal(balance.accountValue, 20_090);
 });
 
-test("CSP assignment at expiry: ITM assigns with intrinsic loss, OTM keeps premium", async () => {
-  // ITM: spot 88 vs strike 95, credit 2.00 -> pnl = (2 - 7) x 100 = -500
+test("CSP assignment at expiry: ITM buys shares at the strike, OTM keeps premium", async () => {
+  // v1.5.0 share carry — ITM: spot 88 vs strike 95, credit 2.00. The trade
+  // realizes the premium (+200); 100 shares enter the holdings ledger at
+  // cost basis 95 and are marked at spot 88.
   const itm = rig({ price: 88 });
   itm.paper.setBudget(50_000);
   itm.paper.open({
@@ -118,12 +120,29 @@ test("CSP assignment at expiry: ITM assigns with intrinsic loss, OTM keeps premi
   let out = await itm.paper.process();
   let t = out.trades[0];
   assert.equal(t.status, "assigned");
-  assert.equal(t.actualPnl, -500);
+  assert.equal(t.actualPnl, 200); // premium kept; share loss floats unrealized
   assert.ok(t.tags.includes("Assigned"));
-  assert.ok(t.notes.includes("shares not carried"));
-  assert.equal(out.balance.available, 49_500); // reservation released, loss realized
+  assert.ok(t.notes.includes("shares now held"));
+  assert.equal(out.events.length, 1);
+  assert.match(out.events[0], /SPY: 100 shares assigned at \$95/);
+  assert.equal(out.holdings.length, 1);
+  assert.deepEqual(
+    { shares: out.holdings[0].shares, costBasis: out.holdings[0].costBasis, lastPrice: out.holdings[0].lastPrice },
+    { shares: 100, costBasis: 95, lastPrice: 88 });
+  // cash: 50000 + 200 premium - 9500 spent on shares
+  assert.equal(out.balance.available, 40_700);
+  // account: cash 40700 + shares at market 8800 = 49500 (same net worth as
+  // the old cash-settled model — the loss is just unrealized now)
+  assert.equal(out.balance.accountValue, 49_500);
 
-  // OTM: spot 100 > strike 95 -> full premium kept
+  // selling the shares at market realizes the share loss
+  const sale = await itm.paper.sellHolding("SPY", {});
+  assert.equal(sale.sold.realized, -700); // (88 - 95) x 100
+  assert.equal(sale.holdings.length, 0);
+  assert.equal(sale.balance.available, 49_500);
+  assert.equal(sale.balance.accountValue, 49_500);
+
+  // OTM: spot 100 > strike 95 -> full premium kept, no shares
   const otm = rig({ price: 100 });
   otm.paper.setBudget(50_000);
   otm.paper.open({
@@ -134,6 +153,7 @@ test("CSP assignment at expiry: ITM assigns with intrinsic loss, OTM keeps premi
   t = out.trades[0];
   assert.equal(t.status, "expired");
   assert.equal(t.actualPnl, 200);
+  assert.equal(out.holdings.length, 0);
 });
 
 test("covered call at expiry: called away above strike, rides the stock below", async () => {
@@ -161,20 +181,47 @@ test("covered call at expiry: called away above strike, rides the stock below", 
   assert.equal(out.trades[0].actualPnl, -400); // (94-98)x100, settled at market
 });
 
-test("candidate-linked settlement uses the engine's exact payoff", async () => {
-  // engine says the structure's expiry P&L at spot is -180 per unit
+test("candidate-linked settlement uses the engine's exact payoff (non-CSP)", async () => {
+  // engine says the structure's expiry P&L at spot is -180 per unit.
+  // v1.5.0: assigned CSPs now settle via share carry, so the engine-payoff
+  // path is exercised with a defined-risk vertical instead.
   const { paper, calls } = rig({ price: 88, engineResult: -180 });
   paper.setBudget(50_000);
-  paper.open({ candidate: { ...CSP_CANDIDATE, expiration: YESTERDAY } });
+  paper.open({
+    candidate: {
+      ...CSP_CANDIDATE,
+      id: "pv:x",
+      strategyType: "put_vertical",
+      legs: [
+        { type: "short_put", strike: 95, price: 2, qty: 1, iv: 0.3 },
+        { type: "long_put", strike: 90, price: 1, qty: 1, iv: 0.3 },
+      ],
+      sizing: { totalDebit: -100, capitalRequired: 400 },
+      expiration: YESTERDAY,
+    },
+  });
   const out = await paper.process();
   const t = out.trades[0];
   assert.equal(calls.engine.length, 1);
   assert.equal(calls.engine[0][0].fn, "multi_leg_payoff");
   assert.equal(t.actualPnl, -180);
-  assert.equal(t.status, "assigned"); // spot 88 <= strike 95
-  // exitPrice back-derived so pnlOf stays consistent: credit 2.00, pnl -180
-  // -> exit = 2.00 + 1.80 = 3.80
-  assert.equal(t.exitPrice, 3.8);
+  assert.equal(t.status, "expired"); // no assignment strike on a vertical
+  // exitPrice back-derived so pnlOf stays consistent: credit 1.00, pnl -180
+  // -> exit = 1.00 + 1.80 = 2.80
+  assert.equal(t.exitPrice, 2.8);
+});
+
+test("v1.5.0: candidate-linked CSP assignment carries shares instead of cash-settling", async () => {
+  const { paper, calls } = rig({ price: 88 });
+  paper.setBudget(50_000);
+  paper.open({ candidate: { ...CSP_CANDIDATE, expiration: YESTERDAY } });
+  const out = await paper.process();
+  const t = out.trades[0];
+  assert.equal(calls.engine.length, 0); // share carry, no payoff call
+  assert.equal(t.status, "assigned");
+  assert.equal(t.actualPnl, 200); // premium kept
+  assert.equal(out.holdings.length, 1);
+  assert.equal(out.holdings[0].costBasis, 95);
 });
 
 test("open positions get marks, snapshots build the equity curve", async () => {
@@ -188,6 +235,87 @@ test("open positions get marks, snapshots build the equity curve", async () => {
   assert.ok(Number.isFinite(last.accountValue));
   assert.equal(typeof last.at, "string");
   assert.ok(paperStore.getBudget().initialBalance === 30_000);
+});
+
+test("v1.5.0: commission charged per order (entry + exit) when enabled", () => {
+  const { paper } = rig();
+  paper.setBudget(20_000);
+  paper.setSettings({ commissionEnabled: true, commissionPerTrade: 5 });
+  const { trade, balance: afterOpen } = paper.open({
+    symbol: "IWM", strategy: "call_vertical", side: "debit",
+    entryPrice: 1.5, entryQty: 1, maxLossTarget: 150,
+  });
+  assert.equal(afterOpen.feesPaid, 5);
+  assert.equal(afterOpen.available, 20_000 - 150 - 5);
+  const { balance } = paper.close(trade.id, { exitPrice: 2.4 });
+  assert.equal(balance.feesPaid, 10);
+  assert.equal(balance.realizedPnl, 80);   // 90 gross - 10 fees
+  assert.equal(balance.accountValue, 20_080);
+});
+
+test("v1.5.0: settings validate and persist; defaults are fee-off/auto-assign-on", () => {
+  const { paper } = rig();
+  const defaults = paper.getSettings();
+  assert.equal(defaults.commissionEnabled, false);
+  assert.equal(defaults.autoAssign, true);
+  assert.equal(defaults.thetaMode, "normal");
+  assert.throws(() => paper.setSettings({ thetaMode: "warp" }), /thetaMode/);
+  assert.throws(() => paper.setSettings({ commissionPerTrade: -1 }), /commissionPerTrade/);
+  const next = paper.setSettings({ thetaMode: "fast", maxRiskPct: 3 });
+  assert.equal(next.thetaMode, "fast");
+  assert.equal(next.maxRiskPct, 3);
+});
+
+test("v1.5.0: auto-assign off leaves expired positions open with a warning", async () => {
+  const { paper } = rig({ price: 88 });
+  paper.setBudget(50_000);
+  paper.setSettings({ autoAssign: false });
+  paper.open({
+    symbol: "SPY", strategy: "cash_secured_put", side: "credit",
+    entryPrice: 2, entryQty: 1, assignmentStrike: 95, expiration: YESTERDAY,
+  });
+  const out = await paper.process();
+  assert.equal(out.trades[0].status, "open");
+  assert.ok(out.warnings.some((w) => /auto-assign is off/.test(w)));
+  assert.equal(out.holdings.length, 0);
+});
+
+test("v1.5.0: theta mode warps the DTE used for marks (marks only)", async () => {
+  const dteSeen = [];
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "od-paper-"));
+  const tradeStore = createTradeStore({ dir });
+  const paperStore = createPaperStore({ dir });
+  const paper = createPaperTrading({
+    tradeStore,
+    paperStore,
+    dataLayer: { getMarketData: async () => ({ price: 100, stale: false }) },
+    engineBatch: async (reqs) => reqs.map(() => ({ ok: true, result: [0] })),
+    calculator: {
+      analyze: async (req) => {
+        dteSeen.push(req.dte);
+        return { sizing: { totalDebit: 250 } };
+      },
+    },
+  });
+  paper.setBudget(50_000);
+  // far-future expiry so nothing settles; backdate the entry 10 days so the
+  // theta clock has elapsed time to warp against
+  paper.open({ candidate: CSP_CANDIDATE });
+  const id = tradeStore.list()[0].id;
+  const entryTenDaysAgo = new Date(Date.now() - 10 * 86_400_000).toISOString();
+  tradeStore.update(id, { entryDate: entryTenDaysAgo });
+
+  await paper.process();                 // normal: dte = real dte
+  const normalDte = dteSeen[0];
+  assert.ok(normalDte > 300);            // sanity: 2099 expiry
+
+  paper.setSettings({ thetaMode: "fast" });
+  await paper.process();                 // fast: extra (2-1)*10 days of decay
+  assert.equal(dteSeen[1], normalDte - 10);
+
+  paper.setSettings({ thetaMode: "slow" });
+  await paper.process();                 // slow: half speed -> +5 days of DTE
+  assert.equal(dteSeen[2], normalDte + 5);
 });
 
 test("reset archives paper trades and restarts the curve", async () => {

@@ -6,9 +6,11 @@ import { useStore } from "../store";
 import { money, pct, strategyLabel } from "../lib/format";
 import { useTheme } from "../contexts/ThemeContext";
 import Button from "./ui/Button";
-import { Badge, Card, MetricBox } from "./ui/Card";
+import { Badge, Card, MetricBox, PctBadge } from "./ui/Card";
+import { accountImpactPct, pctReturn } from "../lib/journalStats";
 import { FormInput } from "./ui/Input";
 import { CloseTradeModal } from "./Journal";
+import { SandboxCustomize, SandboxHoldings } from "./shared/SandboxCustomize";
 import type { EquityPoint, JournalTrade } from "../types";
 
 // Sandbox view (renamed from Paper Trading, v1.4.0): three-column layout —
@@ -48,7 +50,9 @@ function EquityCurve({ points, days }: { points: EquityPoint[]; days: number }) 
     );
   }
   return (
-    <div key={days} className="h-44 w-full animate-fade-in" data-testid="equity-curve">
+    // v1.5.0: the curve traces in on mount/range switch (chart-trace wipe);
+    // background 60s mark refreshes deliberately do NOT replay it
+    <div key={days} className="chart-trace h-44 w-full" data-testid="equity-curve">
       <ResponsiveContainer>
         <AreaChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={grid} opacity={0.2} />
@@ -63,7 +67,7 @@ function EquityCurve({ points, days }: { points: EquityPoint[]; days: number }) 
             contentStyle={{ backgroundColor: panel, border: `1px solid ${grid}`, borderRadius: 8, fontSize: 12 }}
           />
           <Area type="monotone" dataKey="accountValue" stroke={line} strokeWidth={2}
-            fill={line} fillOpacity={0.08} isAnimationActive animationDuration={800} />
+            fill={line} fillOpacity={0.08} isAnimationActive={false} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -148,7 +152,7 @@ export default function PaperTrading() {
             {money(balance.initialBalance)} initial →{" "}
             <b className={pnlClass(totalReturn)}>{money(balance.accountValue, 2)}</b>{" "}
             ({totalReturn >= 0 ? "+" : ""}{((totalReturn / balance.initialBalance) * 100).toFixed(2)}%)
-            — simulated money, engine marks, cash-settled assignment.
+            — simulated money, engine marks, deterministic assignment.
             {open.length > 0 && (
               <span className="text-content-3" data-testid="paper-mark-freshness">
                 {" "}Marks auto-refresh every minute
@@ -180,6 +184,10 @@ export default function PaperTrading() {
         </div>
       </div>
 
+      {paper.settings && (
+        <SandboxCustomize settings={paper.settings} accountValue={balance.accountValue} />
+      )}
+
       <div className="grid gap-4 lg:grid-cols-12">
         {/* left: account stats */}
         <aside className="card-glass h-fit space-y-2 p-4 lg:col-span-3" data-testid="paper-balance">
@@ -204,6 +212,11 @@ export default function PaperTrading() {
             hint="From theoretical marks, auto-refreshed every minute while this tab is open" />
           <MetricBox label="Win rate" value={stats.winRate === null ? "—" : pct(stats.winRate)}
             hint={`Profit factor ${stats.profitFactor ?? "—"} · ${stats.assigned} assigned`} />
+          {(balance.feesPaid ?? 0) > 0 && (
+            <MetricBox label="Commissions" value={money(balance.feesPaid ?? 0, 2)}
+              highlight="red"
+              hint="Total simulated trading fees paid (already deducted from realized P&L)" />
+          )}
         </aside>
 
         {/* center: open positions */}
@@ -222,6 +235,8 @@ export default function PaperTrading() {
                 const dte = dteOf(t.expiration);
                 const unrl = t.lastMark?.unrealizedPnl ?? null;
                 const expanded = expandedId === t.id;
+                const returnPct = pctReturn(t);
+                const impactPct = accountImpactPct(t, balance.accountValue);
                 return (
                   <Card key={t.id} interactive data-testid="paper-row"
                     className={unrl !== null
@@ -251,12 +266,22 @@ export default function PaperTrading() {
                           {dte <= 0 ? "expiry due" : `${dte}d`}
                         </Badge>
                       )}
-                      <span className={`ml-auto font-mono font-bold tabular-nums ${pnlClass(unrl)}`}
-                        title={unrl === null
-                          ? "No pricing model for this position — it was logged manually without a linked candidate, so it can't be repriced. Close it manually at your own exit price."
-                          : "Unrealized P&L at the latest theoretical mark"}>
-                        {unrl === null ? "—" : money(unrl)}
-                        {unrl !== null && <span className="ml-1 text-[10px] font-normal text-content-3">unrl</span>}
+                      <span className="ml-auto flex items-center gap-2">
+                        {returnPct !== null && (
+                          <PctBadge value={returnPct}
+                            title="Live % return on the entry premium/debit (from the latest mark)" />
+                        )}
+                        {impactPct !== null && (
+                          <PctBadge value={impactPct} muted suffix="of acct"
+                            title="Capital this position reserves, as % of the account value" />
+                        )}
+                        <span className={`font-mono font-bold tabular-nums ${pnlClass(unrl)}`}
+                          title={unrl === null
+                            ? "No pricing model for this position — it was logged manually without a linked candidate, so it can't be repriced. Close it manually at your own exit price."
+                            : "Unrealized P&L at the latest theoretical mark"}>
+                          {unrl === null ? "—" : money(unrl)}
+                          {unrl !== null && <span className="ml-1 text-[10px] font-normal text-content-3">unrl</span>}
+                        </span>
                       </span>
                     </div>
                     {expanded && (
@@ -280,6 +305,10 @@ export default function PaperTrading() {
                 );
               })}
             </div>
+          )}
+
+          {paper.holdings && paper.holdings.length > 0 && (
+            <SandboxHoldings holdings={paper.holdings} />
           )}
 
           {(stats.byStrategy.length > 0 || stats.bySymbol.length > 0) && (

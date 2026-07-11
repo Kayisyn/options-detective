@@ -294,6 +294,18 @@ body::before {
   }
 }
 
+/* v1.5.0 chart trace-in: a left-to-right wipe over the freshly drawn
+   chart — reads as the line tracing its path. clip-path animations ride
+   the compositor in Chromium; recharts' own point-interpolation animation
+   (the "pixel shifting") is disabled at the chart level. */
+.chart-trace {
+  animation: chart-trace 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes chart-trace {
+  0% { clip-path: inset(0 100% 0 0); }
+  100% { clip-path: inset(0 0 0 0); }
+}
+
 /* Settings panel: fixed header, scrolling body. The thumb rides the
    accent primary, so it reads violet-tinted on obsidian and gray on
    Black & White without theme-specific rules. */
@@ -365,8 +377,15 @@ body::before {
   animation-delay: 0ms !important;
 }
 :root.motion-off .animate-pulse,
-:root.motion-off .animate-skeleton,
-:root.motion-off .animate-stripe-slide {
+:root.motion-off .animate-skeleton {
+  animation: none;
+}
+/* loading must stay indicated without motion: the runner parks mid-track */
+:root.motion-off .animate-loader-slide {
+  animation: none;
+  transform: translateX(100%);
+}
+:root.motion-off .chart-trace {
   animation: none;
 }
 :root.motion-off .card-glass-hover,

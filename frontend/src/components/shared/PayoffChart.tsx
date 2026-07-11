@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import {
   Area, CartesianGrid, ComposedChart, ReferenceDot, ReferenceLine,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -62,13 +63,21 @@ function LegendSwatch({ color, dashed, label }: {
   );
 }
 
-// P&L at expiry across underlying prices. Draws left-to-right over 800ms on
-// mount and on every recalculation.
+// P&L at expiry across underlying prices. v1.5.0: the curve traces in
+// left-to-right over 800ms (CSS clip-path wipe, .chart-trace) on mount and
+// on every recalculation; recharts' own point interpolation is off — it
+// morphs the old curve into the new one ("pixel shifting") instead of
+// drawing the path.
 export default function PayoffChart({
   points, breakevens, spot, maxProfit, maxLoss,
 }: PayoffChartProps) {
   useTheme(); // re-resolve colors when the theme changes
   const COLORS = themeColors();
+  // replay the trace when the data identity changes (new calc result)
+  const traceRef = useRef({ points, key: 0 });
+  if (traceRef.current.points !== points) {
+    traceRef.current = { points, key: traceRef.current.key + 1 };
+  }
   if (points.length === 0) {
     return (
       <div className="flex h-72 items-center justify-center rounded-lg border border-dashed border-dark-600 text-sm text-content-3">
@@ -89,7 +98,7 @@ export default function PayoffChart({
 
   return (
     <div data-testid="payoff-chart">
-      <div className="h-72 w-full">
+      <div key={traceRef.current.key} className="chart-trace h-72 w-full">
         <ResponsiveContainer>
           <ComposedChart data={points} margin={{ top: 20, right: 16, bottom: 4, left: 8 }}>
             <defs>
@@ -177,9 +186,7 @@ export default function PayoffChart({
               stroke={COLORS.line}
               strokeWidth={2}
               fill="url(#pnlFill)"
-              isAnimationActive
-              animationDuration={800}
-              animationEasing="ease-out"
+              isAnimationActive={false}
             />
           </ComposedChart>
         </ResponsiveContainer>

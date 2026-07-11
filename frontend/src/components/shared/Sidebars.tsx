@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useStore } from "../../store";
 import { money, strategyLabel } from "../../lib/format";
+import { pctReturn } from "../../lib/journalStats";
 import { cx } from "../../lib/cx";
 import type { PulseQuote } from "../../types";
 
@@ -167,6 +168,11 @@ export function LeftSidebar() {
                   <span className={cx("font-mono text-xs tabular-nums",
                     (t.actualPnl ?? 0) >= 0 ? "text-accent-green" : "text-accent-red")}>
                     {(t.actualPnl ?? 0) >= 0 ? "+" : ""}{money(t.actualPnl ?? 0)}
+                    {pctReturn(t) !== null && (
+                      <span className="ml-1 text-[10px] opacity-80">
+                        ({pctReturn(t)! > 0 ? "+" : ""}{pctReturn(t)!.toFixed(1)}%)
+                      </span>
+                    )}
                   </span>
                 </span>
                 <span className="flex items-baseline justify-between gap-2 text-[11px] text-content-3">

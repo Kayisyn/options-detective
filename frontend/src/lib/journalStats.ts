@@ -42,6 +42,32 @@ function buckets(trades: JournalTrade[], keyOf: (t: JournalTrade) => string): Pn
   return [...map.values()].sort((a, b) => b.pnl - a.pnl);
 }
 
+// v1.5.0 % metrics -----------------------------------------------------------
+
+// Signed P&L as a % of the premium/debit basis (entry × qty × multiplier).
+// Open trades read from the live mark, settled trades from realized P&L.
+// The P&L numbers are backend-computed and side-aware, so credit positions
+// come out right (+60% = kept 60% of the credit received).
+export function pctReturn(t: JournalTrade): number | null {
+  const basis = Math.abs(t.entryPrice) * t.entryQty * t.multiplier;
+  if (!basis) return null;
+  const pnl = t.status !== "open"
+    ? t.actualPnl
+    : t.lastMark?.unrealizedPnl ?? null;
+  if (pnl === null) return null;
+  return (pnl / basis) * 100;
+}
+
+// Capital this position ties up as a % of the sandbox account. Only paper
+// trades have an account; reservedCapital is what the paper engine actually
+// held back at open.
+export function accountImpactPct(t: JournalTrade, accountValue: number | null | undefined): number | null {
+  if (!t.paper || !accountValue || accountValue <= 0) return null;
+  const notional = t.reservedCapital
+    ?? Math.abs(t.entryPrice) * t.entryQty * t.multiplier;
+  return (notional / accountValue) * 100;
+}
+
 export function journalStats(trades: JournalTrade[]): JournalStats {
   // "closed" here means settled any way: manual close, assignment, expiry
   const closed = trades.filter((t) => t.status !== "open" && t.actualPnl !== null);

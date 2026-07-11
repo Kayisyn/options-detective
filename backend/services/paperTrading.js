@@ -14,8 +14,22 @@
 // - Settlement at expiry uses the math engine's EXACT payoff at the
 //   settlement price for candidate-linked trades (the brief's §1.3F
 //   formulas compare underlying to option premium — dimensionally wrong).
-//   Assignment is deterministic (§1.6) and cash-settled at market; share
-//   inventory is not carried, and every settlement note says so.
+//   Assignment is deterministic (§1.6): 100% when ITM at expiry.
+//
+// v1.5.0 realism:
+// - SHARE CARRY: an assigned cash-secured put converts its reserved cash
+//   into shares at the strike (the trade realizes only the premium; the
+//   share position floats at market in accountValue until sold). An
+//   assigned covered call sells held shares at the strike (share P&L goes
+//   to the shareRealized ledger); with no held shares it stays the
+//   buy-write cash settlement. Other strategies remain cash-settled via
+//   the engine payoff.
+// - COMMISSION: optional flat fee per order (entry and exit/settlement),
+//   accumulated in the fees ledger and deducted from cash + accountValue.
+// - THETA MODE: fast/slow reprices marks at 2x/0.5x elapsed time-decay
+//   (marks only — real expiry dates still drive settlement).
+// - AUTO-ASSIGN toggle: off = expired positions are left open with a
+//   warning to settle manually.
 const { dataLayer: defaultDataLayer } = require("./dataLayer");
 const { callEngineBatch } = require("./mathEngine");
 const { paperStore: defaultPaperStore, DEFAULT_BALANCE } = require("./paperStore");
@@ -71,18 +85,36 @@ function createPaperTrading({
     return round2(input.entryPrice * mult * qty); // debit cost
   }
 
+  // one flat commission per order when enabled (entry, exit, settlement)
+  function chargeCommission(count = 1) {
+    const settings = paperStore.getSettings();
+    if (!settings.commissionEnabled || settings.commissionPerTrade <= 0) return 0;
+    const fee = round2(settings.commissionPerTrade * count);
+    paperStore.addFee(fee);
+    return fee;
+  }
+
   function balance() {
     const budget = paperStore.getBudget();
     if (!budget) return null;
     const trades = paperTrades();
     const closed = trades.filter((t) => t.status !== "open" && t.actualPnl !== null);
     const open = trades.filter((t) => t.status === "open");
-    const realizedPnl = round2(closed.reduce((s, t) => s + t.actualPnl, 0));
+    const { feesPaid, shareRealized } = paperStore.getLedgers();
+    const holdings = paperStore.listHoldings();
+    // trade realizations + share-sale realizations, net of commissions
+    const realizedPnl = round2(
+      closed.reduce((s, t) => s + t.actualPnl, 0) + shareRealized - feesPaid);
     const reserved = round2(open.reduce((s, t) => s + (t.reservedCapital ?? 0), 0));
     const marked = open.filter((t) => t.lastMark?.unrealizedPnl != null);
     const unrealizedPnl = marked.length
       ? round2(marked.reduce((s, t) => s + t.lastMark.unrealizedPnl, 0))
       : null;
+    // shares tie up their cost basis in cash; they float at lastPrice
+    // (refreshed each process pass) in accountValue
+    const holdingsCost = round2(holdings.reduce((s, h) => s + h.shares * h.costBasis, 0));
+    const holdingsValue = round2(holdings.reduce(
+      (s, h) => s + h.shares * (h.lastPrice ?? h.costBasis), 0));
     return {
       initialBalance: budget.initialBalance,
       createdAt: budget.createdAt,
@@ -90,8 +122,13 @@ function createPaperTrading({
       realizedPnl,
       unrealizedPnl,
       reserved,
-      available: round2(budget.initialBalance + realizedPnl - reserved),
-      accountValue: round2(budget.initialBalance + realizedPnl + (unrealizedPnl ?? 0)),
+      feesPaid,
+      holdingsCost,
+      holdingsValue,
+      available: round2(budget.initialBalance + realizedPnl - reserved - holdingsCost),
+      accountValue: round2(
+        budget.initialBalance + realizedPnl - holdingsCost + holdingsValue
+        + (unrealizedPnl ?? 0)),
       openCount: open.length,
       closedCount: closed.length,
     };
@@ -137,6 +174,7 @@ function createPaperTrading({
       trade = tradeStore.create({ ...body, paper: true });
     }
     trade = tradeStore.setReservedCapital(trade.id, reserved);
+    chargeCommission(); // entry order
     snapshot();
     return { trade, balance: balance() };
   }
@@ -145,18 +183,63 @@ function createPaperTrading({
     const trade = tradeStore.get(id);
     if (!trade.paper) throw new TypeError("not a paper trade — close it in the journal");
     const closed = tradeStore.close(id, payload);
+    chargeCommission(); // exit order
     snapshot();
     return { trade: closed, balance: balance() };
   }
 
+  // v1.5.0: sell shares acquired through assignment. Price defaults to the
+  // live quote; realized share P&L lands in the shareRealized ledger.
+  async function sellHolding(symbol, { shares, price } = {}) {
+    requireBudget();
+    const holding = paperStore.getHolding(symbol);
+    if (!holding) throw new TypeError(`no ${symbol.toUpperCase()} shares held`);
+    const qty = shares ?? holding.shares;
+    let px = price;
+    if (px === undefined || px === null) {
+      const d = await dataLayer.getMarketData(holding.symbol);
+      px = d.price;
+    }
+    px = Number(px);
+    if (!Number.isFinite(px) || px <= 0) throw new TypeError("sell price must be > 0");
+    paperStore.removeHolding(holding.symbol, qty);
+    const realized = round2((px - holding.costBasis) * qty);
+    paperStore.addShareRealized(realized);
+    chargeCommission(); // the sale is an order too
+    snapshot();
+    return {
+      sold: { symbol: holding.symbol, shares: qty, price: px, realized },
+      holdings: paperStore.listHoldings(),
+      balance: balance(),
+    };
+  }
+
+  // Theta simulation (marks only): fast decays twice as quickly as the
+  // wall clock since entry, slow at half speed. Real dates still expire.
+  function simulatedDte(trade, realDte) {
+    const mode = paperStore.getSettings().thetaMode;
+    const mult = mode === "fast" ? 2 : mode === "slow" ? 0.5 : 1;
+    if (mult === 1 || !trade.entryDate) return realDte;
+    const elapsedDays = Math.max(0, (now() - Date.parse(trade.entryDate)) / 86_400_000);
+    return Math.max(1, Math.round(realDte - (mult - 1) * elapsedDays));
+  }
+
   // §1.3D/G: expiration + assignment, deterministic. Also refreshes marks
-  // on surviving open positions (same theo model as the journal).
+  // on surviving open positions (same theo model as the journal) and on
+  // held shares. Returns `events` for user-facing notifications
+  // ("AAPL: 100 shares assigned at $165").
   async function process() {
     requireBudget();
     const warnings = [];
+    const events = [];
+    const settings = paperStore.getSettings();
     const open = paperTrades().filter((t) => t.status === "open");
     const quotes = new Map();
-    for (const symbol of new Set(open.map((t) => t.symbol))) {
+    const symbols = new Set([
+      ...open.map((t) => t.symbol),
+      ...paperStore.listHoldings().map((h) => h.symbol),
+    ]);
+    for (const symbol of symbols) {
       try {
         const d = await dataLayer.getMarketData(symbol);
         quotes.set(symbol, { price: d.price, stale: d.stale });
@@ -169,11 +252,16 @@ function createPaperTrading({
       const quote = quotes.get(trade.symbol);
       if (!quote) continue;
       const spot = quote.price;
-      const expired = trade.expiration !== null && dteOf(trade.expiration, now()) <= 0;
+      const realDte = trade.expiration !== null ? dteOf(trade.expiration, now()) : null;
+      const expired = realDte !== null && realDte <= 0;
 
       if (expired) {
+        if (!settings.autoAssign) {
+          warnings.push(`${trade.symbol} ${trade.strategy}: expired — auto-assign is off, close it manually`);
+          continue;
+        }
         try {
-          const settled = await settleAtExpiry(trade, spot);
+          const settled = await settleAtExpiry(trade, spot, events);
           if (settled) continue;
           warnings.push(`${trade.symbol} ${trade.strategy}: expired but has no legs or assignment strike — close it manually`);
           continue;
@@ -183,7 +271,7 @@ function createPaperTrading({
         }
       }
 
-      // not expired: refresh the mark
+      // not expired: refresh the mark (at the simulated decay clock)
       let mark = null;
       let unrealized = null;
       if (trade.candidate?.legs?.length) {
@@ -191,7 +279,8 @@ function createPaperTrading({
           const res = await calc().analyze({
             legs: engineLegsOf(trade.candidate),
             spot,
-            dte: Math.max(1, dteOf(trade.expiration ?? trade.candidate.expiration, now())),
+            dte: simulatedDte(trade,
+              Math.max(1, dteOf(trade.expiration ?? trade.candidate.expiration, now()))),
             sigma: trade.candidate.meta?.sigma,
             riskFreeRate: trade.candidate.meta?.riskFreeRate,
             repriceTheoretical: true,
@@ -209,12 +298,58 @@ function createPaperTrading({
       });
     }
 
+    // mark held shares at the latest quote so accountValue tracks them
+    for (const holding of paperStore.listHoldings()) {
+      const quote = quotes.get(holding.symbol);
+      if (quote) paperStore.markHolding(holding.symbol, quote.price);
+    }
+
     snapshot();
-    return { trades: paperTrades(), balance: balance(), warnings };
+    return {
+      trades: paperTrades(), balance: balance(), warnings, events,
+      holdings: paperStore.listHoldings(),
+    };
   }
 
-  async function settleAtExpiry(trade, spot) {
+  async function settleAtExpiry(trade, spot, events = []) {
     const scale = trade.entryQty * trade.multiplier;
+    const strike = trade.assignmentStrike;
+
+    // v1.5.0 SHARE CARRY: an assigned short put buys real (simulated)
+    // shares at the strike. The trade realizes only its premium; the
+    // shares enter the holdings ledger at the strike as cost basis and
+    // float at market until the user sells them. Covered calls are NOT
+    // wired to the holdings ledger: every CC here is a buy-write whose
+    // settlement already contains the share leg — pulling separately-held
+    // shares into it would double-count.
+    const isShortPut = strike !== null && trade.side === "credit"
+      && (trade.strategy === "cash_secured_put" || !trade.candidate?.legs?.length);
+    if (isShortPut && spot <= strike) {
+      tradeStore.settle(trade.id, {
+        status: "assigned",
+        actualPnl: round2(trade.entryPrice * scale), // premium kept
+        note: `Assigned at expiry: bought ${scale} ${trade.symbol} shares at $${strike} `
+          + `(underlying $${spot.toFixed(2)}); premium kept, shares now held in the Sandbox.`,
+      });
+      paperStore.addHolding(trade.symbol, {
+        shares: scale, costBasis: strike, lastPrice: spot,
+      });
+      chargeCommission(); // settlement order
+      events.push(`${trade.symbol}: ${scale} shares assigned at $${strike} strike`);
+      return true;
+    }
+    // short put OTM at expiry: expired worthless, full premium kept (the
+    // engine payoff gives the same number for candidate-linked CSPs)
+    if (isShortPut) {
+      tradeStore.settle(trade.id, {
+        status: "expired",
+        actualPnl: round2(trade.entryPrice * scale),
+        note: `Expired worthless, underlying $${spot.toFixed(2)} above $${strike} — premium kept.`,
+      });
+      chargeCommission();
+      return true;
+    }
+
     // candidate-linked: exact payoff at the settlement price, from the engine
     if (trade.candidate?.legs?.length) {
       const [res] = await engineBatch([{
@@ -223,36 +358,39 @@ function createPaperTrading({
       }]);
       if (!res.ok) throw new Error(res.error);
       const pnl = round2(res.result[0] * trade.entryQty);
-      const strike = trade.assignmentStrike;
       const assigned = strike !== null && (
         (trade.strategy === "cash_secured_put" && spot <= strike)
         || (trade.strategy === "covered_call" && spot >= strike));
       tradeStore.settle(trade.id, {
         status: assigned ? "assigned" : "expired",
         actualPnl: pnl,
-        note: `Settled at expiry, underlying $${spot.toFixed(2)} (cash-settled at market; shares not carried).`,
+        note: assigned && trade.strategy === "covered_call"
+          ? `Assigned at expiry: shares called away at $${strike} (buy-write settled, capital freed).`
+          : `Settled at expiry, underlying $${spot.toFixed(2)} (cash-settled at market).`,
       });
+      chargeCommission();
+      if (assigned) {
+        events.push(trade.strategy === "covered_call"
+          ? `${trade.symbol}: shares called away at $${strike} strike`
+          : `${trade.symbol}: assigned at $${strike} strike`);
+      }
       return true;
     }
-    // manual with an assignment strike: CSP-style (credit) or CC-style (debit)
-    if (trade.assignmentStrike !== null) {
-      const strike = trade.assignmentStrike;
-      let pnl;
-      let assigned;
-      if (trade.side === "credit") { // cash-secured put
-        assigned = spot <= strike;
-        pnl = round2((trade.entryPrice - Math.max(strike - spot, 0)) * scale);
-      } else { // covered call (entry = buy-write cost per share)
-        assigned = spot >= strike;
-        pnl = assigned
-          ? round2((strike - trade.entryPrice) * scale)
-          : round2((spot - trade.entryPrice) * scale);
-      }
+    // manual CC-style (debit, entry = buy-write cost per share)
+    if (strike !== null) {
+      const assigned = spot >= strike;
+      const pnl = assigned
+        ? round2((strike - trade.entryPrice) * scale)
+        : round2((spot - trade.entryPrice) * scale);
       tradeStore.settle(trade.id, {
         status: assigned ? "assigned" : "expired",
         actualPnl: pnl,
-        note: `Settled at expiry, underlying $${spot.toFixed(2)} vs strike $${strike} (cash-settled at market; shares not carried).`,
+        note: assigned
+          ? `Assigned at expiry: shares called away at $${strike} (buy-write settled, capital freed).`
+          : `Settled at expiry, underlying $${spot.toFixed(2)} vs strike $${strike}.`,
       });
+      chargeCommission();
+      if (assigned) events.push(`${trade.symbol}: shares called away at $${strike} strike`);
       return true;
     }
     return false; // nothing deterministic to settle against
@@ -318,9 +456,21 @@ function createPaperTrading({
     return { archived, balance: balance() };
   }
 
+  function getSettings() {
+    return paperStore.getSettings();
+  }
+
+  function setSettings(patch) {
+    return paperStore.setSettings(patch);
+  }
+
+  function holdings() {
+    return paperStore.listHoldings();
+  }
+
   return {
     open, close, process, stats, equityCurve, balance, setBudget, reset,
-    reservedCapitalFor,
+    reservedCapitalFor, getSettings, setSettings, holdings, sellHolding,
   };
 }
 

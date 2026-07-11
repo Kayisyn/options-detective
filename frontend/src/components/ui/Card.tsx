@@ -93,6 +93,38 @@ export function MetricBox({ label, value, highlight = "none", hint }: {
   return hint ? <Hint text={hint} className="block">{box}</Hint> : box;
 }
 
+// ---- PctBadge (v1.5.0 journal % metrics) ------------------------------------
+
+// Small glassmorphic percentage chip: mono digits, green/red by sign,
+// neutral for muted context values (account impact).
+export function PctBadge({ value, suffix, title, muted = false }: {
+  value: number;
+  suffix?: string;
+  title?: string;
+  muted?: boolean;
+}) {
+  const tone = muted
+    ? "border-dark-600 text-content-2"
+    : value > 0
+      ? "border-accent-green/30 bg-accent-green/10 text-accent-green"
+      : value < 0
+        ? "border-accent-red/30 bg-accent-red/10 text-accent-red"
+        : "border-dark-600 text-content-2";
+  return (
+    <span
+      title={title}
+      data-testid="pct-badge"
+      className={cx(
+        "inline-flex items-baseline gap-0.5 rounded border px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums",
+        tone,
+      )}
+    >
+      {!muted && value > 0 ? "+" : ""}{value.toFixed(1)}%
+      {suffix && <span className="font-normal text-content-3"> {suffix}</span>}
+    </span>
+  );
+}
+
 // ---- Badge -----------------------------------------------------------------
 
 type BadgeVariant = "violet" | "blue" | "green" | "red" | "orange" | "neutral";

@@ -79,6 +79,9 @@ function registerIpc() {
   ipcMain.handle("api:paper:process", () => forward("/paper/process", {}));
   ipcMain.handle("api:paper:curve", (_event, { days }) => forward(`/paper/equity-curve?days=${Number(days) || 30}`));
   ipcMain.handle("api:paper:reset", (_event, body) => forward("/paper/reset", body));
+  ipcMain.handle("api:paper:settings", (_event, body) => forward("/paper/settings", body, "PUT"));
+  ipcMain.handle("api:paper:sell", (_event, { symbol, payload }) =>
+    forward(`/paper/holdings/${encodeURIComponent(symbol)}/sell`, payload));
   ipcMain.handle("api:etf:reference", () => forward("/etf-screener/reference"));
   ipcMain.handle("api:etf:universe", () => forward("/etf-screener/universe"));
   ipcMain.handle("api:etf:screen", (_event, body) => forward("/etf-screener/screen", body));

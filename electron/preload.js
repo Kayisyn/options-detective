@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld("optionsDetective", {
   paperProcess: () => ipcRenderer.invoke("api:paper:process"),
   paperCurve: (days) => ipcRenderer.invoke("api:paper:curve", { days }),
   paperReset: (payload) => ipcRenderer.invoke("api:paper:reset", payload),
+  paperSettings: (payload) => ipcRenderer.invoke("api:paper:settings", payload),
+  paperSellHolding: (symbol, payload) => ipcRenderer.invoke("api:paper:sell", { symbol, payload }),
   etfReference: () => ipcRenderer.invoke("api:etf:reference"),
   etfUniverse: () => ipcRenderer.invoke("api:etf:universe"),
   etfScreen: (payload) => ipcRenderer.invoke("api:etf:screen", payload),

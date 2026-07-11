@@ -3,8 +3,8 @@
 import type {
   CalcResult, EquityPoint, EtfDetail, EtfFilters, EtfRecord, EtfReference,
   EtfScreenResult, EtfStrategy, HoldingsInfo, IcsConstraints, IcsResult,
-  JournalTrade, MarketPulse, PaperBalance, PaperState, Recommendation,
-  ScreenResult,
+  JournalTrade, MarketPulse, PaperBalance, PaperHolding, PaperSettings,
+  PaperState, Recommendation, ScreenResult,
 } from "../types";
 
 type Bridge = {
@@ -22,9 +22,11 @@ type Bridge = {
   paperBudget?: (body: unknown) => Promise<{ budget: unknown; balance: PaperBalance }>;
   paperOpen?: (body: unknown) => Promise<{ trade: JournalTrade; balance: PaperBalance }>;
   paperClose?: (id: string, body: unknown) => Promise<{ trade: JournalTrade; balance: PaperBalance }>;
-  paperProcess?: () => Promise<{ trades: JournalTrade[]; balance: PaperBalance; warnings: string[] }>;
+  paperProcess?: () => Promise<PaperProcessResult>;
   paperCurve?: (days: number) => Promise<{ points: EquityPoint[] }>;
   paperReset?: (body: unknown) => Promise<{ archived: number; balance: PaperBalance }>;
+  paperSettings?: (body: unknown) => Promise<{ settings: PaperSettings }>;
+  paperSellHolding?: (symbol: string, body: unknown) => Promise<PaperSellResult>;
   etfReference?: () => Promise<EtfReference>;
   etfUniverse?: () => Promise<{ etfs: EtfRecord[] }>;
   etfScreen?: (body: unknown) => Promise<EtfScreenResult>;
@@ -36,6 +38,21 @@ type Bridge = {
   icsBatch?: (body: unknown) => Promise<IcsResult>;
   marketPulse?: (watch: string) => Promise<MarketPulse>;
 };
+
+// v1.5.0: process() now also returns assignment events + holdings snapshot
+export interface PaperProcessResult {
+  trades: JournalTrade[];
+  balance: PaperBalance;
+  warnings: string[];
+  events?: string[];
+  holdings?: PaperHolding[];
+}
+
+export interface PaperSellResult {
+  sold: { symbol: string; shares: number; price: number; realized: number };
+  holdings: PaperHolding[];
+  balance: PaperBalance;
+}
 
 function bridge(): Bridge | null {
   return (window as { optionsDetective?: Bridge }).optionsDetective ?? null;
@@ -105,7 +122,15 @@ export const api = {
   },
   paperProcess() {
     return bridge()?.paperProcess?.()
-      ?? post<{ trades: JournalTrade[]; balance: PaperBalance; warnings: string[] }>("/paper/process", {});
+      ?? post<PaperProcessResult>("/paper/process", {});
+  },
+  paperSettings(patch: Partial<PaperSettings>): Promise<{ settings: PaperSettings }> {
+    return bridge()?.paperSettings?.(patch)
+      ?? request("PUT", "/paper/settings", patch);
+  },
+  paperSellHolding(symbol: string, body: { shares?: number; price?: number }): Promise<PaperSellResult> {
+    return bridge()?.paperSellHolding?.(symbol, body)
+      ?? post<PaperSellResult>(`/paper/holdings/${encodeURIComponent(symbol)}/sell`, body);
   },
   paperCurve(days: number): Promise<{ points: EquityPoint[] }> {
     return bridge()?.paperCurve?.(days) ?? request("GET", `/paper/equity-curve?days=${days}`);

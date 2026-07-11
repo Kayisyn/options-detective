@@ -29,7 +29,24 @@ router.get("/", (_req, res) => send(res, () => ({
   balance: paperTrading.balance(),
   trades: tradeStore.list().filter((t) => t.paper),
   stats: paperTrading.stats(),
+  settings: paperTrading.getSettings(),
+  holdings: paperTrading.holdings(),
 })));
+
+// v1.5.0 sandbox customization
+router.get("/settings", (_req, res) => send(res, () => ({ settings: paperTrading.getSettings() })));
+router.put("/settings", (req, res) => send(res, () => ({
+  settings: paperTrading.setSettings(req.body || {}),
+})));
+
+router.post("/holdings/:symbol/sell", async (req, res) => {
+  try {
+    res.json(await paperTrading.sellHolding(req.params.symbol, req.body || {}));
+  } catch (err) {
+    if (err instanceof TypeError) res.status(400).json({ error: err.message });
+    else res.status(502).json({ error: String(err.message || err) });
+  }
+});
 
 router.post("/budget", (req, res) => send(res, () => paperTrading.setBudget(req.body?.initialBalance)));
 router.get("/budget", (_req, res) => send(res, () => ({ balance: paperTrading.balance() })));

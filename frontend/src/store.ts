@@ -13,8 +13,8 @@ import type {
   CalcResult, Candidate, CloseTradeInput, DirectionalView, EquityPoint,
   EtfFilters, EtfReference, EtfScreenResult, EtfStrategy, IcsResult,
   IcsViewState, JournalSaveOptions,
-  JournalTrade, Leg, MarketPulse, NewTradeInput, PaperState, Recommendation,
-  ScreenParams, ScreenResult,
+  JournalTrade, Leg, MarketPulse, NewTradeInput, PaperSettings, PaperState,
+  Recommendation, ScreenParams, ScreenResult,
 } from "./types";
 
 export type View = "home" | "detector" | "calculator" | "recommender" | "journal" | "paper" | "etf" | "ics";
@@ -205,6 +205,8 @@ interface AppState {
   closePaperTrade: (id: string, input: CloseTradeInput) => Promise<boolean>;
   processPaper: (opts?: { quiet?: boolean }) => Promise<void>;
   resetPaper: (initialBalance?: number) => Promise<void>;
+  updatePaperSettings: (patch: Partial<PaperSettings>) => Promise<void>;
+  sellHolding: (symbol: string, shares?: number) => Promise<void>;
 
   loadEtfReference: () => Promise<void>;
   screenEtf: (filters: EtfFilters, strategy: EtfStrategy) => Promise<void>;
@@ -575,12 +577,19 @@ export const useStore = create<AppState>((set, get) => ({
     if (quiet && openCount === 0) return; // nothing to mark or settle
     set({ paperMarking: true });
     try {
-      const { warnings } = await api.paperProcess();
+      const { warnings, events } = await api.paperProcess();
       await Promise.all([get().loadPaper(), get().loadJournal()]);
+      // assignment notifications matter even on a quiet background pass —
+      // the user needs to know shares appeared/left (v1.5.0 §8)
+      if (events && events.length > 0) {
+        get().showToast(`⚑ ${events[0]}${events.length > 1 ? ` (+${events.length - 1} more)` : ""}`);
+      }
       if (!quiet) {
-        get().showToast(warnings.length > 0
-          ? `Processed — ${warnings.length} warning${warnings.length > 1 ? "s" : ""}`
-          : "✓ Marks & expirations processed");
+        if (!events || events.length === 0) {
+          get().showToast(warnings.length > 0
+            ? `Processed — ${warnings.length} warning${warnings.length > 1 ? "s" : ""}`
+            : "✓ Marks & expirations processed");
+        }
         if (warnings.length > 0) set({ error: warnings.join(" · ") });
       }
     } catch (err) {
@@ -595,6 +604,27 @@ export const useStore = create<AppState>((set, get) => ({
       const { archived } = await api.paperReset(initialBalance);
       await Promise.all([get().loadPaper(), get().loadJournal()]);
       get().showToast(`✓ Sandbox reset — ${archived} position${archived === 1 ? "" : "s"} archived`);
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  // v1.5.0 sandbox customization: settings apply on the next process pass
+  // (fees on the next order, theta to the next mark, auto-assign at expiry).
+  async updatePaperSettings(patch) {
+    try {
+      const { settings } = await api.paperSettings(patch);
+      set((s) => ({ paper: s.paper ? { ...s.paper, settings } : s.paper }));
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async sellHolding(symbol, shares) {
+    try {
+      const { sold } = await api.paperSellHolding(symbol, shares ? { shares } : {});
+      await get().loadPaper();
+      get().showToast(`✓ Sold ${sold.shares} ${sold.symbol} @ $${sold.price.toFixed(2)} — P&L $${sold.realized.toFixed(2)}`);
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }

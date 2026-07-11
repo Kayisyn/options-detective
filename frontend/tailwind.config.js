@@ -107,9 +107,11 @@ export default {
           "40%": { transform: "scale(1.05)" },
           "100%": { backgroundColor: "transparent", transform: "scale(1)" },
         },
-        "stripe-slide": {
-          "0%": { backgroundPosition: "0 0" },
-          "100%": { backgroundPosition: "20px 0" },
+        // v1.5.0 loading bar: the glowing runner (w-1/3 of its track)
+        // sweeps fully across and back — transform only
+        "loader-slide": {
+          "0%, 100%": { transform: "translateX(-110%)" },
+          "50%": { transform: "translateX(410%)" },
         },
         skeleton: {
           "0%, 100%": { opacity: "1" },
@@ -151,7 +153,7 @@ export default {
         "valid-check": "valid-check 100ms ease-out both",
         ripple: "ripple 300ms ease-out forwards",
         "value-flash": "value-flash 300ms ease-out",
-        "stripe-slide": "stripe-slide 2s linear infinite",
+        "loader-slide": "loader-slide 2s ease-in-out infinite",
         skeleton: "skeleton 1.5s ease-in-out infinite",
         "modal-enter": "modal-enter 250ms cubic-bezier(0.16, 1, 0.3, 1) both",
         "modal-exit": "modal-exit 150ms cubic-bezier(0.7, 0, 0.84, 0) both",

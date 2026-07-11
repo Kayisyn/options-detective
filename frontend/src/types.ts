@@ -235,6 +235,31 @@ export interface PaperBalance {
   accountValue: number;
   openCount: number;
   closedCount: number;
+  // v1.5.0 realism
+  feesPaid?: number;
+  holdingsCost?: number;
+  holdingsValue?: number;
+}
+
+// v1.5.0 sandbox customization
+export type ThetaMode = "normal" | "fast" | "slow";
+
+export interface PaperSettings {
+  commissionEnabled: boolean;
+  commissionPerTrade: number;
+  autoAssign: boolean;
+  thetaMode: ThetaMode;
+  maxRiskPct: number;
+}
+
+// Shares acquired through assignment (CSP), floating at market until sold.
+export interface PaperHolding {
+  symbol: string;
+  shares: number;
+  costBasis: number;
+  lastPrice: number | null;
+  acquiredAt: string;
+  from: string;
 }
 
 export interface PaperStats {
@@ -266,6 +291,8 @@ export interface PaperState {
   balance: PaperBalance | null;
   trades: JournalTrade[];
   stats: PaperStats;
+  settings?: PaperSettings;
+  holdings?: PaperHolding[];
 }
 
 // v2.0 ETF screener
