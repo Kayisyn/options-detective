@@ -98,7 +98,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1440,
     height: 900,
-    backgroundColor: "#020617",
+    backgroundColor: "#0a0a0f", // obsidian black — pre-paint bg, no blue tint
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

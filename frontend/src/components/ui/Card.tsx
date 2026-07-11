@@ -93,7 +93,7 @@ export function MetricBox({ label, value, highlight = "none", hint }: {
 type BadgeVariant = "violet" | "blue" | "green" | "red" | "orange" | "neutral";
 
 const BADGES: Record<BadgeVariant, string> = {
-  violet: "bg-accent-primary text-white border-accent-primary",
+  violet: "bg-accent-primary text-on-accent border-accent-primary",
   blue: "bg-accent-blue/15 text-accent-blue border-accent-blue/30",
   green: "bg-accent-green/15 text-accent-green border-accent-green/30",
   red: "bg-accent-red/15 text-accent-red border-accent-red/30",

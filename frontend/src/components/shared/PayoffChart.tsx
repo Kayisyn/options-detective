@@ -29,10 +29,11 @@ function themeColors() {
     profit: cssVar("--od-accent-green", "#10b981"),
     loss: cssVar("--od-accent-red", "#ef4444"),
     breakeven: cssVar("--od-accent-orange", "#f59e0b"),
-    spot: "#06b6d4",
+    spot: cssVar("--od-chart-spot", "#06b6d4"),
     grid: cssVar("--od-dark-700", "#2a3050"),
     panel: cssVar("--od-dark-800", "#1a1f3a"),
     axis: cssVar("--od-text-3", "#9ca3af"),
+    zero: cssVar("--od-dark-500", "#64748b"),
   };
 }
 
@@ -124,7 +125,7 @@ export default function PayoffChart({
                 fontSize: 12,
               }}
             />
-            <ReferenceLine y={0} stroke="#64748b" strokeWidth={1} />
+            <ReferenceLine y={0} stroke={COLORS.zero} strokeWidth={1} />
             {breakevens.map((be) => (
               <ReferenceLine
                 key={be}

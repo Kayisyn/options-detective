@@ -5,12 +5,17 @@ import { cx } from "../../lib/cx";
 // with slide-up + scale 0.95 -> 1 over 250ms ease-out, exits with the
 // reverse over 150ms ease-in, then unmounts. Backdrop click and Escape
 // both close.
-export default function Modal({ open, onClose, children, testid, maxWidth = "max-w-xl" }: {
+export default function Modal({
+  open, onClose, children, testid, maxWidth = "max-w-xl", flush = false,
+}: {
   open: boolean;
   onClose: () => void;
   children: ReactNode;
   testid?: string;
   maxWidth?: string;
+  /** no built-in padding; panel becomes a max-height flex column so the
+      caller can pin a header and scroll the body (Settings) */
+  flush?: boolean;
 }) {
   const [closing, setClosing] = useState(false);
   const failsafe = useRef<ReturnType<typeof setTimeout>>();
@@ -49,7 +54,8 @@ export default function Modal({ open, onClose, children, testid, maxWidth = "max
     >
       <div
         className={cx(
-          "card-glass w-full border-accent-primary/30 p-6 shadow-glow",
+          "card-glass w-full border-accent-primary/30 shadow-glow",
+          flush ? "flex max-h-[85vh] flex-col overflow-hidden" : "p-6",
           maxWidth,
           closing ? "animate-modal-exit" : "animate-modal-enter",
         )}

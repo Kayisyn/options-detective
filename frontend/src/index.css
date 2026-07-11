@@ -3,18 +3,17 @@
 @tailwind utilities;
 
 /* ============================================================
-   Option Obelisk theme tokens (v1.4.0 obsidian overhaul).
+   Option Obelisk theme tokens (v1.4.x).
    Pure-black obsidian surfaces (no blue tint) + vibrant violet
-   primary. Three themes, selected by a theme-* class on <html>;
+   primary. Two themes, selected by a theme-* class on <html>;
    obsidian is the default (:root with no class, id "dark" so
    stored preferences keep working). Every surface, text tier and
    accent rides these variables.
 
    Accent SLOTS stay semantic: primary = CTAs/highlights/active
    states, green = profit, red = loss, blue = info, orange =
-   warnings. The colorblind themes recolor the profit/loss slots
-   (deuteranopia: profit -> blue, loss -> yellow) on the same
-   obsidian surfaces — components keep using the same classes.
+   warnings. on-accent = text sitting ON a primary fill (white on
+   violet; black on the B&W theme's white fills).
 
    Violet contrast discipline: #9733FF is ~4.0:1 on obsidian, so
    raw primary is reserved for CTA fills (white text on it is
@@ -34,27 +33,43 @@
   --od-accent-primary: 151 51 255;       /* #9733FF violet */
   --od-accent-primary-hover: 163 74 255; /* #A34AFF */
   --od-accent-primary-text: 178 102 255; /* #B266FF AA-safe small text */
+  --od-on-accent: 255 255 255;    /* text on primary fills */
   --od-accent-blue: 59 130 246;   /* info #3b82f6 */
   --od-accent-green: 16 185 129;  /* profit #10b981 */
   --od-accent-red: 239 68 68;     /* loss #ef4444 */
   --od-accent-orange: 251 191 36; /* warning #fbbf24 */
+  --od-chart-spot: 6 182 212;     /* spot marker #06b6d4 cyan */
   --od-glass-fill: 15 15 21;      /* rgba(15,15,21,.8) glass base */
 }
 
-/* Red-blind safe: profit reads as blue, loss as yellow. */
-:root.theme-deuteranopia {
-  --od-accent-green: 59 130 246;  /* profit -> blue #3b82f6 */
-  --od-accent-red: 251 191 36;    /* loss -> yellow #fbbf24 */
-  --od-accent-orange: 249 115 22;
-  --od-accent-blue: 34 211 238;   /* info -> cyan, keeps distance from profit */
-}
-
-/* Red-green blind safe: profit as sky blue, loss as light red. */
-:root.theme-protanopia {
-  --od-accent-green: 14 165 233;  /* profit -> sky #0ea5e9 */
-  --od-accent-red: 248 113 113;   /* loss -> #f87171 */
-  --od-accent-orange: 251 191 36;
-  --od-accent-blue: 129 140 248;  /* info -> indigo */
+/* ============================================================
+   Black & White — finance terminal mode. Pure black canvas,
+   white text, every accent slot collapses to grayscale. Flat
+   surfaces (glass effects disabled below), crisp white borders.
+   Profit reads bright, loss reads dim; the +/- signs carry the
+   semantics. The brief's #555-#777 status grays fail WCAG AA on
+   black, so text-bearing slots are lifted to >= 6:1 while
+   keeping the dim-vs-bright hierarchy.
+   ============================================================ */
+:root.theme-bw {
+  --od-dark-900: 0 0 0;       /* pure black canvas */
+  --od-dark-800: 10 10 10;    /* #0a0a0a flat panels */
+  --od-dark-700: 26 26 26;    /* #1a1a1a inputs / surfaces */
+  --od-dark-600: 51 51 51;    /* #333333 borders (brief) */
+  --od-dark-500: 82 82 82;    /* #525252 raised borders */
+  --od-text-1: 255 255 255;
+  --od-text-2: 235 235 235;
+  --od-text-3: 163 163 163;   /* #a3a3a3, ~8.6:1 on black */
+  --od-accent-primary: 255 255 255;      /* CTAs/highlights turn white */
+  --od-accent-primary-hover: 224 224 224;
+  --od-accent-primary-text: 255 255 255;
+  --od-on-accent: 0 0 0;          /* black text on white fills */
+  --od-accent-blue: 168 168 168;  /* info    #a8a8a8 ~7.4:1 */
+  --od-accent-green: 235 235 235; /* profit  #ebebeb bright */
+  --od-accent-red: 150 150 150;   /* loss    #969696 ~6.1:1 dim */
+  --od-accent-orange: 200 200 200;/* warning #c8c8c8 */
+  --od-chart-spot: 190 190 190;   /* spot marker, mid gray */
+  --od-glass-fill: 0 0 0;
 }
 
 body {
@@ -97,6 +112,45 @@ body::before {
   }
 }
 
+/* ============================================================
+   Black & White theme: kill every glass effect. Flat panels,
+   crisp white borders, no blur, no glow, no ambient radials.
+   Specificity (:root.theme-bw .x) outranks the utility classes.
+   ============================================================ */
+:root.theme-bw body::before {
+  display: none;
+}
+:root.theme-bw .card-glass {
+  background-color: rgb(10 10 10);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: rgb(255 255 255 / 0.25);
+  box-shadow: none;
+}
+:root.theme-bw .card-glass-hover:hover {
+  border-color: rgb(255 255 255 / 0.7);
+  box-shadow: none;
+}
+:root.theme-bw .bg-glass {
+  background-color: rgb(0 0 0 / 0.92);
+}
+:root.theme-bw .backdrop-blur-glass,
+:root.theme-bw .backdrop-blur-sm {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+/* Primary CTAs invert terminal-style: white fill, black text (via
+   --od-on-accent). Destructive fills are light gray in B&W, so their
+   label flips to black for contrast. */
+:root.theme-bw .od-btn-destructive {
+  color: rgb(0 0 0);
+}
+/* Pictographic emoji render in full color regardless of CSS color, so
+   the terminal theme desaturates them. */
+:root.theme-bw .emoji-icon {
+  filter: grayscale(1);
+}
+
 /* Solid fallback when the user asks for reduced transparency. */
 @media (prefers-reduced-transparency: reduce) {
   .card-glass {
@@ -107,6 +161,36 @@ body::before {
   body::before {
     display: none;
   }
+}
+
+/* Settings panel: fixed header, scrolling body. The thumb rides the
+   accent primary, so it reads violet-tinted on obsidian and gray on
+   Black & White without theme-specific rules. */
+.settings-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--od-accent-primary) / 0.35) transparent;
+}
+.settings-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.settings-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.settings-scroll::-webkit-scrollbar-thumb {
+  background: rgb(var(--od-accent-primary) / 0.35);
+  border-radius: 4px;
+  border: none;
+}
+.settings-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--od-accent-primary) / 0.55);
+}
+
+/* Settings tab strip: the active-tab underline slides between tabs on
+   a GPU-only translateX + scaleX (the bar itself is 1px wide and gets
+   stretched to the measured tab width). */
+.settings-tab-underline {
+  transform-origin: left;
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Dark scrollbars so the chrome doesn't break the obsidian shell. */
@@ -155,5 +239,8 @@ body::before {
   .card-glass-hover,
   .card-glass-hover:hover {
     transform: none;
+  }
+  .settings-tab-underline {
+    transition-duration: 1ms;
   }
 }

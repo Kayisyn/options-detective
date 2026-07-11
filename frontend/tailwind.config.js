@@ -18,6 +18,10 @@ export default {
           2: "rgb(var(--od-text-2) / <alpha-value>)", // secondary
           3: "rgb(var(--od-text-3) / <alpha-value>)", // tertiary / hints
         },
+        // text sitting ON a primary fill: white on violet (obsidian),
+        // black on white (Black & White theme). Top-level so the utility
+        // is `text-on-accent`.
+        "on-accent": "rgb(var(--od-on-accent) / <alpha-value>)",
         accent: {
           // violet primary: CTAs, active states, highlights. `primary-text`
           // is the AA-safe tint for small text on obsidian (see index.css).
@@ -52,8 +56,9 @@ export default {
       },
       boxShadow: {
         glass: "0 8px 32px rgba(0, 0, 0, 0.2)",
-        "glass-lg": "0 8px 32px rgba(151, 51, 255, 0.25)",
-        "violet-glow": "0 0 24px rgba(151, 51, 255, 0.5)",
+        // glows ride the accent primary: violet on obsidian, white on B&W
+        "glass-lg": "0 8px 32px rgb(var(--od-accent-primary) / 0.25)",
+        "accent-glow": "0 0 24px rgb(var(--od-accent-primary) / 0.5)",
         glow: "0 0 0 1px rgb(var(--od-accent-primary) / 0.4), 0 0 24px rgb(var(--od-accent-primary) / 0.15)",
       },
       transitionTimingFunction: {
@@ -94,10 +99,11 @@ export default {
           "0%": { transform: "scale(0)", opacity: "0.5" },
           "100%": { transform: "scale(4)", opacity: "0" },
         },
-        // metric update: violet flash + scale pulse (GPU: opacity/transform
-        // ride the pseudo-flash via background-color on a tiny inline span)
+        // metric update: accent flash + scale pulse (GPU: opacity/transform
+        // ride the pseudo-flash via background-color on a tiny inline span);
+        // flash color follows the theme (violet / white at 20%)
         "value-flash": {
-          "0%": { backgroundColor: "rgb(151 51 255 / 0.2)", transform: "scale(1)" },
+          "0%": { backgroundColor: "rgb(var(--od-accent-primary) / 0.2)", transform: "scale(1)" },
           "40%": { transform: "scale(1.05)" },
           "100%": { backgroundColor: "transparent", transform: "scale(1)" },
         },

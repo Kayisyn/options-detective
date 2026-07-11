@@ -25,10 +25,10 @@ export default function CandidateCard({
   const weights = useStore((s) => s.weights);
   const openPaperTrade = useStore((s) => s.openPaperTrade);
   return (
-    <Card glow={featured || c.rank === 1} enterDelayMs={(c.rank - 1) * 50}>
+    <Card glow={featured || c.rank === 1} enterDelayMs={Math.min(c.rank - 1, 8) * 50}>
       <CardHeader>
         <div className="flex items-center gap-2.5">
-          <span className="rounded bg-accent-primary px-2 py-0.5 text-xs font-semibold text-white">
+          <span className="rounded bg-accent-primary px-2 py-0.5 text-xs font-semibold text-on-accent">
             #{c.rank}
           </span>
           <div>

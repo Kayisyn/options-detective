@@ -3,14 +3,16 @@ import {
   type ReactNode,
 } from "react";
 
-// v1.4.0 obsidian overhaul: one locked obsidian aesthetic plus two
-// colorblind-safe variants that recolor only the profit/loss accent slots.
+// v1.4.x themes: the locked obsidian aesthetic (default) plus a Black &
+// White finance-terminal mode — pure black, grayscale accents, flat
+// surfaces (index.css disables the glass effects under .theme-bw).
 // The theme is a class on <html>; every component reads CSS variables, so
 // switching is instant and touches no component code. The default keeps the
 // id "dark" so stored preferences from earlier versions still apply; stored
-// ids of retired themes (light/neon/professional) fall back to obsidian.
+// ids of retired themes (light/neon/professional/deuteranopia/protanopia)
+// fall back to obsidian.
 
-export type ThemeId = "dark" | "deuteranopia" | "protanopia";
+export type ThemeId = "dark" | "bw";
 
 export interface ThemeMeta {
   id: ThemeId;
@@ -25,12 +27,8 @@ export const THEMES: ThemeMeta[] = [
     swatch: { bg: "#0a0a0f", panel: "#15151f", accents: ["#9733FF", "#10b981", "#ef4444"] },
   },
   {
-    id: "deuteranopia", name: "Colorblind (red-safe)", hint: "Profit = blue, loss = yellow",
-    swatch: { bg: "#0a0a0f", panel: "#15151f", accents: ["#9733FF", "#3b82f6", "#fbbf24"] },
-  },
-  {
-    id: "protanopia", name: "Colorblind (red-green)", hint: "Profit = sky, loss = soft red",
-    swatch: { bg: "#0a0a0f", panel: "#15151f", accents: ["#9733FF", "#0ea5e9", "#f87171"] },
+    id: "bw", name: "Black & White", hint: "Finance terminal — pure black & white, formal aesthetic",
+    swatch: { bg: "#000000", panel: "#1a1a1a", accents: ["#ffffff", "#ebebeb", "#969696"] },
   },
 ];
 

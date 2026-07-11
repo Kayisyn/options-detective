@@ -10,10 +10,10 @@ export type ButtonSize = "xs" | "sm" | "md" | "lg";
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: cx(
-    "bg-accent-primary text-white shadow-glass",
-    "hover:bg-accent-primary-hover hover:scale-[1.02] hover:shadow-violet-glow",
+    "od-btn-primary bg-accent-primary text-on-accent shadow-glass",
+    "hover:bg-accent-primary-hover hover:scale-[1.02] hover:shadow-accent-glow",
     "active:scale-[0.95]",
-    "disabled:bg-dark-600",
+    "disabled:bg-dark-600 disabled:text-content-2",
   ),
   secondary: cx(
     "border border-accent-primary/60 bg-accent-primary/10 text-accent-primary-text",
@@ -26,7 +26,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
     "active:text-accent-primary-text",
   ),
   destructive: cx(
-    "bg-accent-red text-white shadow-glass",
+    "od-btn-destructive bg-accent-red text-white shadow-glass",
     "hover:brightness-110 hover:shadow-lg",
     "active:brightness-90 active:scale-[0.95]",
   ),
@@ -52,7 +52,11 @@ function spawnRipple(e: React.PointerEvent<HTMLButtonElement>) {
   const rect = button.getBoundingClientRect();
   const size = Math.max(rect.width, rect.height);
   const ripple = document.createElement("span");
-  ripple.className = "animate-ripple pointer-events-none absolute rounded-full bg-white/40";
+  // the ripple takes the button's text color at 40%, so it stays visible
+  // on every variant in both themes (white on violet, black on the B&W
+  // theme's white primary fill)
+  ripple.className = "animate-ripple pointer-events-none absolute rounded-full";
+  ripple.style.backgroundColor = "color-mix(in srgb, currentcolor 40%, transparent)";
   ripple.style.width = `${size}px`;
   ripple.style.height = `${size}px`;
   ripple.style.left = `${e.clientX - rect.left - size / 2}px`;

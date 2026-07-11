@@ -189,13 +189,13 @@ export default function Detector() {
 
           {expertMode && result.ivBand === "high" && (
             <div className="rounded-md border border-accent-blue/30 bg-accent-blue/10 px-4 py-2 text-sm text-accent-blue">
-              💡 IV rank {result.ivRank} is high — options are expensive right now, so the
+              <span className="emoji-icon">💡</span> IV rank {result.ivRank} is high — options are expensive right now, so the
               screen favors premium-selling structures (condors, strangles, covered calls).
             </div>
           )}
           {expertMode && result.ivBand === "low" && (
             <div className="rounded-md border border-accent-blue/30 bg-accent-blue/10 px-4 py-2 text-sm text-accent-blue">
-              💡 IV rank {result.ivRank} is low — options are cheap right now, so the screen
+              <span className="emoji-icon">💡</span> IV rank {result.ivRank} is low — options are cheap right now, so the screen
               favors long-volatility structures (straddles) and debit spreads.
             </div>
           )}
@@ -257,7 +257,7 @@ export default function Detector() {
               >
                 <CardHeader>
                   <div className="flex items-center gap-2.5">
-                    <span className="rounded bg-accent-primary px-2 py-0.5 text-xs font-semibold text-white"
+                    <span className="rounded bg-accent-primary px-2 py-0.5 text-xs font-semibold text-on-accent"
                       title="Composite-score rank from the screen">
                       #{rankById.get(c.id)}
                     </span>

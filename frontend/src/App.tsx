@@ -28,14 +28,15 @@ const TABS: Array<{ id: View; label: string; hint: string }> = [
   { id: "etf", label: "Assets", hint: "Asset Screener — discover ETF option-selling candidates" },
 ];
 
-// Minimal geometric obelisk mark (two strokes, violet gradient).
+// Minimal geometric obelisk mark. Gradient stops ride the accent tokens,
+// so the mark is violet on obsidian and white on the B&W theme.
 function ObeliskMark() {
   return (
     <svg width="18" height="24" viewBox="0 0 18 24" aria-hidden className="shrink-0">
       <defs>
         <linearGradient id="obelisk-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#A34AFF" />
-          <stop offset="1" stopColor="#9733FF" />
+          <stop offset="0" style={{ stopColor: "rgb(var(--od-accent-primary-hover))" }} />
+          <stop offset="1" style={{ stopColor: "rgb(var(--od-accent-primary))" }} />
         </linearGradient>
       </defs>
       <path d="M6 24 L7 6 L9 0 L11 6 L12 24 Z" fill="url(#obelisk-grad)" />
@@ -129,7 +130,7 @@ export default function App() {
                 disabled={!enabled[tab.id]}
                 className={`rounded-md px-3 py-1.5 text-sm transition-all duration-150 ease-out-quad ${
                   activeTab === tab.id
-                    ? "bg-accent-primary text-white shadow-violet-glow"
+                    ? "bg-accent-primary text-on-accent shadow-accent-glow"
                     : enabled[tab.id]
                       ? "text-content-3 hover:bg-dark-700 hover:text-content-1"
                       : "cursor-not-allowed text-content-3/40"

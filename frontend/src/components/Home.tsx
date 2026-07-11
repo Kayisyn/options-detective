@@ -125,7 +125,7 @@ export default function Home() {
         {FEATURES.map((f, i) => (
           <Card key={f.title} enterDelayMs={200 + i * 50}>
             <div className="flex items-start gap-3">
-              <span className="text-2xl">{f.icon}</span>
+              <span className="emoji-icon text-2xl">{f.icon}</span>
               <div>
                 <h3 className="font-semibold">{f.title}</h3>
                 <p className="mt-0.5 text-sm text-content-3">{f.desc}</p>

@@ -10,7 +10,7 @@ const BASE_FIELD = cx(
   "rounded-md border bg-dark-700 text-content-1 placeholder:text-content-2/30",
   "transition-all duration-150 ease-out-quad",
   "hover:border-dark-500",
-  "focus:border-accent-primary focus:shadow-violet-glow focus:outline-none focus:ring-1 focus:ring-accent-primary/30",
+  "focus:border-accent-primary focus:shadow-accent-glow focus:outline-none focus:ring-1 focus:ring-accent-primary/30",
   "disabled:cursor-not-allowed disabled:opacity-50",
 );
 
