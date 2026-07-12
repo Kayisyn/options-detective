@@ -1,16 +1,20 @@
-import { useEffect } from "react";
+import { useEffect, type ComponentType, type SVGProps } from "react";
 import { readLastScreen, useStore } from "../store";
 import { money, pct, strategyLabel } from "../lib/format";
 import Button from "./ui/Button";
 import { Card } from "./ui/Card";
+import { GridIcon, RadarIcon, TrophyIcon } from "./ui/Icons";
 
 // Home screen, v1.4.0: obsidian hero with quick-start CTAs, a live stats
 // row (sandbox balance, realized P&L, win rate) and feature highlights.
+// v1.5.1: emojis replaced with large low-opacity outline watermark icons.
 
-const FEATURES = [
-  { icon: "⚡", title: "Real-time screening", desc: "Every expiration × every eligible strategy, priced and ranked in one pass" },
-  { icon: "📊", title: "Trade analysis", desc: "Exact greeks, breakevens and probabilities from a deterministic Black-Scholes engine" },
-  { icon: "🎯", title: "Optimal strategies", desc: "Top candidates compared with plain trade-off facts and broker-ready tickets" },
+const FEATURES: Array<{
+  Icon: ComponentType<SVGProps<SVGSVGElement>>; title: string; desc: string;
+}> = [
+  { Icon: RadarIcon, title: "Real-time screening", desc: "Every expiration × every eligible strategy, priced and ranked in one pass" },
+  { Icon: GridIcon, title: "Trade analysis", desc: "Exact greeks, breakevens and probabilities from a deterministic Black-Scholes engine" },
+  { Icon: TrophyIcon, title: "Optimal strategies", desc: "Top candidates compared with plain trade-off facts and broker-ready tickets" },
 ];
 
 const SHORTCUTS = [
@@ -123,13 +127,14 @@ export default function Home() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         {FEATURES.map((f, i) => (
-          <Card liquid key={f.title} enterDelayMs={200 + i * 50}>
-            <div className="flex items-start gap-3">
-              <span className="emoji-icon text-2xl">{f.icon}</span>
-              <div>
-                <h3 className="font-semibold">{f.title}</h3>
-                <p className="mt-0.5 text-sm text-content-3">{f.desc}</p>
-              </div>
+          <Card liquid key={f.title} enterDelayMs={200 + i * 50}
+            className="relative overflow-hidden">
+            {/* large outline watermark behind the text (theme-colored, faint) */}
+            <f.Icon aria-hidden
+              className="pointer-events-none absolute -right-3 -top-4 h-24 w-24 text-accent-primary-text opacity-[0.18]" />
+            <div className="relative">
+              <h3 className="font-semibold">{f.title}</h3>
+              <p className="mt-0.5 text-sm text-content-3">{f.desc}</p>
             </div>
           </Card>
         ))}
