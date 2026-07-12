@@ -10,6 +10,7 @@ const paperRouter = require("./routes/paper");
 const etfRouter = require("./routes/etf");
 const screenerRouter = require("./routes/screener");
 const marketRouter = require("./routes/market");
+const { router: authRouter, requireAccount } = require("./routes/auth");
 const { callEngine, engineClient } = require("./services/mathEngine");
 
 const app = express();
@@ -32,14 +33,20 @@ app.get("/health", async (_req, res) => {
   }
 });
 
+// v1.6.0 local accounts: auth is open; per-account storage routes require an
+// active account (session.js). Pure-compute + shared-cache routes (detect,
+// calculate, recommend, data, screener/ICS cache, market pulse) stay open —
+// they hold no per-user data.
+app.use("/auth", authRouter);
+
 app.use("/detect", detectRouter);
 app.use("/calculate", calculateRouter);
 app.use("/recommend", recommendRouter);
 app.use("/data", dataRouter);
-app.use("/journal", journalRouter);
-app.use("/trades", journalRouter); // pre-v1.1 alias (old bridge builds)
-app.use("/paper", paperRouter);
-app.use("/etf-screener", etfRouter);
+app.use("/journal", requireAccount, journalRouter);
+app.use("/trades", requireAccount, journalRouter); // pre-v1.1 alias
+app.use("/paper", requireAccount, paperRouter);
+app.use("/etf-screener", requireAccount, etfRouter);
 app.use("/screener", screenerRouter);
 app.use("/market", marketRouter);
 

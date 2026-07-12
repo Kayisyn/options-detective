@@ -92,24 +92,27 @@ function cleanTags(tags) {
   return tags.map((t) => String(t).trim()).filter(Boolean).slice(0, 12);
 }
 
-function createTradeStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
-  const file = path.join(dir, "trades.json");
+// v1.6.0: `getDir` resolves the data directory per call (the active account's
+// dir); tests still pass a fixed `dir`. `file()` is therefore dynamic.
+function createTradeStore({ dir, getDir, now = () => new Date() } = {}) {
+  const resolveDir = getDir || (() => dir || DEFAULT_DIR);
+  const file = () => path.join(resolveDir(), "trades.json");
 
   function load() {
     try {
-      const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
+      const parsed = JSON.parse(fs.readFileSync(file(), "utf8"));
       return Array.isArray(parsed) ? parsed.map(migrate) : [];
     } catch (err) {
       if (err.code === "ENOENT") return [];
-      throw new Error(`trade journal unreadable (${file}): ${err.message}`);
+      throw new Error(`trade journal unreadable (${file()}): ${err.message}`);
     }
   }
 
   function persist(trades) {
-    fs.mkdirSync(dir, { recursive: true });
-    const tmp = `${file}.tmp`;
+    fs.mkdirSync(resolveDir(), { recursive: true });
+    const tmp = `${file()}.tmp`;
     fs.writeFileSync(tmp, JSON.stringify(trades, null, 2));
-    fs.renameSync(tmp, file); // atomic on the same volume
+    fs.renameSync(tmp, file()); // atomic on the same volume
   }
 
   // Trashed (soft-deleted) trades are excluded everywhere by default, so a
@@ -472,6 +475,9 @@ function createTradeStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
   };
 }
 
-const tradeStore = createTradeStore();
+// singleton reads the active account's dir per operation (see session.js)
+const tradeStore = createTradeStore({
+  getDir: () => require("./session").activeDataDir(),
+});
 
 module.exports = { createTradeStore, tradeStore, NotFoundError };

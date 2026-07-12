@@ -7,27 +7,31 @@ const path = require("path");
 
 const DEFAULT_DIR = process.env.OD_DATA_DIR || path.join(__dirname, "..", "data");
 
-function createEtfStore({ dir = DEFAULT_DIR } = {}) {
-  const file = path.join(dir, "etf.json");
+// v1.6.0: per-account (the watchlist is user data; the metrics cache rides
+// along and just refetches per account). `getDir` resolves the active
+// account's dir per call; tests pass a fixed `dir`.
+function createEtfStore({ dir, getDir } = {}) {
+  const resolveDir = getDir || (() => dir || DEFAULT_DIR);
+  const file = () => path.join(resolveDir(), "etf.json");
 
   function load() {
     try {
-      const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
+      const parsed = JSON.parse(fs.readFileSync(file(), "utf8"));
       return {
         metrics: parsed.metrics && typeof parsed.metrics === "object" ? parsed.metrics : {},
         watchlist: Array.isArray(parsed.watchlist) ? parsed.watchlist : [],
       };
     } catch (err) {
       if (err.code === "ENOENT") return { metrics: {}, watchlist: [] };
-      throw new Error(`ETF store unreadable (${file}): ${err.message}`);
+      throw new Error(`ETF store unreadable (${file()}): ${err.message}`);
     }
   }
 
   function persist(state) {
-    fs.mkdirSync(dir, { recursive: true });
-    const tmp = `${file}.tmp`;
+    fs.mkdirSync(resolveDir(), { recursive: true });
+    const tmp = `${file()}.tmp`;
     fs.writeFileSync(tmp, JSON.stringify(state, null, 2));
-    fs.renameSync(tmp, file);
+    fs.renameSync(tmp, file());
   }
 
   function getMetrics() {
@@ -64,6 +68,8 @@ function createEtfStore({ dir = DEFAULT_DIR } = {}) {
   return { getMetrics, saveMetrics, getWatchlist, setWatchlist, file };
 }
 
-const etfStore = createEtfStore();
+const etfStore = createEtfStore({
+  getDir: () => require("./session").activeDataDir(),
+});
 
 module.exports = { createEtfStore, etfStore };

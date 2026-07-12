@@ -34,8 +34,11 @@ function round2(x) {
   return Math.round(x * 100) / 100;
 }
 
-function createPaperStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
-  const file = path.join(dir, "paper.json");
+// v1.6.0: `getDir` resolves the active account's dir per call; tests pass a
+// fixed `dir`. `file()` is dynamic.
+function createPaperStore({ dir, getDir, now = () => new Date() } = {}) {
+  const resolveDir = getDir || (() => dir || DEFAULT_DIR);
+  const file = () => path.join(resolveDir(), "paper.json");
 
   const EMPTY = () => ({
     budget: null,
@@ -48,7 +51,7 @@ function createPaperStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
 
   function load() {
     try {
-      const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
+      const parsed = JSON.parse(fs.readFileSync(file(), "utf8"));
       return {
         budget: parsed.budget ?? null,
         snapshots: Array.isArray(parsed.snapshots) ? parsed.snapshots : [],
@@ -60,15 +63,15 @@ function createPaperStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
       };
     } catch (err) {
       if (err.code === "ENOENT") return EMPTY();
-      throw new Error(`paper store unreadable (${file}): ${err.message}`);
+      throw new Error(`paper store unreadable (${file()}): ${err.message}`);
     }
   }
 
   function persist(state) {
-    fs.mkdirSync(dir, { recursive: true });
-    const tmp = `${file}.tmp`;
+    fs.mkdirSync(resolveDir(), { recursive: true });
+    const tmp = `${file()}.tmp`;
     fs.writeFileSync(tmp, JSON.stringify(state, null, 2));
-    fs.renameSync(tmp, file);
+    fs.renameSync(tmp, file());
   }
 
   function getBudget() {
@@ -251,6 +254,8 @@ function createPaperStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
   };
 }
 
-const paperStore = createPaperStore();
+const paperStore = createPaperStore({
+  getDir: () => require("./session").activeDataDir(),
+});
 
 module.exports = { createPaperStore, paperStore, DEFAULT_BALANCE, DEFAULT_SETTINGS };
