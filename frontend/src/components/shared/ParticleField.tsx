@@ -49,6 +49,7 @@ const PARALLAX_MAX = 8;     // px shift of the deepest layer
 export default function ParticleField() {
   const enabled = useStore((s) => s.fxParticles);
   const count = useStore((s) => s.fxParticleCount);
+  const parallaxOn = useStore((s) => s.fxParallax);
   const motionPref = useStore((s) => s.fxMotion); // re-run when it changes
   const { theme } = useTheme();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -139,8 +140,11 @@ export default function ParticleField() {
         p.offsetX += p.velX * dt;
         p.offsetY += p.velY * dt;
 
-        x = homeX + p.offsetX + parallaxX * PARALLAX_MAX * (0.3 + p.depth * 0.7);
-        y = homeY + p.offsetY + parallaxY * PARALLAX_MAX * (0.3 + p.depth * 0.7);
+        // parallax is an independent debug toggle (v1.5.1); off = no cursor
+        // depth shift, particles still drift + repel
+        const pShift = parallaxOn ? PARALLAX_MAX * (0.3 + p.depth * 0.7) : 0;
+        x = homeX + p.offsetX + parallaxX * pShift;
+        y = homeY + p.offsetY + parallaxY * pShift;
 
         const alpha = 0.05 + p.depth * 0.13;
         ctx!.beginPath();
@@ -159,7 +163,7 @@ export default function ParticleField() {
       ctx.clearRect(0, 0, width, height);
       particles = [];
     };
-  }, [enabled, count, theme, motionPref]);
+  }, [enabled, count, theme, motionPref, parallaxOn]);
 
   if (!enabled) return null;
   return (

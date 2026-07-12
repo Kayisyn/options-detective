@@ -9,6 +9,7 @@ import {
   type ScoreWeights,
 } from "./lib/scoring";
 import { applyMotionPref, type MotionPref } from "./lib/motionPref";
+import { applyFxClasses } from "./lib/fxClasses";
 import type {
   CalcResult, Candidate, CloseTradeInput, DirectionalView, EquityPoint,
   EtfFilters, EtfReference, EtfScreenResult, EtfStrategy, IcsResult,
@@ -28,31 +29,46 @@ interface FxPrefs {
   particles: boolean;
   particleCount: number; // 50-300
   motion: MotionPref;    // system | on | off
+  // v1.5.1 performance debug toggles — all default ON (preserve visuals)
+  parallax: boolean;     // cursor depth shift on the particle layer
+  liquidGlass: boolean;  // flowing shimmer on cards/buttons/inputs
+  glow: boolean;         // neon halo + P&L + focus box-shadow glows
 }
 
-const DEFAULT_FX: FxPrefs = { particles: true, particleCount: 200, motion: "system" };
+const DEFAULT_FX: FxPrefs = {
+  particles: true, particleCount: 200, motion: "system",
+  parallax: true, liquidGlass: true, glow: true,
+};
+
+// older payloads predate the debug toggles; a missing flag defaults ON
+function readBool(v: unknown, fallback: boolean): boolean {
+  return typeof v === "boolean" ? v : fallback;
+}
 
 function readStoredFx(): FxPrefs {
   try {
     const parsed = JSON.parse(localStorage.getItem(FX_KEY) ?? "null");
     if (!parsed || typeof parsed !== "object") return { ...DEFAULT_FX };
-    const count = Number((parsed as FxPrefs).particleCount);
-    const motion = (parsed as FxPrefs).motion;
+    const p = parsed as Partial<FxPrefs>;
+    const count = Number(p.particleCount);
     return {
-      particles: typeof (parsed as FxPrefs).particles === "boolean"
-        ? (parsed as FxPrefs).particles : DEFAULT_FX.particles,
+      particles: readBool(p.particles, DEFAULT_FX.particles),
       particleCount: Number.isFinite(count)
         ? Math.min(300, Math.max(50, Math.round(count))) : DEFAULT_FX.particleCount,
-      motion: motion === "on" || motion === "off" ? motion : "system",
+      motion: p.motion === "on" || p.motion === "off" ? p.motion : "system",
+      parallax: readBool(p.parallax, DEFAULT_FX.parallax),
+      liquidGlass: readBool(p.liquidGlass, DEFAULT_FX.liquidGlass),
+      glow: readBool(p.glow, DEFAULT_FX.glow),
     };
   } catch {
     return { ...DEFAULT_FX };
   }
 }
 
-// stamp <html class="motion-off"> before the first render so entrance
-// animations resolve correctly from frame one
+// stamp <html> classes (motion-off, fx-no-*) before the first render so
+// entrance animations and effect gating resolve correctly from frame one
 applyMotionPref(readStoredFx().motion);
+applyFxClasses(readStoredFx());
 
 function writeStoredFx(fx: FxPrefs) {
   try {
@@ -160,6 +176,10 @@ interface AppState {
   fxParticles: boolean;
   fxParticleCount: number;
   fxMotion: MotionPref;
+  // v1.5.1 performance debug toggles (persisted)
+  fxParallax: boolean;
+  fxLiquidGlass: boolean;
+  fxGlow: boolean;
 
   // v1.1 §1: client-side filtering/sorting of screened candidates
   filters: CandidateFilters;
@@ -222,7 +242,10 @@ interface AppState {
   loadPulse: () => Promise<void>;
   toggleSidebar: (side: "left" | "right") => void;
   prefillScreener: (symbol: string) => void;
-  setFx: (patch: Partial<{ particles: boolean; particleCount: number; motion: MotionPref }>) => void;
+  setFx: (patch: Partial<{
+    particles: boolean; particleCount: number; motion: MotionPref;
+    parallax: boolean; liquidGlass: boolean; glow: boolean;
+  }>) => void;
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -271,6 +294,9 @@ export const useStore = create<AppState>((set, get) => ({
   fxParticles: readStoredFx().particles,
   fxParticleCount: readStoredFx().particleCount,
   fxMotion: readStoredFx().motion,
+  fxParallax: readStoredFx().parallax,
+  fxLiquidGlass: readStoredFx().liquidGlass,
+  fxGlow: readStoredFx().glow,
   filters: EMPTY_FILTERS,
   sort: DEFAULT_SORT,
   weights: readStoredWeights(),
@@ -722,13 +748,20 @@ export const useStore = create<AppState>((set, get) => ({
       particleCount: Math.min(300, Math.max(50,
         Math.round(patch.particleCount ?? get().fxParticleCount))),
       motion: patch.motion ?? get().fxMotion,
+      parallax: patch.parallax ?? get().fxParallax,
+      liquidGlass: patch.liquidGlass ?? get().fxLiquidGlass,
+      glow: patch.glow ?? get().fxGlow,
     };
     writeStoredFx(next);
     applyMotionPref(next.motion);
+    applyFxClasses(next);
     set({
       fxParticles: next.particles,
       fxParticleCount: next.particleCount,
       fxMotion: next.motion,
+      fxParallax: next.parallax,
+      fxLiquidGlass: next.liquidGlass,
+      fxGlow: next.glow,
     });
   },
 

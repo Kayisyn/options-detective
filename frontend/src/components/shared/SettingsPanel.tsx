@@ -78,11 +78,36 @@ function AppearanceTab() {
   );
 }
 
-// v1.5.0: visual-effects controls (motion preference + particle background)
+// A labelled on/off row for the Performance section.
+function FxToggle({ label, desc, on, onToggle, testid }: {
+  label: string; desc: string; on: boolean; onToggle: () => void; testid: string;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 py-2">
+      <div>
+        <div className="text-sm font-medium">{label}</div>
+        <div className="text-xs text-content-3">{desc}</div>
+      </div>
+      <Button
+        variant={on ? "secondary" : "ghost"} size="sm"
+        data-testid={testid}
+        onClick={onToggle}
+      >
+        {on ? "On" : "Off"}
+      </Button>
+    </div>
+  );
+}
+
+// v1.5.0/v1.5.1: visual-effects controls (motion preference) + a Performance
+// section whose four toggles let the user isolate a scroll-stutter culprit.
 function CustomizationTab() {
   const fxParticles = useStore((s) => s.fxParticles);
   const fxParticleCount = useStore((s) => s.fxParticleCount);
   const fxMotion = useStore((s) => s.fxMotion);
+  const fxParallax = useStore((s) => s.fxParallax);
+  const fxLiquidGlass = useStore((s) => s.fxLiquidGlass);
+  const fxGlow = useStore((s) => s.fxGlow);
   const setFx = useStore((s) => s.setFx);
   const osReduced = typeof matchMedia !== "undefined"
     && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -118,43 +143,54 @@ function CustomizationTab() {
         </div>
       </div>
       <div className="rounded-md bg-dark-700/50 p-4" data-testid="fx-settings">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-sm font-medium">Particle background</div>
-            <div className="text-xs text-content-3">
-              Cursor-reactive drifting particles behind the app. Disabled
-              automatically when your OS asks for reduced motion.
-            </div>
-          </div>
-          <Button
-            variant={fxParticles ? "secondary" : "ghost"}
-            size="sm"
-            data-testid="fx-particles-toggle"
-            onClick={() => setFx({ particles: !fxParticles })}
-          >
-            {fxParticles ? "On" : "Off"}
-          </Button>
+        <div className="text-sm font-medium">Performance</div>
+        <div className="mt-0.5 text-xs text-content-3">
+          If scrolling feels sluggish, toggle these off to find the culprit.
+          All default on — turning one off only affects visuals, never data.
         </div>
-        <label className={cx(
-          "mt-4 flex items-center gap-3 text-sm",
-          !fxParticles && "pointer-events-none opacity-50",
-        )}>
-          <span className="w-32 shrink-0 text-content-2">Particle count</span>
-          <input
-            type="range"
-            min={50}
-            max={300}
-            step={10}
-            value={fxParticleCount}
-            onChange={(e) => setFx({ particleCount: Number(e.target.value) })}
-            data-testid="fx-particle-count"
-            className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-dark-600"
-            style={{ accentColor: "rgb(var(--od-accent-primary))" }}
+
+        <div className="mt-2 divide-y divide-white/5">
+          <FxToggle
+            label="Particle background"
+            desc="Cursor-reactive drifting particles behind the app."
+            on={fxParticles} testid="fx-particles-toggle"
+            onToggle={() => setFx({ particles: !fxParticles })}
           />
-          <span className="w-10 text-right font-mono text-xs text-content-2">
-            {fxParticleCount}
-          </span>
-        </label>
+          {fxParticles && (
+            <label className="flex items-center gap-3 py-2.5 text-sm">
+              <span className="w-32 shrink-0 text-content-2">Particle count</span>
+              <input
+                type="range" min={50} max={300} step={10}
+                value={fxParticleCount}
+                onChange={(e) => setFx({ particleCount: Number(e.target.value) })}
+                data-testid="fx-particle-count"
+                className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-dark-600"
+                style={{ accentColor: "rgb(var(--od-accent-primary))" }}
+              />
+              <span className="w-10 text-right font-mono text-xs text-content-2">
+                {fxParticleCount}
+              </span>
+            </label>
+          )}
+          <FxToggle
+            label="Parallax effect"
+            desc="Background depth shift as the cursor moves. Independent of particles."
+            on={fxParallax} testid="fx-parallax-toggle"
+            onToggle={() => setFx({ parallax: !fxParallax })}
+          />
+          <FxToggle
+            label="Liquid glass"
+            desc="Flowing shimmer on cards, buttons, inputs and modals."
+            on={fxLiquidGlass} testid="fx-liquid-toggle"
+            onToggle={() => setFx({ liquidGlass: !fxLiquidGlass })}
+          />
+          <FxToggle
+            label="Glow effects"
+            desc="Neon halo on CTAs, green/red P&L glow, and focus glow."
+            on={fxGlow} testid="fx-glow-toggle"
+            onToggle={() => setFx({ glow: !fxGlow })}
+          />
+        </div>
       </div>
     </Section>
   );

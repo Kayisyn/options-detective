@@ -244,6 +244,45 @@ body::before {
 }
 
 /* ============================================================
+   v1.5.1 performance debug toggles. Liquid glass + glow effects
+   are gated by a class on <html> (lib/fxClasses.ts) so the user
+   can isolate a scroll-stutter culprit from Settings. Parallax is
+   gated in JS (ParticleField reads the store flag).
+   ============================================================ */
+:root.fx-no-liquid .liquid-glass::before,
+:root.fx-no-liquid .liquid-glass::after,
+:root.fx-no-liquid .od-halo::after {
+  animation: none;
+  opacity: 0;
+}
+:root.fx-no-glow .od-halo::before {
+  animation: none;
+  opacity: 0;
+  box-shadow: none;
+}
+:root.fx-no-glow .od-halo:hover::before,
+:root.fx-no-glow .od-halo:focus-visible::before {
+  box-shadow: none;
+}
+:root.fx-no-glow .glow-pnl-win,
+:root.fx-no-glow .glow-pnl-loss {
+  box-shadow: none;
+}
+:root.fx-no-glow .od-input:focus {
+  animation: none;
+  box-shadow: none;
+}
+:root.fx-no-glow .card-glass-hover:hover {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 8px 32px rgb(0 0 0 / 0.2);
+}
+:root.fx-no-glow .shadow-accent-glow,
+:root.fx-no-glow .shadow-glow {
+  box-shadow: none !important;
+}
+
+/* ============================================================
    Black & White theme: kill every glass effect. Flat panels,
    crisp white borders, no blur, no glow, no ambient radials.
    Specificity (:root.theme-bw .x) outranks the utility classes.
