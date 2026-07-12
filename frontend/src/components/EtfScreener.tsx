@@ -3,6 +3,7 @@ import { useStore } from "../store";
 import { money, num, pct } from "../lib/format";
 import { cx } from "../lib/cx";
 import Button from "./ui/Button";
+import { RadarIcon } from "./ui/Icons";
 import { Badge, Card, MetricBox } from "./ui/Card";
 import { FormInput, FormSelect } from "./ui/Input";
 import type { EtfFilters, EtfRecord, EtfStrategy } from "../types";
@@ -246,20 +247,28 @@ export default function EtfScreener() {
                               ))}
                             </div>
                           )}
-                          <div className="flex flex-wrap gap-2">
-                            <Button size="xs" data-testid="etf-analyze"
-                              onClick={(ev) => { ev.stopPropagation(); s.analyzeEtfInDetector(e.ticker); }}>
-                              Analyze in Screener →
-                            </Button>
-                            <Button variant="secondary" size="xs" data-testid="etf-expand-holdings"
+                          {/* v1.5.1: Screen Holdings (the selling point) is the
+                              primary CTA — left, violet, neon halo. Analyze Fund
+                              + Add to Watchlist are secondary, right-aligned. */}
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <Button size="sm" data-testid="etf-expand-holdings"
+                              className="od-halo basis-[45%] grow-0"
                               title="Screen option strategies across every holding of this ETF"
                               onClick={(ev) => { ev.stopPropagation(); s.openIcs(e.ticker); }}>
-                              Expand holdings ⌄
+                              <RadarIcon className="h-4 w-4" />
+                              Screen Holdings
                             </Button>
-                            <Button variant="ghost" size="xs"
-                              onClick={(ev) => { ev.stopPropagation(); s.toggleEtfWatch(e.ticker, !s.etfWatchlist.includes(e.ticker)); }}>
-                              {s.etfWatchlist.includes(e.ticker) ? "★ In watchlist" : "☆ Watch"}
-                            </Button>
+                            <div className="flex flex-wrap gap-2">
+                              <Button variant="secondary" size="sm" data-testid="etf-analyze"
+                                title="Screen the whole fund in the main Screener"
+                                onClick={(ev) => { ev.stopPropagation(); s.analyzeEtfInDetector(e.ticker); }}>
+                                Analyze Fund
+                              </Button>
+                              <Button variant="secondary" size="sm"
+                                onClick={(ev) => { ev.stopPropagation(); s.toggleEtfWatch(e.ticker, !s.etfWatchlist.includes(e.ticker)); }}>
+                                {s.etfWatchlist.includes(e.ticker) ? "★ In Watchlist" : "Add to Watchlist"}
+                              </Button>
+                            </div>
                           </div>
                         </td>
                       </tr>
