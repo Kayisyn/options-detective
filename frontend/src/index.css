@@ -340,6 +340,18 @@ body::before {
 .chart-trace {
   animation: chart-trace 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+/* v1.5.2 payoff-label halo: SVG text gets a background-colored outline
+   painted UNDER the glyph fill (paint-order), so labels stay readable
+   where they cross the curve, dotted lines or the P&L fill. Rides
+   --od-dark-900, so it's obsidian on the default theme and pure black
+   on Black & White. Crisper than a text-shadow blur at 10px sizes. */
+.payoff-label {
+  paint-order: stroke;
+  stroke: rgb(var(--od-dark-900) / 0.9);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
 @keyframes chart-trace {
   0% { clip-path: inset(0 100% 0 0); }
   100% { clip-path: inset(0 0 0 0); }

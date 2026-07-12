@@ -110,6 +110,18 @@ export default function PayoffChart({
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} opacity={0.2} />
+            {/* v1.5.2: the curve + fill paint FIRST — SVG stacks by DOM
+                order (z-index is a no-op), so everything declared after the
+                Area (reference lines, dots, labels) renders on top of it.
+                Previously the Area was last and buried every label. */}
+            <Area
+              type="linear"
+              dataKey="profit"
+              stroke={COLORS.line}
+              strokeWidth={2}
+              fill="url(#pnlFill)"
+              isAnimationActive={false}
+            />
             <XAxis
               dataKey="underlyingPrice"
               type="number"
@@ -141,7 +153,7 @@ export default function PayoffChart({
                 x={be}
                 stroke={COLORS.breakeven}
                 strokeDasharray="4 3"
-                label={{ value: `BE ${be.toFixed(2)}`, fill: COLORS.breakeven, fontSize: 10, position: "top" }}
+                label={{ value: `BE ${be.toFixed(2)}`, fill: COLORS.breakeven, fontSize: 10, position: "top", className: "payoff-label" }}
               />
             ))}
             {spot !== undefined && (
@@ -149,7 +161,7 @@ export default function PayoffChart({
                 x={spot}
                 stroke={COLORS.spot}
                 strokeDasharray="2 2"
-                label={{ value: "now", fill: COLORS.spot, fontSize: 10, position: "insideTopLeft" }}
+                label={{ value: "now", fill: COLORS.spot, fontSize: 10, position: "insideTopLeft", className: "payoff-label" }}
               />
             )}
             {maxProfitPoint && (
@@ -163,6 +175,7 @@ export default function PayoffChart({
                 label={{
                   value: `max +${money(maxProfit as number)}`,
                   fill: COLORS.profit, fontSize: 10, position: "top",
+                  className: "payoff-label",
                 }}
               />
             )}
@@ -177,17 +190,10 @@ export default function PayoffChart({
                 label={{
                   value: `max −${money(maxLoss as number)}`,
                   fill: COLORS.loss, fontSize: 10, position: "right",
+                  className: "payoff-label",
                 }}
               />
             )}
-            <Area
-              type="linear"
-              dataKey="profit"
-              stroke={COLORS.line}
-              strokeWidth={2}
-              fill="url(#pnlFill)"
-              isAnimationActive={false}
-            />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
