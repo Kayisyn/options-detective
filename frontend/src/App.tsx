@@ -210,6 +210,22 @@ export default function App() {
         </main>
         <RightSidebar />
       </div>
+
+      {/* v1.5.1 help affordance, bottom-left of Home. Rendered at the app
+          root (not inside the view) so `fixed` anchors to the viewport — a
+          transformed ViewTransition ancestor would otherwise capture it.
+          Opens the same searchable Help & Glossary as Ctrl+Shift+?. */}
+      {view === "home" && (
+        <button
+          onClick={() => openHelp()}
+          title="Help & Glossary (Ctrl+Shift+?)"
+          aria-label="Help and glossary"
+          data-testid="home-help-button"
+          className="card-glass fixed bottom-6 left-6 z-40 flex h-11 w-11 items-center justify-center rounded-full text-lg text-content-2 transition-all duration-200 ease-out-quad hover:scale-105 hover:text-accent-primary-text hover:shadow-accent-glow"
+        >
+          ?
+        </button>
+      )}
     </div>
   );
 }
