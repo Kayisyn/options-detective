@@ -11,7 +11,7 @@ import HelpDrawer from "./components/shared/HelpDrawer";
 import Onboarding, { ONBOARDED_KEY } from "./components/shared/Onboarding";
 import ParticleField from "./components/shared/ParticleField";
 import SettingsPanel from "./components/shared/SettingsPanel";
-import { LeftSidebar, RightSidebar } from "./components/shared/Sidebars";
+import { RightSidebar } from "./components/shared/Sidebars";
 import ViewTransition from "./components/shared/ViewTransition";
 import { useMode } from "./contexts/ModeContext";
 import { useStore, type View } from "./store";
@@ -194,7 +194,6 @@ export default function App() {
         </div>
       )}
       <div className="mx-auto flex max-w-[1880px] items-start gap-4 px-6">
-        <LeftSidebar />
         <main className="min-w-0 flex-1 overflow-x-hidden py-6">
           <div className="mx-auto max-w-7xl">
             <ViewTransition viewKey={view}>

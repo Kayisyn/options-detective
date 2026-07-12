@@ -1,14 +1,16 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { THEMES, useTheme } from "../../contexts/ThemeContext";
 import { useMode } from "../../contexts/ModeContext";
-import { useStore } from "../../store";
+import { useStore, type SidebarSection } from "../../store";
 import {
   COMPONENT_KEYS, COMPONENT_META, DEFAULT_WEIGHTS, WEIGHT_PRESETS,
   normalizeWeights, weightsEqual, weightsSum,
 } from "../../lib/scoring";
+import { strategyLabel } from "../../lib/format";
 import Button from "../ui/Button";
 import Modal from "../ui/Modal";
 import ViewTransition from "./ViewTransition";
+import { SECTION_LABELS } from "./Sidebars";
 import { cx } from "../../lib/cx";
 
 interface SettingsPanelProps {
@@ -22,11 +24,12 @@ interface SettingsPanelProps {
 // sections inside each tab stagger in 50ms apart. Selection applies
 // instantly and persists.
 
-type TabId = "appearance" | "customization" | "scoring" | "complexity";
+type TabId = "appearance" | "customization" | "sidebar" | "scoring" | "complexity";
 
 const SETTINGS_TABS: Array<{ id: TabId; label: string }> = [
   { id: "appearance", label: "Appearance" },
   { id: "customization", label: "Customization" },
+  { id: "sidebar", label: "Sidebar" },
   { id: "scoring", label: "Scoring weights" },
   { id: "complexity", label: "Complexity" },
 ];
@@ -191,6 +194,119 @@ function CustomizationTab() {
             onToggle={() => setFx({ glow: !fxGlow })}
           />
         </div>
+      </div>
+    </Section>
+  );
+}
+
+// v1.5.1 Sidebar customization: reorder the right-sidebar sections. Native
+// drag-and-drop for mouse; ▲/▼ buttons are the keyboard-accessible path.
+function useSectionPreview(): (section: SidebarSection) => string[] {
+  const watchlist = useStore((s) => s.etfWatchlist);
+  const trades = useStore((s) => s.savedTrades);
+  const pulse = useStore((s) => s.pulse);
+  return (section) => {
+    switch (section) {
+      case "watchlist":
+        return watchlist.length ? watchlist.slice(0, 2) : ["No ETFs starred yet"];
+      case "recentTrades": {
+        const closed = trades
+          .filter((t) => t.status === "closed" && !t.archived)
+          .sort((a, b) => (b.closedAt ?? "").localeCompare(a.closedAt ?? ""));
+        return closed.length
+          ? closed.slice(0, 2).map((t) => `${t.symbol} ${strategyLabel(t.strategy)}`)
+          : ["No closed positions yet"];
+      }
+      case "breadth":
+        return pulse?.breadth
+          ? [`Score ${pulse.breadth.score} / 100`,
+             `${pulse.breadth.advancers} up · ${pulse.breadth.decliners} down`]
+          : ["Waiting for market data…"];
+      case "trending":
+        return pulse
+          ? pulse.trending.gainers.slice(0, 2).map(
+              (r) => `${r.symbol} ${r.changePct > 0 ? "+" : ""}${r.changePct.toFixed(1)}%`)
+          : ["Waiting for market data…"];
+      case "news":
+        return pulse && pulse.news.length
+          ? pulse.news.slice(0, 2).map((n) => n.title)
+          : ["No headlines yet"];
+    }
+  };
+}
+
+function SidebarTab() {
+  const order = useStore((s) => s.sidebarOrder);
+  const setSidebarOrder = useStore((s) => s.setSidebarOrder);
+  const resetSidebarOrder = useStore((s) => s.resetSidebarOrder);
+  const preview = useSectionPreview();
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const isDefault = order.join() === ["watchlist", "recentTrades", "breadth", "trending", "news"].join();
+
+  function move(from: number, to: number) {
+    if (to < 0 || to >= order.length || from === to) return;
+    const next = [...order];
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    setSidebarOrder(next);
+  }
+
+  return (
+    <Section index={0}>
+      <p className="mb-3 text-xs text-content-3">
+        Drag the sections to reorder the right sidebar, or use the ▲▼ buttons.
+        The order applies live and persists on this machine.
+      </p>
+      <ul className="space-y-2" data-testid="sidebar-reorder">
+        {order.map((section, i) => (
+          <li
+            key={section}
+            draggable
+            data-sidebar-section={section}
+            onDragStart={() => setDragIndex(i)}
+            onDragEnd={() => setDragIndex(null)}
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (dragIndex !== null && dragIndex !== i) {
+                move(dragIndex, i);
+                setDragIndex(i);
+              }
+            }}
+            className={cx(
+              "flex items-center gap-3 rounded-md border border-dark-600 bg-dark-700/50 p-2.5",
+              "transition-transform duration-150 ease-out-quad",
+              dragIndex === i ? "scale-[1.02] border-accent-primary/60 shadow-glow" : "hover:border-dark-500",
+            )}
+          >
+            <span aria-hidden className="cursor-grab select-none text-content-3" title="Drag to reorder">⋮⋮</span>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium text-content-1">{SECTION_LABELS[section]}</div>
+              <div className="truncate text-[11px] text-content-3">
+                {preview(section).join(" · ")}
+              </div>
+            </div>
+            <div className="flex shrink-0 flex-col">
+              <button
+                onClick={() => move(i, i - 1)} disabled={i === 0}
+                aria-label={`Move ${SECTION_LABELS[section]} up`}
+                data-testid="sidebar-move-up"
+                className="px-1 text-xs text-content-3 transition-colors hover:text-content-1 disabled:opacity-30"
+              >▲</button>
+              <button
+                onClick={() => move(i, i + 1)} disabled={i === order.length - 1}
+                aria-label={`Move ${SECTION_LABELS[section]} down`}
+                data-testid="sidebar-move-down"
+                className="px-1 text-xs text-content-3 transition-colors hover:text-content-1 disabled:opacity-30"
+              >▼</button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3">
+        <Button variant="ghost" size="xs" disabled={isDefault}
+          data-testid="sidebar-reset" onClick={resetSidebarOrder}>
+          Reset to default
+        </Button>
       </div>
     </Section>
   );
@@ -419,6 +535,7 @@ export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
         <ViewTransition viewKey={tab}>
           {tab === "appearance" && <AppearanceTab />}
           {tab === "customization" && <CustomizationTab />}
+          {tab === "sidebar" && <SidebarTab />}
           {tab === "scoring" && <ScoringTab />}
           {tab === "complexity" && <ComplexityTab />}
         </ViewTransition>

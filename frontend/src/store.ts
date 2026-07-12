@@ -24,6 +24,39 @@ const LAST_SCREEN_KEY = "od.lastScreen";
 const WEIGHTS_KEY = "od.weights.v1";
 const PROFILES_KEY = "od.weightProfiles.v1";
 const FX_KEY = "od.fx.v1"; // v1.5.0 visual-effects prefs
+const SIDEBAR_ORDER_KEY = "od.sidebarOrder.v1"; // v1.5.1
+
+// v1.5.1: the right sidebar holds all five sections; the user reorders them
+// in Settings and the order persists.
+export type SidebarSection = "watchlist" | "recentTrades" | "breadth" | "trending" | "news";
+export const DEFAULT_SIDEBAR_ORDER: SidebarSection[] =
+  ["watchlist", "recentTrades", "breadth", "trending", "news"];
+
+function readSidebarOrder(): SidebarSection[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SIDEBAR_ORDER_KEY) ?? "null");
+    const known = new Set<string>(DEFAULT_SIDEBAR_ORDER);
+    const order: SidebarSection[] = [];
+    if (Array.isArray(parsed)) {
+      for (const s of parsed) {
+        if (known.has(s) && !order.includes(s as SidebarSection)) order.push(s as SidebarSection);
+      }
+    }
+    // append any section missing from storage (forward-compat with new sections)
+    for (const s of DEFAULT_SIDEBAR_ORDER) if (!order.includes(s)) order.push(s);
+    return order;
+  } catch {
+    return [...DEFAULT_SIDEBAR_ORDER];
+  }
+}
+
+function writeSidebarOrder(order: SidebarSection[]) {
+  try {
+    localStorage.setItem(SIDEBAR_ORDER_KEY, JSON.stringify(order));
+  } catch {
+    // private mode: order lives for the session only
+  }
+}
 
 interface FxPrefs {
   particles: boolean;
@@ -169,8 +202,8 @@ interface AppState {
   // only, deliberately not persisted yet per the brief)
   pulse: MarketPulse | null;
   pulseBusy: boolean;
-  leftSidebarOpen: boolean;
   rightSidebarOpen: boolean;
+  sidebarOrder: SidebarSection[]; // v1.5.1 (persisted)
 
   // v1.5.0 visual effects (persisted)
   fxParticles: boolean;
@@ -240,7 +273,9 @@ interface AppState {
   patchIcsView: (patch: Partial<IcsViewState>) => void;
 
   loadPulse: () => Promise<void>;
-  toggleSidebar: (side: "left" | "right") => void;
+  toggleRightSidebar: () => void;
+  setSidebarOrder: (order: SidebarSection[]) => void;
+  resetSidebarOrder: () => void;
   prefillScreener: (symbol: string) => void;
   setFx: (patch: Partial<{
     particles: boolean; particleCount: number; motion: MotionPref;
@@ -289,8 +324,8 @@ export const useStore = create<AppState>((set, get) => ({
   calcSource: "recommender",
   pulse: null,
   pulseBusy: false,
-  leftSidebarOpen: true,
   rightSidebarOpen: true,
+  sidebarOrder: readSidebarOrder(),
   fxParticles: readStoredFx().particles,
   fxParticleCount: readStoredFx().particleCount,
   fxMotion: readStoredFx().motion,
@@ -734,9 +769,16 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  toggleSidebar: (side) => set(side === "left"
-    ? { leftSidebarOpen: !get().leftSidebarOpen }
-    : { rightSidebarOpen: !get().rightSidebarOpen }),
+  toggleRightSidebar: () => set({ rightSidebarOpen: !get().rightSidebarOpen }),
+
+  setSidebarOrder: (order) => {
+    writeSidebarOrder(order);
+    set({ sidebarOrder: order });
+  },
+  resetSidebarOrder: () => {
+    writeSidebarOrder(DEFAULT_SIDEBAR_ORDER);
+    set({ sidebarOrder: [...DEFAULT_SIDEBAR_ORDER] });
+  },
 
   // sidebar click-through: put the symbol in the Screener without firing
   // a screen yet — the user confirms parameters first
