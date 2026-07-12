@@ -185,7 +185,8 @@ export default function PaperTrading() {
       </div>
 
       {paper.settings && (
-        <SandboxCustomize settings={paper.settings} accountValue={balance.accountValue} />
+        <SandboxCustomize settings={paper.settings} accountValue={balance.accountValue}
+          initialBalance={balance.initialBalance} />
       )}
 
       <div className="grid gap-4 lg:grid-cols-12">
