@@ -39,6 +39,8 @@ function migrateV2(entry) {
   if (entry.expiration === undefined) entry.expiration = entry.candidate?.expiration ?? null;
   if (entry.assignmentStrike === undefined) entry.assignmentStrike = null;
   if (entry.reservedCapital === undefined) entry.reservedCapital = null;
+  // v1.5.1 soft-delete: null = active, ISO string = in trash
+  if (entry.deletedAt === undefined) entry.deletedAt = null;
   return entry;
 }
 
@@ -110,10 +112,19 @@ function createTradeStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
     fs.renameSync(tmp, file); // atomic on the same volume
   }
 
-  function list({ includeArchived = false } = {}) {
+  // Trashed (soft-deleted) trades are excluded everywhere by default, so a
+  // trashed paper position also drops out of the paper balance/stats — the
+  // same as archiving. list() is the single active-trades source of truth.
+  function list({ includeArchived = false, includeDeleted = false } = {}) {
     return load()
-      .filter((t) => includeArchived || !t.archived)
+      .filter((t) => (includeDeleted || !t.deletedAt) && (includeArchived || !t.archived))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  function listTrash() {
+    return load()
+      .filter((t) => t.deletedAt)
+      .sort((a, b) => String(b.deletedAt).localeCompare(String(a.deletedAt)));
   }
 
   function get(id) {
@@ -346,6 +357,62 @@ function createTradeStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
     return true;
   }
 
+  // ---- v1.5.1 trash (soft delete) ----------------------------------------
+
+  function trash(id) {
+    const trades = load();
+    const trade = trades.find((t) => t.id === id);
+    if (!trade) throw new NotFoundError(`no trade ${id}`);
+    if (!trade.deletedAt) trade.deletedAt = now().toISOString();
+    persist(trades);
+    return trade;
+  }
+
+  function restore(id) {
+    const trades = load();
+    const trade = trades.find((t) => t.id === id);
+    if (!trade) throw new NotFoundError(`no trade ${id}`);
+    trade.deletedAt = null;
+    persist(trades);
+    return trade;
+  }
+
+  // "Clear All": soft-delete every active position. Paper positions are
+  // excluded by default (they live in the Sandbox and hold reserved capital);
+  // pass includePaper to sweep them too.
+  function trashActive({ includePaper = false } = {}) {
+    const trades = load();
+    const at = now().toISOString();
+    let count = 0;
+    for (const t of trades) {
+      if (!t.deletedAt && !t.archived && (includePaper || !t.paper)) {
+        t.deletedAt = at;
+        count += 1;
+      }
+    }
+    persist(trades);
+    return count;
+  }
+
+  function restoreAll() {
+    const trades = load();
+    let count = 0;
+    for (const t of trades) {
+      if (t.deletedAt) { t.deletedAt = null; count += 1; }
+    }
+    persist(trades);
+    return count;
+  }
+
+  // Empty the trash permanently (irreversible).
+  function purgeTrash() {
+    const trades = load();
+    const kept = trades.filter((t) => !t.deletedAt);
+    const count = trades.length - kept.length;
+    if (count > 0) persist(kept);
+    return count;
+  }
+
   // Paper engine: record the capital reserved when the position opened.
   function setReservedCapital(id, amount) {
     const trades = load();
@@ -398,7 +465,8 @@ function createTradeStore({ dir = DEFAULT_DIR, now = () => new Date() } = {}) {
   }
 
   return {
-    list, get, create, createFromCandidate, update, close, recordMark, remove,
+    list, listTrash, get, create, createFromCandidate, update, close, recordMark, remove,
+    trash, restore, trashActive, restoreAll, purgeTrash,
     setReservedCapital, settle, archivePaperTrades,
     pnlOf, file,
   };

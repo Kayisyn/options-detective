@@ -4,8 +4,15 @@
 //                                 or one-click {candidate, exportText?, note?}
 //   PATCH  /journal/:id        -> edit whitelisted fields
 //   POST   /journal/:id/close  -> { exitPrice, exitDate?, mae?, mfe?, tags? }
-//   DELETE /journal/:id        -> { removed }
+//   DELETE /journal/:id        -> { removed } (permanent)
 //   POST   /journal/marks      -> refresh quotes + theoretical marks (open trades)
+//   v1.5.1 trash (soft delete):
+//   GET    /journal/trash        -> { trades } (deleted, newest-deleted first)
+//   POST   /journal/trash-all    -> { trashed } (Clear All; real positions)
+//   POST   /journal/restore-all  -> { restored }
+//   POST   /journal/purge-trash  -> { purged } (irreversible)
+//   POST   /journal/:id/trash    -> soft-delete one
+//   POST   /journal/:id/restore  -> restore one
 const { Router } = require("express");
 const { NotFoundError, tradeStore } = require("../services/tradeStore");
 const { journal } = require("../services/journal");
@@ -41,9 +48,21 @@ router.post("/marks", async (_req, res) => {
   }
 });
 
+// v1.5.1 trash. Literal collection routes are declared before the /:id
+// routes so "trash" / "trash-all" are never captured as an :id.
+router.get("/trash", (_req, res) => send(res, () => ({ trades: tradeStore.listTrash() })));
+router.post("/trash-all", (req, res) => send(res, () =>
+  ({ trashed: tradeStore.trashActive({ includePaper: Boolean(req.body?.includePaper) }) })));
+router.post("/restore-all", (_req, res) => send(res, () => ({ restored: tradeStore.restoreAll() })));
+router.post("/purge-trash", (_req, res) => send(res, () => ({ purged: tradeStore.purgeTrash() })));
+
 router.patch("/:id", (req, res) => send(res, () => tradeStore.update(req.params.id, req.body || {})));
 
 router.post("/:id/close", (req, res) => send(res, () => tradeStore.close(req.params.id, req.body || {})));
+
+router.post("/:id/trash", (req, res) => send(res, () => tradeStore.trash(req.params.id)));
+
+router.post("/:id/restore", (req, res) => send(res, () => tradeStore.restore(req.params.id)));
 
 router.delete("/:id", (req, res) => send(res, () => ({ removed: tradeStore.remove(req.params.id) })));
 

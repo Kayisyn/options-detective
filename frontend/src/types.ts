@@ -174,6 +174,7 @@ export interface JournalTrade {
   status: TradeStatus;
   paper: boolean;
   archived: boolean;
+  deletedAt: string | null; // v1.5.1 soft delete: null = active, ISO = in trash
   expiration: string | null;
   assignmentStrike: number | null;
   reservedCapital: number | null; // paper trades: budget reserved at open

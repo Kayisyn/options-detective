@@ -18,6 +18,12 @@ type Bridge = {
   closeTrade?: (id: string, body: unknown) => Promise<JournalTrade>;
   deleteTrade?: (id: string) => Promise<{ removed: boolean }>;
   refreshMarks?: () => Promise<{ trades: JournalTrade[]; warnings: string[] }>;
+  listTrash?: () => Promise<{ trades: JournalTrade[] }>;
+  trashTrade?: (id: string) => Promise<JournalTrade>;
+  restoreTrade?: (id: string) => Promise<JournalTrade>;
+  trashAll?: () => Promise<{ trashed: number }>;
+  restoreAllTrash?: () => Promise<{ restored: number }>;
+  purgeTrash?: () => Promise<{ purged: number }>;
   paperGet?: () => Promise<PaperState>;
   paperBudget?: (body: unknown) => Promise<{ budget: unknown; balance: PaperBalance }>;
   paperOpen?: (body: unknown) => Promise<{ trade: JournalTrade; balance: PaperBalance }>;
@@ -104,6 +110,25 @@ export const api = {
   },
   refreshMarks(): Promise<{ trades: JournalTrade[]; warnings: string[] }> {
     return bridge()?.refreshMarks?.() ?? post("/journal/marks", {});
+  },
+  // v1.5.1 trash (soft delete)
+  listTrash(): Promise<{ trades: JournalTrade[] }> {
+    return bridge()?.listTrash?.() ?? request("GET", "/journal/trash");
+  },
+  trashTrade(id: string): Promise<JournalTrade> {
+    return bridge()?.trashTrade?.(id) ?? post(`/journal/${encodeURIComponent(id)}/trash`, {});
+  },
+  restoreTrade(id: string): Promise<JournalTrade> {
+    return bridge()?.restoreTrade?.(id) ?? post(`/journal/${encodeURIComponent(id)}/restore`, {});
+  },
+  trashAll(): Promise<{ trashed: number }> {
+    return bridge()?.trashAll?.() ?? post("/journal/trash-all", {});
+  },
+  restoreAllTrash(): Promise<{ restored: number }> {
+    return bridge()?.restoreAllTrash?.() ?? post("/journal/restore-all", {});
+  },
+  purgeTrash(): Promise<{ purged: number }> {
+    return bridge()?.purgeTrash?.() ?? post("/journal/purge-trash", {});
   },
   paperGet(): Promise<PaperState> {
     return bridge()?.paperGet?.() ?? request("GET", "/paper");

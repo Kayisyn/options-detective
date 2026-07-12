@@ -72,6 +72,12 @@ function registerIpc() {
   ipcMain.handle("api:trades:close", (_event, { id, payload }) => forward(`/journal/${encodeURIComponent(id)}/close`, payload));
   ipcMain.handle("api:trades:delete", (_event, { id }) => forward(`/journal/${encodeURIComponent(id)}`, undefined, "DELETE"));
   ipcMain.handle("api:trades:marks", () => forward("/journal/marks", {}));
+  ipcMain.handle("api:journal:trash:list", () => forward("/journal/trash"));
+  ipcMain.handle("api:journal:trash", (_event, id) => forward(`/journal/${encodeURIComponent(id)}/trash`, {}));
+  ipcMain.handle("api:journal:restore", (_event, id) => forward(`/journal/${encodeURIComponent(id)}/restore`, {}));
+  ipcMain.handle("api:journal:trash-all", () => forward("/journal/trash-all", {}));
+  ipcMain.handle("api:journal:restore-all", () => forward("/journal/restore-all", {}));
+  ipcMain.handle("api:journal:purge-trash", () => forward("/journal/purge-trash", {}));
   ipcMain.handle("api:paper:get", () => forward("/paper"));
   ipcMain.handle("api:paper:budget", (_event, body) => forward("/paper/budget", body));
   ipcMain.handle("api:paper:open", (_event, body) => forward("/paper/trades", body));

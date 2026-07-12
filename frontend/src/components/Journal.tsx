@@ -4,6 +4,7 @@ import { money, pct, strategyLabel } from "../lib/format";
 import { ALL_STRATEGY_TYPES } from "../lib/copy";
 import { accountImpactPct, journalStats, pctReturn } from "../lib/journalStats";
 import { confirmationText, downloadCsv } from "../lib/journalCsv";
+import { cx } from "../lib/cx";
 import Button from "./ui/Button";
 import { Badge, Card, MetricBox, PctBadge } from "./ui/Card";
 import { FormInput, FormSelect } from "./ui/Input";
@@ -61,9 +62,12 @@ export default function Journal() {
   const [closeTarget, setCloseTarget] = useState<JournalTrade | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [marksBusy, setMarksBusy] = useState(false);
+  const [tab, setTab] = useState<"log" | "trash">("log"); // v1.5.1
+  const [confirmClear, setConfirmClear] = useState(false);
 
   useEffect(() => {
     s.loadJournal();
+    s.loadTrash(); // v1.5.1: keep the Trash tab count live
     // account-impact % on sandbox rows needs the paper balance
     if (s.paper === null) s.loadPaper();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
@@ -113,6 +117,30 @@ export default function Journal() {
         </div>
       </div>
 
+      {/* v1.5.1: Position Log / Trash tab strip */}
+      <div className="flex gap-1 border-b border-white/10" role="tablist">
+        {([["log", "Position Log"], ["trash", `Trash${s.trashedTrades.length ? ` (${s.trashedTrades.length})` : ""}`]] as const).map(([id, label]) => (
+          <button key={id} role="tab" aria-selected={tab === id}
+            data-testid={`journal-tab-${id}`}
+            onClick={() => setTab(id)}
+            className={cx(
+              "-mb-px border-b-2 px-3 py-2 text-sm transition-colors duration-150",
+              tab === id
+                ? "border-accent-primary text-content-1"
+                : "border-transparent text-content-3 hover:text-content-1",
+            )}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "trash" && (
+        <TrashView trades={s.trashedTrades}
+          onRestore={s.restorePosition} onDelete={s.deletePositionForever}
+          onRestoreAll={s.restoreAllTrash} onPurge={s.purgeTrash} />
+      )}
+
+      {tab === "log" && (
       <div className="flex flex-col gap-4 lg:flex-row">
         {s.savedTrades.length > 0 && (
           <aside className="card-glass h-fit w-full shrink-0 p-4 lg:w-64" data-testid="journal-stats">
@@ -288,8 +316,10 @@ export default function Journal() {
                         onClick={() => s.exportTrade(t.id, confirmationText(t))}>
                         {s.exportedId === t.id ? "Copied ✓" : "Copy confirmation"}
                       </Button>
-                      <Button variant="destructive" size="xs" onClick={() => s.removeFromJournal(t.id)}>
-                        Delete
+                      <Button variant="secondary" size="xs" data-testid="trash-position"
+                        title="Move to Trash — recoverable from the Trash tab"
+                        onClick={() => s.trashPosition(t.id)}>
+                        Move to Trash
                       </Button>
                     </div>
                   </div>
@@ -299,8 +329,21 @@ export default function Journal() {
           })}
             </div>
           )}
+
+          {s.savedTrades.length > 0 && (
+            <div className="flex justify-end border-t border-white/10 pt-3">
+              <Button variant="ghost" size="sm" data-testid="clear-all"
+                onClick={() => setConfirmClear(true)}>
+                Clear All
+              </Button>
+            </div>
+          )}
         </div>
       </div>
+      )}
+
+      <ClearAllModal open={confirmClear} onClose={() => setConfirmClear(false)}
+        onConfirm={async () => { await s.clearAllPositions(); setConfirmClear(false); }} />
 
       <LogTradeModal open={logOpen} onClose={() => setLogOpen(false)}
         onSubmit={async (input) => {
@@ -319,6 +362,106 @@ export default function Journal() {
           if (ok) setCloseTarget(null);
         }} />
     </section>
+  );
+}
+
+// v1.5.1 Clear All confirmation.
+function ClearAllModal({ open, onClose, onConfirm }: {
+  open: boolean; onClose: () => void; onConfirm: () => void;
+}) {
+  return (
+    <Modal open={open} onClose={onClose} testid="clear-all-modal" maxWidth="max-w-sm">
+      <h3 className="mb-2 text-lg font-semibold">Clear all positions?</h3>
+      <p className="mb-4 text-sm text-content-2">
+        This moves every real position to Trash. You can restore them any time
+        from the Trash tab. Sandbox positions are left untouched.
+      </p>
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+        <Button size="sm" data-testid="clear-all-confirm" onClick={onConfirm}>
+          Move to Trash
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
+// v1.5.1 Trash tab: deleted positions with restore / permanent-delete.
+function relativeDeleted(iso: string | null): string {
+  if (!iso) return "";
+  const days = Math.floor((Date.now() - Date.parse(iso)) / 86_400_000);
+  if (days <= 0) {
+    const hours = Math.floor((Date.now() - Date.parse(iso)) / 3_600_000);
+    return hours <= 0 ? "just now" : `${hours}h ago`;
+  }
+  return `${days}d ago`;
+}
+
+function TrashView({ trades, onRestore, onDelete, onRestoreAll, onPurge }: {
+  trades: JournalTrade[];
+  onRestore: (id: string) => void;
+  onDelete: (id: string) => void;
+  onRestoreAll: () => void;
+  onPurge: () => void;
+}) {
+  const [confirmPurge, setConfirmPurge] = useState(false);
+  if (trades.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-dark-600 p-10 text-center text-content-3"
+        data-testid="trash-empty">
+        Trash is empty. Positions you clear from the log land here, recoverable
+        until you delete them permanently.
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-3" data-testid="trash-view">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-content-3">
+          {trades.length} position{trades.length === 1 ? "" : "s"} in Trash.
+          Restore to bring them back, or delete permanently to free the space.
+        </p>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="xs" data-testid="restore-all"
+            onClick={onRestoreAll}>Restore All</Button>
+          {confirmPurge ? (
+            <Button variant="destructive" size="xs" data-testid="purge-confirm"
+              onClick={() => { onPurge(); setConfirmPurge(false); }}>
+              Confirm — delete {trades.length} forever
+            </Button>
+          ) : (
+            <Button variant="ghost" size="xs" data-testid="purge-trash"
+              onClick={() => { setConfirmPurge(true); setTimeout(() => setConfirmPurge(false), 4000); }}>
+              Clear Trash Permanently
+            </Button>
+          )}
+        </div>
+      </div>
+      <div className="space-y-2">
+        {trades.map((t) => (
+          <Card key={t.id} className="opacity-90" data-testid="trash-row">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="w-16 font-mono font-semibold">{t.symbol}</span>
+              <span className="capitalize">{strategyLabel(t.strategy)}</span>
+              <Badge variant={t.status === "open" ? "green" : "neutral"}>{t.status}</Badge>
+              {t.paper && <Badge variant="violet">sandbox</Badge>}
+              <span className="font-mono text-sm text-content-2">
+                ${t.entryPrice.toFixed(2)} × {t.entryQty}
+              </span>
+              <span className="text-xs text-content-3" title={t.deletedAt ?? ""}>
+                Deleted {relativeDeleted(t.deletedAt)}
+              </span>
+              <span className="ml-auto flex gap-2">
+                <Button variant="secondary" size="xs" data-testid="trash-restore"
+                  onClick={() => onRestore(t.id)}>Restore</Button>
+                <Button variant="destructive" size="xs" data-testid="trash-delete"
+                  onClick={() => onDelete(t.id)}>Delete Permanently</Button>
+              </span>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
   );
 }
 

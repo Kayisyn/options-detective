@@ -167,6 +167,60 @@ test("validation and not-found errors are typed", () => {
   assert.throws(() => store.close(t.id, { exitPrice: 2 }), /already closed/);
 });
 
+test("v1.5.1 trash: soft-deleted trades leave the active list, restore brings them back", () => {
+  const { store } = tmpStore();
+  const a = store.create({ symbol: "GOOG", strategy: "covered_call", entryPrice: 5, entryQty: 1 });
+  const b = store.create({ symbol: "SPY", strategy: "cash_secured_put", side: "credit", entryPrice: 2, entryQty: 1 });
+
+  store.trash(a.id);
+  assert.equal(store.list().length, 1);              // a is gone from active
+  assert.equal(store.list()[0].id, b.id);
+  const trashed = store.listTrash();
+  assert.equal(trashed.length, 1);
+  assert.equal(trashed[0].id, a.id);
+  assert.ok(trashed[0].deletedAt);                   // timestamped
+  assert.equal(store.list({ includeDeleted: true }).length, 2);
+
+  store.restore(a.id);
+  assert.equal(store.list().length, 2);
+  assert.equal(store.listTrash().length, 0);
+});
+
+test("v1.5.1 trash: Clear All sweeps real positions, spares paper by default", () => {
+  const { store } = tmpStore();
+  store.create({ symbol: "AAPL", strategy: "covered_call", entryPrice: 5, entryQty: 1 });
+  store.create({ symbol: "MSFT", strategy: "long_call", entryPrice: 3, entryQty: 1 });
+  store.create({ symbol: "QQQ", strategy: "cash_secured_put", side: "credit", entryPrice: 2, entryQty: 1, paper: true });
+
+  const trashed = store.trashActive();
+  assert.equal(trashed, 2);                          // both real ones
+  assert.equal(store.list().length, 1);              // paper survives
+  assert.equal(store.list()[0].symbol, "QQQ");
+  assert.equal(store.listTrash().length, 2);
+
+  // includePaper sweeps everything
+  store.restoreAll();
+  assert.equal(store.trashActive({ includePaper: true }), 3);
+  assert.equal(store.list().length, 0);
+});
+
+test("v1.5.1 trash: restore-all and purge (irreversible)", () => {
+  const { store } = tmpStore();
+  const a = store.create({ symbol: "AAPL", strategy: "covered_call", entryPrice: 5, entryQty: 1 });
+  const b = store.create({ symbol: "MSFT", strategy: "long_call", entryPrice: 3, entryQty: 1 });
+  store.trash(a.id);
+  store.trash(b.id);
+
+  assert.equal(store.restoreAll(), 2);
+  assert.equal(store.listTrash().length, 0);
+
+  store.trash(a.id);
+  store.trash(b.id);
+  assert.equal(store.purgeTrash(), 2);               // gone for good
+  assert.equal(store.listTrash().length, 0);
+  assert.equal(store.list({ includeDeleted: true }).length, 0);
+});
+
 test("journal.refreshMarks reprices candidate trades and warns on expiry", async () => {
   const { store } = tmpStore();
   const live = store.createFromCandidate({ candidate: CANDIDATE });          // 2099 expiry

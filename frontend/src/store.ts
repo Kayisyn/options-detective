@@ -176,6 +176,7 @@ interface AppState {
   recommendation: Recommendation | null;
   exportedId: string | null; // last candidate copied to clipboard
   savedTrades: JournalTrade[];
+  trashedTrades: JournalTrade[]; // v1.5.1 soft-deleted positions
   paper: PaperState | null;      // null until first load
   paperCurve: EquityPoint[];
   paperCurveDays: number;        // sticky range so background refreshes keep it
@@ -242,6 +243,13 @@ interface AppState {
   recommend: () => Promise<void>;
   exportTrade: (id: string, text: string) => Promise<void>;
   loadJournal: () => Promise<void>;
+  loadTrash: () => Promise<void>;
+  clearAllPositions: () => Promise<number>;
+  trashPosition: (id: string) => Promise<void>;
+  restorePosition: (id: string) => Promise<void>;
+  deletePositionForever: (id: string) => Promise<void>;
+  restoreAllTrash: () => Promise<void>;
+  purgeTrash: () => Promise<void>;
   saveToJournal: (candidate: Candidate, opts?: JournalSaveOptions) => Promise<boolean>;
   removeFromJournal: (id: string) => Promise<void>;
   logTrade: (input: NewTradeInput) => Promise<boolean>;
@@ -307,6 +315,7 @@ export const useStore = create<AppState>((set, get) => ({
   recommendation: null,
   exportedId: null,
   savedTrades: [],
+  trashedTrades: [],
   paper: null,
   paperCurve: [],
   paperCurveDays: 90,
@@ -529,6 +538,79 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       await api.deleteTrade(id);
       await get().loadJournal();
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  // v1.5.1 trash. Soft-deletes drop out of the active journal and (being
+  // excluded from tradeStore.list) out of Sandbox derivations too, so we
+  // refresh both after every trash/restore.
+  async loadTrash() {
+    try {
+      const { trades } = await api.listTrash();
+      set({ trashedTrades: trades });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async clearAllPositions() {
+    try {
+      const { trashed } = await api.trashAll();
+      await Promise.all([get().loadJournal(), get().loadTrash(), get().loadPaper()]);
+      get().showToast(`${trashed} position${trashed === 1 ? "" : "s"} moved to Trash`);
+      return trashed;
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+      return 0;
+    }
+  },
+
+  async trashPosition(id) {
+    try {
+      await api.trashTrade(id);
+      await Promise.all([get().loadJournal(), get().loadTrash(), get().loadPaper()]);
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async restorePosition(id) {
+    try {
+      await api.restoreTrade(id);
+      await Promise.all([get().loadJournal(), get().loadTrash(), get().loadPaper()]);
+      get().showToast("✓ Position restored");
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async deletePositionForever(id) {
+    try {
+      await api.deleteTrade(id);
+      await get().loadTrash();
+      get().showToast("Position deleted permanently");
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async restoreAllTrash() {
+    try {
+      const { restored } = await api.restoreAllTrash();
+      await Promise.all([get().loadJournal(), get().loadTrash(), get().loadPaper()]);
+      get().showToast(`✓ ${restored} position${restored === 1 ? "" : "s"} restored`);
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  async purgeTrash() {
+    try {
+      const { purged } = await api.purgeTrash();
+      await get().loadTrash();
+      get().showToast(`Trash emptied — ${purged} deleted permanently`);
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }
