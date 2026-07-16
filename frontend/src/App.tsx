@@ -12,6 +12,7 @@ import Onboarding, { ONBOARDED_KEY } from "./components/shared/Onboarding";
 import ParticleField from "./components/shared/ParticleField";
 import SettingsPanel from "./components/shared/SettingsPanel";
 import { RightSidebar } from "./components/shared/Sidebars";
+import AuthGate from "./components/AuthGate";
 import ViewTransition from "./components/shared/ViewTransition";
 import { useMode } from "./contexts/ModeContext";
 import { useStore, type View } from "./store";
@@ -46,7 +47,7 @@ function ObeliskMark() {
   );
 }
 
-export default function App() {
+function MainApp() {
   const view = useStore((s) => s.view);
   const setView = useStore((s) => s.setView);
   const selected = useStore((s) => s.selected);
@@ -59,6 +60,8 @@ export default function App() {
   const loadPulse = useStore((s) => s.loadPulse);
   const loadJournal = useStore((s) => s.loadJournal);
   const loadEtfWatchlist = useStore((s) => s.loadEtfWatchlist);
+  const account = useStore((s) => s.account);
+  const logout = useStore((s) => s.logout);
   const { expertMode, toggleMode } = useMode();
   const [onboardingOpen, setOnboardingOpen] = useState(() => {
     try {
@@ -117,7 +120,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      <ParticleField />
       <Onboarding open={onboardingOpen} onClose={() => setOnboardingOpen(false)} />
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <HelpDrawer onReplayWalkthrough={() => setOnboardingOpen(true)} />
@@ -185,6 +187,16 @@ export default function App() {
             >
               ?
             </button>
+            <span className="mx-1 h-6 w-px bg-white/10" />
+            <button
+              onClick={() => logout()}
+              title={account ? `Signed in as ${account.username} — sign out` : "Sign out"}
+              data-testid="logout-button"
+              className="rounded-md px-3 py-1.5 text-sm text-content-3 transition-all duration-150 ease-out-quad hover:bg-dark-700 hover:text-accent-red"
+            >
+              <span className="font-medium text-content-2">{account?.username}</span>
+              <span className="text-content-3"> · Sign out</span>
+            </button>
           </nav>
         </div>
       </header>
@@ -227,5 +239,34 @@ export default function App() {
         </button>
       )}
     </div>
+  );
+}
+
+// v1.6.0 auth boundary: boot once, then show a splash → the sign-in gate →
+// the app. The particle background rides behind all three states. MainApp
+// only mounts when an account is active, so its data-loading effects (which
+// hit the per-account, account-guarded routes) never fire unauthenticated.
+export default function App() {
+  const authReady = useStore((s) => s.authReady);
+  const account = useStore((s) => s.account);
+  const bootAuth = useStore((s) => s.bootAuth);
+
+  useEffect(() => {
+    bootAuth();
+  }, [bootAuth]);
+
+  return (
+    <>
+      <ParticleField />
+      {!authReady ? (
+        <div className="flex min-h-[100dvh] items-center justify-center">
+          <div className="h-8 w-2 animate-pulse rounded-full bg-gradient-to-b from-accent-primary-hover to-accent-primary" />
+        </div>
+      ) : account ? (
+        <MainApp />
+      ) : (
+        <AuthGate />
+      )}
+    </>
   );
 }

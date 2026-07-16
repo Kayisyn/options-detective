@@ -168,6 +168,14 @@ export type TradeStatus = "open" | "closed" | "assigned" | "expired";
 // Journal trade, v1.1 Phase A. Prices are per unit as brokers quote them
 // (per spread for options, per share for stock); dollar P&L multiplies by
 // qty × multiplier. Credit positions profit when the closing price falls.
+// v1.6.0 local accounts
+export interface Account {
+  id: string;
+  username: string;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
 export interface JournalTrade {
   id: string;
   createdAt: string;

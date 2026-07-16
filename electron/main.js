@@ -62,6 +62,10 @@ async function forward(pathname, body, method) {
 }
 
 function registerIpc() {
+  ipcMain.handle("api:auth:state", () => forward("/auth/state"));
+  ipcMain.handle("api:auth:register", (_event, body) => forward("/auth/register", body));
+  ipcMain.handle("api:auth:login", (_event, body) => forward("/auth/login", body));
+  ipcMain.handle("api:auth:logout", () => forward("/auth/logout", {}));
   ipcMain.handle("api:detect", (_event, body) => forward("/detect", body));
   ipcMain.handle("api:calculate", (_event, body) => forward("/calculate", body));
   ipcMain.handle("api:recommend", (_event, body) => forward("/recommend", body));

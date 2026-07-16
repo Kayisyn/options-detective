@@ -1,13 +1,17 @@
 // Single API seam: inside Electron the preload bridge handles transport
 // (Phase 7); in the browser we go through Vite's /api proxy to Express.
 import type {
-  CalcResult, EquityPoint, EtfDetail, EtfFilters, EtfRecord, EtfReference,
+  Account, CalcResult, EquityPoint, EtfDetail, EtfFilters, EtfRecord, EtfReference,
   EtfScreenResult, EtfStrategy, HoldingsInfo, IcsConstraints, IcsResult,
   JournalTrade, MarketPulse, PaperBalance, PaperHolding, PaperSettings,
   PaperState, Recommendation, ScreenResult,
 } from "../types";
 
 type Bridge = {
+  authState?: () => Promise<AuthState>;
+  authRegister?: (body: unknown) => Promise<{ account: Account }>;
+  authLogin?: (body: unknown) => Promise<{ account: Account }>;
+  authLogout?: () => Promise<{ ok: boolean }>;
   detect?: (body: unknown) => Promise<ScreenResult>;
   calculate?: (body: unknown) => Promise<CalcResult>;
   recommend?: (body: unknown) => Promise<Recommendation>;
@@ -60,6 +64,11 @@ export interface PaperSellResult {
   balance: PaperBalance;
 }
 
+export interface AuthState {
+  account: Account | null;
+  accounts: Account[];
+}
+
 function bridge(): Bridge | null {
   return (window as { optionsDetective?: Bridge }).optionsDetective ?? null;
 }
@@ -81,6 +90,19 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 const post = <T,>(path: string, body: unknown) => request<T>("POST", path, body);
 
 export const api = {
+  // v1.6.0 local accounts
+  authState(): Promise<AuthState> {
+    return bridge()?.authState?.() ?? request("GET", "/auth/state");
+  },
+  authRegister(body: { username: string; password: string }): Promise<{ account: Account }> {
+    return bridge()?.authRegister?.(body) ?? post("/auth/register", body);
+  },
+  authLogin(body: { username: string; password: string; rememberMe: boolean }): Promise<{ account: Account }> {
+    return bridge()?.authLogin?.(body) ?? post("/auth/login", body);
+  },
+  authLogout(): Promise<{ ok: boolean }> {
+    return bridge()?.authLogout?.() ?? post("/auth/logout", {});
+  },
   detect(body: unknown): Promise<ScreenResult> {
     return bridge()?.detect?.(body) ?? post<ScreenResult>("/detect", body);
   },

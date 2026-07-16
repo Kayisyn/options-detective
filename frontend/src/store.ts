@@ -11,7 +11,7 @@ import {
 import { applyMotionPref, type MotionPref } from "./lib/motionPref";
 import { applyFxClasses } from "./lib/fxClasses";
 import type {
-  CalcResult, Candidate, CloseTradeInput, DirectionalView, EquityPoint,
+  Account, CalcResult, Candidate, CloseTradeInput, DirectionalView, EquityPoint,
   EtfFilters, EtfReference, EtfScreenResult, EtfStrategy, IcsResult,
   IcsViewState, JournalSaveOptions,
   JournalTrade, Leg, MarketPulse, NewTradeInput, PaperSettings, PaperState,
@@ -175,6 +175,12 @@ interface AppState {
   calcResult: CalcResult | null;
   recommendation: Recommendation | null;
   exportedId: string | null; // last candidate copied to clipboard
+  // v1.6.0 local accounts
+  account: Account | null;
+  accounts: Account[];
+  authReady: boolean;  // boot check finished (splash → gate/app)
+  authBusy: boolean;
+
   savedTrades: JournalTrade[];
   trashedTrades: JournalTrade[]; // v1.5.1 soft-deleted positions
   paper: PaperState | null;      // null until first load
@@ -242,6 +248,11 @@ interface AppState {
   recalculate: (legs: Leg[], repriceTheoretical: boolean) => Promise<void>;
   recommend: () => Promise<void>;
   exportTrade: (id: string, text: string) => Promise<void>;
+  bootAuth: () => Promise<void>;
+  login: (username: string, password: string, rememberMe: boolean) => Promise<void>;
+  register: (username: string, password: string, rememberMe: boolean) => Promise<void>;
+  logout: () => Promise<void>;
+
   loadJournal: () => Promise<void>;
   loadTrash: () => Promise<void>;
   clearAllPositions: () => Promise<number>;
@@ -314,6 +325,11 @@ export const useStore = create<AppState>((set, get) => ({
   calcResult: null,
   recommendation: null,
   exportedId: null,
+  account: null,
+  accounts: [],
+  authReady: false,
+  authBusy: false,
+
   savedTrades: [],
   trashedTrades: [],
   paper: null,
@@ -509,6 +525,65 @@ export const useStore = create<AppState>((set, get) => ({
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }
+  },
+
+  // v1.6.0 local accounts ------------------------------------------------
+
+  async bootAuth() {
+    try {
+      const { account, accounts } = await api.authState();
+      set({ account, accounts, authReady: true });
+    } catch {
+      // backend not up yet: still show the gate; the user's login will retry
+      set({ authReady: true });
+    }
+  },
+
+  // login/register throw on failure so the gate can show the message inline
+  // (they deliberately do NOT set the global error banner).
+  async login(username, password, rememberMe) {
+    set({ authBusy: true });
+    try {
+      const { account } = await api.authLogin({ username, password, rememberMe });
+      set({ account, authBusy: false, error: null });
+    } catch (err) {
+      set({ authBusy: false });
+      throw err;
+    }
+  },
+
+  async register(username, password, rememberMe) {
+    set({ authBusy: true });
+    try {
+      await api.authRegister({ username, password });
+      // no email verification in the local model — sign straight in
+      const { account } = await api.authLogin({ username, password, rememberMe });
+      const { accounts } = await api.authState();
+      set({ account, accounts, authBusy: false, error: null });
+    } catch (err) {
+      set({ authBusy: false });
+      throw err;
+    }
+  },
+
+  async logout() {
+    try {
+      await api.authLogout();
+    } catch {
+      // even if the call fails, drop the local session
+    }
+    // clear every per-account slice so nothing leaks to the login screen or
+    // the next account that signs in
+    set({
+      account: null,
+      view: "home",
+      savedTrades: [], trashedTrades: [],
+      paper: null, paperCurve: [],
+      etfWatchlist: [], etfResult: null,
+      screenResult: null, selected: null, calcResult: null,
+      recommendation: null, pulse: null, icsResult: null,
+      error: null,
+    });
   },
 
   async loadJournal() {

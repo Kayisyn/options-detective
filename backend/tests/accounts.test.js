@@ -62,6 +62,34 @@ test("remember token: issue -> resolve -> clear", () => {
   assert.equal(accounts.resolveRememberToken({ id: acct.id, token }), null);
 });
 
+test("first account adopts legacy root data by COPY (originals kept)", () => {
+  // stage legacy single-user files at the root (pre-v1.6.0 layout)
+  const legacyTrades = [{ id: "t1", createdAt: "2026-01-01T00:00:00.000Z", status: "open",
+    symbol: "GOOG", strategy: "covered_call", side: "credit", entryPrice: 4, entryQty: 1,
+    multiplier: 100, entryDate: "2026-01-01", notes: "", tags: [], exitPrice: null,
+    exitDate: null, closedAt: null, actualPnl: null, mae: null, mfe: null,
+    lastMark: null, candidate: null, exportText: null }];
+  fs.writeFileSync(path.join(ROOT, "trades.json"), JSON.stringify(legacyTrades));
+  fs.writeFileSync(path.join(ROOT, "paper.json"), JSON.stringify({ budget: { initialBalance: 12345 } }));
+
+  // NOTE: earlier tests in this file already registered accounts, so wipe the
+  // registry to simulate a true first run
+  fs.rmSync(accounts.REGISTRY, { force: true });
+  const first = accounts.register({ username: "legacyuser", password: "Migrate123" });
+
+  // copied into the account dir…
+  const copied = JSON.parse(fs.readFileSync(
+    path.join(ROOT, "accounts", first.id, "trades.json"), "utf8"));
+  assert.equal(copied[0].symbol, "GOOG");
+  assert.ok(fs.existsSync(path.join(ROOT, "accounts", first.id, "paper.json")));
+  // …and the originals survive at the root as a backup
+  assert.ok(fs.existsSync(path.join(ROOT, "trades.json")));
+
+  // a SECOND account starts empty — no legacy adoption
+  const second = accounts.register({ username: "cleanuser", password: "Fresh1234" });
+  assert.equal(fs.existsSync(path.join(ROOT, "accounts", second.id, "trades.json")), false);
+});
+
 test("per-account isolation: trades + sandbox follow the active account", () => {
   const a = accounts.register({ username: "userA", password: "PasswordA1" });
   const b = accounts.register({ username: "userB", password: "PasswordB1" });
