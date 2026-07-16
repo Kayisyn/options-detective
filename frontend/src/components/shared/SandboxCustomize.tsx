@@ -66,7 +66,7 @@ export function SandboxCustomize({ settings, accountValue, initialBalance }: {
           aria-expanded={open}
         >
           <span className="flex items-center gap-2 text-xs">
-            <span className="font-medium uppercase tracking-wide text-content-3">Customize</span>
+            <span className="font-medium uppercase tracking-wide text-heading">Customize</span>
             <span className="font-mono text-content-2" data-testid="sandbox-settings-badge">
               {activeBadge(settings)}
             </span>
@@ -248,7 +248,7 @@ export function SandboxHoldings({ holdings }: { holdings: PaperHolding[] }) {
   if (holdings.length === 0) return null;
   return (
     <div className="space-y-2" data-testid="sandbox-holdings">
-      <h3 className="text-sm font-medium uppercase tracking-wide text-content-3">
+      <h3 className="text-sm font-medium uppercase tracking-wide text-heading">
         Shares held ({holdings.length})
       </h3>
       {holdings.map((h) => {

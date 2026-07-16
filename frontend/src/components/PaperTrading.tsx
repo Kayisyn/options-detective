@@ -193,7 +193,7 @@ export default function PaperTrading() {
         {/* left: account stats */}
         <aside className="card-glass h-fit space-y-2 p-4 lg:col-span-3" data-testid="paper-balance">
           <div className="rounded-md bg-dark-700/50 p-3 text-center">
-            <div className="text-xs uppercase tracking-wide text-content-3">Account value</div>
+            <div className="text-xs uppercase tracking-wide text-heading">Account value</div>
             <div className="mt-1 font-mono text-2xl font-bold text-content-1">
               {money(balance.accountValue, 2)}
             </div>
@@ -222,7 +222,7 @@ export default function PaperTrading() {
 
         {/* center: open positions */}
         <div className="min-w-0 space-y-3 lg:col-span-6">
-          <h3 className="text-sm font-medium uppercase tracking-wide text-content-3">
+          <h3 className="text-sm font-medium uppercase tracking-wide text-heading">
             Open positions ({open.length})
           </h3>
           {open.length === 0 ? (
@@ -335,7 +335,7 @@ export default function PaperTrading() {
 
         {/* right: equity curve */}
         <div className="space-y-2 lg:col-span-3">
-          <h3 className="text-sm font-medium uppercase tracking-wide text-content-3">
+          <h3 className="text-sm font-medium uppercase tracking-wide text-heading">
             Equity curve
           </h3>
           <Card className="p-3">
@@ -356,7 +356,7 @@ export default function PaperTrading() {
         </div>
       </div>
 
-      <h3 className="text-sm font-medium uppercase tracking-wide text-content-3">
+      <h3 className="text-sm font-medium uppercase tracking-wide text-heading">
         History ({settled.length})
       </h3>
       {settled.length === 0 ? (

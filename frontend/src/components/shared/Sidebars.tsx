@@ -13,7 +13,7 @@ import type { PulseQuote } from "../../types";
 // (hidden below xl); each panel folds, and the whole rail collapses.
 
 const PANEL = "card-glass liquid-glass p-3";
-const HEADING = "flex w-full items-center justify-between text-xs font-medium uppercase tracking-wide text-content-3 hover:text-content-1 transition-colors duration-150";
+const HEADING = "flex w-full items-center justify-between text-xs font-medium uppercase tracking-wide text-heading hover:text-content-1 transition-colors duration-150";
 
 export const SECTION_LABELS: Record<SidebarSection, string> = {
   watchlist: "Watchlist",

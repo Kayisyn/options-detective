@@ -120,7 +120,7 @@ export default function HelpDrawer({ onReplayWalkthrough }: {
           {visibleSections.map((section) => (
             <div key={section.id}>
               {!showTabs && (
-                <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-content-3">
+                <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-heading">
                   {section.title}
                 </h3>
               )}

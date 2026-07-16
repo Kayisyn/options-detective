@@ -289,7 +289,7 @@ export default function EtfScreener() {
 
       {s.etfWatchlist.length > 0 && (
         <div>
-          <h3 className="mb-1 text-sm font-medium uppercase tracking-wide text-content-3">Watchlist</h3>
+          <h3 className="mb-1 text-sm font-medium uppercase tracking-wide text-heading">Watchlist</h3>
           <div className="flex flex-wrap gap-2" data-testid="etf-watchlist">
             {s.etfWatchlist.map((t) => (
               <Badge key={t} variant="neutral"

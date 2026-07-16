@@ -84,7 +84,7 @@ export default function Home() {
             <div className="font-mono text-2xl font-bold text-accent-primary-text">
               {money(balance.accountValue, 2)}
             </div>
-            <div className="mt-1 text-xs uppercase tracking-wide text-content-3">Sandbox balance</div>
+            <div className="mt-1 text-xs uppercase tracking-wide text-heading">Sandbox balance</div>
           </Card>
           <Card liquid enterDelayMs={100} className="text-center">
             <div className={`font-mono text-2xl font-bold ${
@@ -93,13 +93,13 @@ export default function Home() {
             }`}>
               {money(balance.realizedPnl, 2)}
             </div>
-            <div className="mt-1 text-xs uppercase tracking-wide text-content-3">Realized P&L</div>
+            <div className="mt-1 text-xs uppercase tracking-wide text-heading">Realized P&L</div>
           </Card>
           <Card liquid enterDelayMs={150} className="text-center">
             <div className="font-mono text-2xl font-bold text-accent-primary-text">
               {winRate === null ? "—" : pct(winRate)}
             </div>
-            <div className="mt-1 text-xs uppercase tracking-wide text-content-3">Win rate</div>
+            <div className="mt-1 text-xs uppercase tracking-wide text-heading">Win rate</div>
           </Card>
         </div>
       )}
@@ -108,17 +108,17 @@ export default function Home() {
         <div className="grid grid-cols-3 gap-3" data-testid="home-stats">
           <Card liquid enterDelayMs={50} className="text-center">
             <div className="font-mono text-2xl font-bold text-accent-primary-text">{s.savedTrades.length}</div>
-            <div className="mt-1 text-xs uppercase tracking-wide text-content-3">Positions logged</div>
+            <div className="mt-1 text-xs uppercase tracking-wide text-heading">Positions logged</div>
           </Card>
           <Card liquid enterDelayMs={100} className="text-center">
             <div className="text-2xl font-semibold capitalize">{mostUsed}</div>
-            <div className="mt-1 text-xs uppercase tracking-wide text-content-3">Most used</div>
+            <div className="mt-1 text-xs uppercase tracking-wide text-heading">Most used</div>
           </Card>
           <Card liquid enterDelayMs={150} className="text-center">
             <div className="font-mono text-2xl font-semibold">
               {lastScreen ? lastScreen.symbol : "—"}
             </div>
-            <div className="mt-1 text-xs uppercase tracking-wide text-content-3">
+            <div className="mt-1 text-xs uppercase tracking-wide text-heading">
               {lastScreen ? `Last screened ${relativeTime(lastScreen.at)}` : "Nothing screened yet"}
             </div>
           </Card>

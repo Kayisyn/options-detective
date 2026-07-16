@@ -83,7 +83,7 @@ export function MetricBox({ label, value, highlight = "none", hint }: {
 }) {
   const box = (
     <div className={cx("rounded-md bg-dark-700/50 p-2.5", hint && "cursor-help")}>
-      <div className="text-xs uppercase tracking-wide text-content-3">{label}</div>
+      <div className="text-xs uppercase tracking-wide text-heading">{label}</div>
       <div className={cx("mt-0.5 font-mono font-bold tabular-nums", HIGHLIGHTS[highlight])}>
         {value}
       </div>

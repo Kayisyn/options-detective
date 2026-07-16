@@ -38,7 +38,7 @@ function NumberField({ label, value, onChange, placeholder, step, hint }: {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h4 className="mb-1.5 text-xs font-medium uppercase tracking-wide text-content-3">
+      <h4 className="mb-1.5 text-xs font-medium uppercase tracking-wide text-heading">
         {title}
       </h4>
       {children}

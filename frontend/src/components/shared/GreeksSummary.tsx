@@ -41,7 +41,7 @@ export default function GreeksSummary({ greeks }: { greeks: Greeks }) {
       {(Object.keys(UNITS) as Array<keyof Greeks>).map((key) => (
         <Hint key={key} text={explainers[key]} className="block">
           <div className="cursor-help rounded-md bg-dark-800 p-3">
-            <dt className="text-xs uppercase tracking-wide text-content-3">
+            <dt className="text-xs uppercase tracking-wide text-heading">
               {key} <span className="normal-case text-content-3/70">({UNITS[key]})</span>
               <button
                 onClick={() => openHelp(key)}

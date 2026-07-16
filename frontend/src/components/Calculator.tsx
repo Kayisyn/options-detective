@@ -137,7 +137,7 @@ export default function Calculator() {
             {!expertMode && (
               <div className="card-glass mt-3 p-4 text-sm text-content-2"
                 data-testid="beginner-explainer">
-                <h3 className="mb-1 text-xs font-medium uppercase tracking-wide text-content-3">
+                <h3 className="mb-1 text-xs font-medium uppercase tracking-wide text-heading">
                   Understanding the payoff
                 </h3>
                 <p>
@@ -360,7 +360,7 @@ function Stat({ label, value, hint, tone, onInfo }: {
 }) {
   return (
     <div className="cursor-help rounded-md bg-dark-700/50 p-3" title={hint}>
-      <div className="text-xs uppercase tracking-wide text-content-3">
+      <div className="text-xs uppercase tracking-wide text-heading">
         {label}
         {onInfo && (
           <button onClick={onInfo} title="Open in the glossary" aria-label={`Glossary: ${label}`}

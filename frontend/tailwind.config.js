@@ -18,6 +18,9 @@ export default {
           2: "rgb(var(--od-text-2) / <alpha-value>)", // secondary
           3: "rgb(var(--od-text-3) / <alpha-value>)", // tertiary / hints
         },
+        // section/sidebar headers: = content-3 on obsidian/B&W, Jade on the
+        // green theme (v1.6.1 semantic hierarchy)
+        heading: "rgb(var(--od-heading) / <alpha-value>)",
         // text sitting ON a primary fill: white on violet (obsidian),
         // black on white (Black & White theme). Top-level so the utility
         // is `text-on-accent`.

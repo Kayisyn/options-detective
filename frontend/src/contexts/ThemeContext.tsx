@@ -3,16 +3,17 @@ import {
   type ReactNode,
 } from "react";
 
-// v1.4.x themes: the locked obsidian aesthetic (default) plus a Black &
-// White finance-terminal mode — pure black, grayscale accents, flat
-// surfaces (index.css disables the glass effects under .theme-bw).
+// Themes: the locked obsidian aesthetic (default), a Black & White
+// finance-terminal mode (pure black, grayscale accents, flat surfaces —
+// index.css disables the glass effects under .theme-bw), and v1.6.1's
+// Emerald Green (emerald titles, jade headers, MINT profit numbers).
 // The theme is a class on <html>; every component reads CSS variables, so
 // switching is instant and touches no component code. The default keeps the
 // id "dark" so stored preferences from earlier versions still apply; stored
 // ids of retired themes (light/neon/professional/deuteranopia/protanopia)
 // fall back to obsidian.
 
-export type ThemeId = "dark" | "bw";
+export type ThemeId = "dark" | "green" | "bw";
 
 export interface ThemeMeta {
   id: ThemeId;
@@ -25,6 +26,10 @@ export const THEMES: ThemeMeta[] = [
   {
     id: "dark", name: "Obsidian", hint: "Default — obsidian glass, violet accents",
     swatch: { bg: "#0a0a0f", panel: "#15151f", accents: ["#9733FF", "#10b981", "#ef4444"] },
+  },
+  {
+    id: "green", name: "Emerald", hint: "Terminal green — emerald titles, mint profits",
+    swatch: { bg: "#0a0f0a", panel: "#1a201a", accents: ["#10b981", "#6ee7b7", "#ef4444"] },
   },
   {
     id: "bw", name: "Black & White", hint: "Finance terminal — pure black & white, formal aesthetic",

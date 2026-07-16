@@ -97,7 +97,7 @@ export default function Recommender() {
 
       {rec.tradeoffs.length > 0 && (
         <div className="card-glass p-4">
-          <h3 className="text-sm font-medium uppercase tracking-wide text-content-3">
+          <h3 className="text-sm font-medium uppercase tracking-wide text-heading">
             Trade-offs
           </h3>
           <ul className="mt-2 space-y-2 text-sm text-content-2">

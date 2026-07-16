@@ -144,7 +144,7 @@ export default function Journal() {
       <div className="flex flex-col gap-4 lg:flex-row">
         {s.savedTrades.length > 0 && (
           <aside className="card-glass h-fit w-full shrink-0 p-4 lg:w-64" data-testid="journal-stats">
-            <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-content-3">
+            <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-heading">
               Stats
             </h3>
             <div className="grid grid-cols-2 gap-2">

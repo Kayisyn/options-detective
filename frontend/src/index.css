@@ -30,6 +30,8 @@
   --od-text-1: 255 255 255;
   --od-text-2: 240 240 240;   /* #f0f0f0 white subtle */
   --od-text-3: 158 158 178;   /* #9e9eb2 tertiary / hints */
+  --od-heading: 158 158 178;  /* section/sidebar headers (= text-3 here;
+                                 the green theme gives it its own hue) */
   --od-accent-primary: 151 51 255;       /* #9733FF violet */
   --od-accent-primary-hover: 163 74 255; /* #A34AFF */
   --od-accent-primary-text: 178 102 255; /* #B266FF AA-safe small text */
@@ -60,6 +62,7 @@
   --od-text-1: 255 255 255;
   --od-text-2: 235 235 235;
   --od-text-3: 163 163 163;   /* #a3a3a3, ~8.6:1 on black */
+  --od-heading: 163 163 163;  /* headers stay the tertiary gray */
   --od-accent-primary: 255 255 255;      /* CTAs/highlights turn white */
   --od-accent-primary-hover: 224 224 224;
   --od-accent-primary-text: 255 255 255;
@@ -72,14 +75,55 @@
   --od-glass-fill: 0 0 0;
 }
 
+/* ============================================================
+   Emerald Green — terminal green mode (v1.6.1). Semantic color
+   hierarchy per the green-theme spec: Emerald titles/CTAs, Jade
+   section headers, MINT profit numbers (deliberately distinct
+   from the emerald titles), Sage tertiary text, teal info,
+   pistachio chart "now" marker. Losses stay red — never green.
+   Glass, halos, liquid shimmer, particles and charts all ride
+   these slots, so no component changes are needed beyond the
+   --od-heading hierarchy hook.
+
+   Contrast (on #0a0f0a): emerald #10b981 ~7.5:1, jade #059669
+   ~5.0:1 (12px semibold headers, AA), mint #6ee7b7 ~12:1, sage
+   #78a59a ~6.9:1; dark-on-emerald CTA text ~7.5:1.
+   ============================================================ */
+:root.theme-green {
+  --od-dark-900: 10 15 10;    /* #0a0f0a page background */
+  --od-dark-800: 20 22 20;    /* #141614 deep surfaces */
+  --od-dark-700: 26 32 26;    /* #1a201a cards / inputs */
+  --od-dark-600: 45 58 45;    /* #2d3a2d borders / mid */
+  --od-dark-500: 61 74 61;    /* #3d4a3d raised / hover */
+  --od-text-1: 255 255 255;
+  --od-text-2: 240 240 240;
+  --od-text-3: 120 165 154;   /* Sage #78a59a — tertiary text, hints */
+  --od-heading: 5 150 105;    /* Jade #059669 — section/sidebar headers */
+  --od-accent-primary: 16 185 129;       /* Emerald Bright #10b981 */
+  --od-accent-primary-hover: 52 211 153; /* Emerald Light #34d399 */
+  --od-accent-primary-text: 52 211 153;  /* small emerald text, ~9.9:1 */
+  --od-on-accent: 10 15 10;       /* dark text on emerald fills */
+  --od-accent-blue: 20 184 166;   /* info -> Teal #14b8a6 */
+  --od-accent-green: 110 231 183; /* profit -> MINT #6ee7b7 (≠ titles) */
+  --od-accent-red: 239 68 68;     /* loss stays red #ef4444 */
+  --od-accent-orange: 251 191 36; /* warnings stay amber (never green) */
+  --od-chart-spot: 163 230 53;    /* Pistachio #a3e635 — "now" marker */
+  --od-glass-fill: 15 20 15;      /* rgba(15,20,15,.8) glass base */
+}
+/* Emerald-tinted glass edge (the base rule's white/15 reads gray here) */
+:root.theme-green .card-glass {
+  border-color: rgb(16 185 129 / 0.18);
+}
+
 body {
   @apply bg-dark-900 font-sans text-content-1 antialiased;
 }
 
-/* Ambient depth layer: two large, very faint violet radials fixed behind
+/* Ambient depth layer: two large, very faint accent radials fixed behind
    the content. This is what the glass cards actually refract — without it
    backdrop-blur over a flat page is invisible. pointer-events-none + fixed
-   so it never repaints on scroll. */
+   so it never repaints on scroll. Rides the accent token (v1.6.1): violet
+   on obsidian, emerald on green; hidden on B&W. */
 body::before {
   content: "";
   position: fixed;
@@ -87,8 +131,8 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(900px 600px at 12% -10%, rgb(151 51 255 / 0.09), transparent 60%),
-    radial-gradient(1100px 700px at 105% 110%, rgb(151 51 255 / 0.07), transparent 55%),
+    radial-gradient(900px 600px at 12% -10%, rgb(var(--od-accent-primary) / 0.09), transparent 60%),
+    radial-gradient(1100px 700px at 105% 110%, rgb(var(--od-accent-primary) / 0.07), transparent 55%),
     radial-gradient(700px 500px at 85% 15%, rgb(255 255 255 / 0.02), transparent 60%);
 }
 
