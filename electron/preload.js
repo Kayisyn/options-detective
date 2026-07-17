@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld("optionsDetective", {
   paperReset: (payload) => ipcRenderer.invoke("api:paper:reset", payload),
   paperSettings: (payload) => ipcRenderer.invoke("api:paper:settings", payload),
   paperSellHolding: (symbol, payload) => ipcRenderer.invoke("api:paper:sell", { symbol, payload }),
+  marketFx: (refresh) => ipcRenderer.invoke("api:market:fx", refresh),
   authState: () => ipcRenderer.invoke("api:auth:state"),
   authRegister: (body) => ipcRenderer.invoke("api:auth:register", body),
   authLogin: (body) => ipcRenderer.invoke("api:auth:login", body),

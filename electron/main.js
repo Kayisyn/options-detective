@@ -62,6 +62,7 @@ async function forward(pathname, body, method) {
 }
 
 function registerIpc() {
+  ipcMain.handle("api:market:fx", (_event, refresh) => forward(`/market/fx${refresh ? "?refresh=1" : ""}`));
   ipcMain.handle("api:auth:state", () => forward("/auth/state"));
   ipcMain.handle("api:auth:register", (_event, body) => forward("/auth/register", body));
   ipcMain.handle("api:auth:login", (_event, body) => forward("/auth/login", body));

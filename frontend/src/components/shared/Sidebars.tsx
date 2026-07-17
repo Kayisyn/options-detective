@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useStore } from "../../store";
 import { money, strategyLabel } from "../../lib/format";
+import { DualValue } from "../../lib/currency";
 import { pctReturn } from "../../lib/journalStats";
 import { cx } from "../../lib/cx";
 import type { SidebarSection } from "../../store";
@@ -126,7 +127,8 @@ function RecentTradesBody() {
             <span className="font-mono text-xs font-semibold text-content-1">{t.symbol}</span>
             <span className={cx("font-mono text-xs tabular-nums",
               (t.actualPnl ?? 0) >= 0 ? "text-accent-green" : "text-accent-red")}>
-              {(t.actualPnl ?? 0) >= 0 ? "+" : ""}{money(t.actualPnl ?? 0)}
+              <DualValue usd={t.actualPnl ?? 0} signed
+                histRate={t.exchangeRateAtClose ?? t.exchangeRateUsed ?? null} />
               {pctReturn(t) !== null && (
                 <span className="ml-1 text-[10px] opacity-80">
                   ({pctReturn(t)! > 0 ? "+" : ""}{pctReturn(t)!.toFixed(1)}%)

@@ -25,6 +25,36 @@ const WEIGHTS_KEY = "od.weights.v1";
 const PROFILES_KEY = "od.weightProfiles.v1";
 const FX_KEY = "od.fx.v1"; // v1.5.0 visual-effects prefs
 const SIDEBAR_ORDER_KEY = "od.sidebarOrder.v1"; // v1.5.1
+const CURRENCY_KEY = "od.currency.v1"; // v1.9.0
+
+// v1.9.0 currency display preference (per machine, like themes)
+interface CurrencyPrefs {
+  mode: "usd" | "cad" | "dual";
+  autoUpdate: boolean;
+}
+
+const DEFAULT_CURRENCY: CurrencyPrefs = { mode: "usd", autoUpdate: true };
+
+function readCurrencyPrefs(): CurrencyPrefs {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(CURRENCY_KEY) ?? "null");
+    if (!parsed || typeof parsed !== "object") return { ...DEFAULT_CURRENCY };
+    const mode = (parsed as CurrencyPrefs).mode;
+    return {
+      mode: mode === "cad" || mode === "dual" ? mode : "usd",
+      autoUpdate: typeof (parsed as CurrencyPrefs).autoUpdate === "boolean"
+        ? (parsed as CurrencyPrefs).autoUpdate : true,
+    };
+  } catch {
+    return { ...DEFAULT_CURRENCY };
+  }
+}
+
+function writeCurrencyPrefs(prefs: CurrencyPrefs) {
+  try {
+    localStorage.setItem(CURRENCY_KEY, JSON.stringify(prefs));
+  } catch { /* private mode */ }
+}
 
 // v1.5.1: the right sidebar holds all five sections; the user reorders them
 // in Settings and the order persists.
@@ -221,6 +251,14 @@ interface AppState {
   fxLiquidGlass: boolean;
   fxGlow: boolean;
 
+  // v1.9.0 currency (prefs persisted; rate fetched)
+  currencyMode: "usd" | "cad" | "dual";
+  fxAutoUpdate: boolean;
+  fxRate: number | null;   // 1 USD = fxRate CAD
+  fxAsOf: string | null;
+  fxStale: boolean;
+  fxBusy: boolean;
+
   // v1.1 §1: client-side filtering/sorting of screened candidates
   filters: CandidateFilters;
   sort: SortSpec;
@@ -300,6 +338,8 @@ interface AppState {
     particles: boolean; particleCount: number; motion: MotionPref;
     parallax: boolean; liquidGlass: boolean; glow: boolean;
   }>) => void;
+  loadFx: (refresh?: boolean) => Promise<void>;
+  setCurrency: (patch: Partial<{ mode: "usd" | "cad" | "dual"; autoUpdate: boolean }>) => void;
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -357,6 +397,13 @@ export const useStore = create<AppState>((set, get) => ({
   fxParallax: readStoredFx().parallax,
   fxLiquidGlass: readStoredFx().liquidGlass,
   fxGlow: readStoredFx().glow,
+
+  currencyMode: readCurrencyPrefs().mode,
+  fxAutoUpdate: readCurrencyPrefs().autoUpdate,
+  fxRate: null,
+  fxAsOf: null,
+  fxStale: false,
+  fxBusy: false,
   filters: EMPTY_FILTERS,
   sort: DEFAULT_SORT,
   weights: readStoredWeights(),
@@ -525,6 +572,32 @@ export const useStore = create<AppState>((set, get) => ({
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }
+  },
+
+  // v1.9.0 currency --------------------------------------------------------
+
+  // Load the USD→CAD rate. refresh=true forces a refetch (Settings button);
+  // otherwise the backend serves its daily cache. autoUpdate=false still
+  // loads whatever the backend has cached — it just never forces.
+  async loadFx(refresh = false) {
+    set({ fxBusy: true });
+    try {
+      const info = await api.marketFx(refresh);
+      set({ fxRate: info.rate, fxAsOf: info.asOf, fxStale: info.stale, fxBusy: false });
+    } catch {
+      set({ fxBusy: false }); // keep whatever we had; CAD display waits
+    }
+  },
+
+  setCurrency(patch) {
+    const next = {
+      mode: patch.mode ?? get().currencyMode,
+      autoUpdate: patch.autoUpdate ?? get().fxAutoUpdate,
+    };
+    writeCurrencyPrefs(next);
+    set({ currencyMode: next.mode, fxAutoUpdate: next.autoUpdate });
+    // first switch into a CAD mode with no rate yet: fetch one
+    if (next.mode !== "usd" && get().fxRate == null) get().loadFx();
   },
 
   // v1.6.0 local accounts ------------------------------------------------

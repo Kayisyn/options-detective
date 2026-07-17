@@ -168,6 +168,15 @@ export type TradeStatus = "open" | "closed" | "assigned" | "expired";
 // Journal trade, v1.1 Phase A. Prices are per unit as brokers quote them
 // (per spread for options, per share for stock); dollar P&L multiplies by
 // qty × multiplier. Credit positions profit when the closing price falls.
+// v1.9.0 currency
+export interface FxInfo {
+  rate: number;          // 1 USD = rate CAD
+  asOf: string | null;
+  stale: boolean;        // old cache or static fallback, not a fresh fetch
+}
+
+export type CurrencyMode = "usd" | "cad" | "dual";
+
 // v1.6.0 local accounts
 export interface Account {
   id: string;
@@ -183,6 +192,10 @@ export interface JournalTrade {
   paper: boolean;
   archived: boolean;
   deletedAt: string | null; // v1.5.1 soft delete: null = active, ISO = in trash
+  // v1.9.0 currency: USD→CAD rate stamped at entry / at close (null on
+  // legacy trades or when no rate had ever been fetched)
+  exchangeRateUsed?: number | null;
+  exchangeRateAtClose?: number | null;
   expiration: string | null;
   assignmentStrike: number | null;
   reservedCapital: number | null; // paper trades: budget reserved at open

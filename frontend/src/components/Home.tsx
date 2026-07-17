@@ -1,9 +1,10 @@
 import { useEffect, type ComponentType, type SVGProps } from "react";
 import { readLastScreen, useStore } from "../store";
-import { money, pct, strategyLabel } from "../lib/format";
+import { pct, strategyLabel } from "../lib/format";
 import Button from "./ui/Button";
 import { Card } from "./ui/Card";
 import { GridIcon, RadarIcon, TrophyIcon } from "./ui/Icons";
+import { DualValue } from "../lib/currency";
 
 // Home screen, v1.4.0: obsidian hero with quick-start CTAs, a live stats
 // row (sandbox balance, realized P&L, win rate) and feature highlights.
@@ -82,7 +83,7 @@ export default function Home() {
         <div className="grid grid-cols-3 gap-3" data-testid="home-stats">
           <Card liquid enterDelayMs={50} className="text-center">
             <div className="font-mono text-2xl font-bold text-accent-primary-text">
-              {money(balance.accountValue, 2)}
+              <DualValue usd={balance.accountValue} digits={2} />
             </div>
             <div className="mt-1 text-xs uppercase tracking-wide text-heading">Sandbox balance</div>
           </Card>
@@ -91,7 +92,7 @@ export default function Home() {
               balance.realizedPnl > 0 ? "text-accent-green"
                 : balance.realizedPnl < 0 ? "text-accent-red" : "text-accent-primary-text"
             }`}>
-              {money(balance.realizedPnl, 2)}
+              <DualValue usd={balance.realizedPnl} digits={2} />
             </div>
             <div className="mt-1 text-xs uppercase tracking-wide text-heading">Realized P&L</div>
           </Card>

@@ -5,6 +5,7 @@ import { ALL_STRATEGY_TYPES } from "../lib/copy";
 import { accountImpactPct, journalStats, pctReturn } from "../lib/journalStats";
 import { confirmationText, downloadCsv } from "../lib/journalCsv";
 import { cx } from "../lib/cx";
+import { DualValue } from "../lib/currency";
 import Button from "./ui/Button";
 import { Badge, Card, MetricBox, PctBadge } from "./ui/Card";
 import { FormInput, FormSelect } from "./ui/Input";
@@ -152,12 +153,13 @@ export default function Journal() {
               <MetricBox label="Open" value={String(stats.open)} />
               <MetricBox label="Win rate" value={stats.winRate === null ? "—" : pct(stats.winRate)}
                 hint="Winners among closed trades" />
-              <MetricBox label="Realized P&L" value={money(stats.totalPnl)}
+              <MetricBox label="Realized P&L"
+                value={<DualValue usd={stats.totalPnl} title="Aggregates convert at today's rate" />}
                 highlight={stats.totalPnl > 0 ? "green" : stats.totalPnl < 0 ? "red" : "none"} />
-              <MetricBox label="Avg win" value={stats.avgWin === null ? "—" : money(stats.avgWin)} highlight="green" />
-              <MetricBox label="Avg loss" value={stats.avgLoss === null ? "—" : money(stats.avgLoss)} highlight="red" />
-              <MetricBox label="Best" value={stats.largestWin === null ? "—" : money(stats.largestWin)} highlight="green" />
-              <MetricBox label="Worst" value={stats.largestLoss === null ? "—" : money(stats.largestLoss)} highlight="red" />
+              <MetricBox label="Avg win" value={stats.avgWin === null ? "—" : <DualValue usd={stats.avgWin} />} highlight="green" />
+              <MetricBox label="Avg loss" value={stats.avgLoss === null ? "—" : <DualValue usd={stats.avgLoss} />} highlight="red" />
+              <MetricBox label="Best" value={stats.largestWin === null ? "—" : <DualValue usd={stats.largestWin} />} highlight="green" />
+              <MetricBox label="Worst" value={stats.largestLoss === null ? "—" : <DualValue usd={stats.largestLoss} />} highlight="red" />
             </div>
             {(stats.byStrategy.length > 0 || stats.bySymbol.length > 0) && (
               <div className="mt-3 space-y-1 border-t border-white/10 pt-3 text-xs text-content-3">
@@ -268,7 +270,12 @@ export default function Journal() {
                     )}
                     <span className={`font-mono font-bold tabular-nums ${pnlClass(pnl.value)}`}
                       title={pnl.realized ? "Realized P&L" : "Unrealized P&L from the latest mark"}>
-                      {pnl.value === null ? "—" : money(pnl.value)}
+                      {pnl.value === null ? "—" : (
+                        <DualValue usd={pnl.value}
+                          histRate={pnl.realized
+                            ? (t.exchangeRateAtClose ?? t.exchangeRateUsed ?? null)
+                            : undefined} />
+                      )}
                       {!pnl.realized && pnl.value !== null && (
                         <span className="ml-1 text-[10px] font-normal text-content-3">unrl</span>
                       )}

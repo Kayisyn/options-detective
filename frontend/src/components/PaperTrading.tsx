@@ -11,6 +11,7 @@ import { accountImpactPct, pctReturn } from "../lib/journalStats";
 import { FormInput } from "./ui/Input";
 import { CloseTradeModal } from "./Journal";
 import { SandboxCustomize, SandboxHoldings } from "./shared/SandboxCustomize";
+import { DualValue } from "../lib/currency";
 import type { EquityPoint, JournalTrade } from "../types";
 
 // Sandbox view (renamed from Paper Trading, v1.4.0): three-column layout —
@@ -150,7 +151,9 @@ export default function PaperTrading() {
           <h2 className="text-lg font-semibold">Sandbox</h2>
           <p className="text-sm text-content-3" data-testid="paper-headline">
             {money(balance.initialBalance)} initial →{" "}
-            <b className={pnlClass(totalReturn)}>{money(balance.accountValue, 2)}</b>{" "}
+            <b className={pnlClass(totalReturn)}>
+              <DualValue usd={balance.accountValue} digits={2} />
+            </b>{" "}
             ({totalReturn >= 0 ? "+" : ""}{((totalReturn / balance.initialBalance) * 100).toFixed(2)}%)
             — simulated money, engine marks, deterministic assignment.
             {open.length > 0 && (
@@ -198,17 +201,17 @@ export default function PaperTrading() {
               {money(balance.accountValue, 2)}
             </div>
             <div className={`text-xs font-medium ${pnlClass(totalReturn)}`}>
-              {totalReturn >= 0 ? "+" : ""}{money(totalReturn, 2)} total
+              <DualValue usd={totalReturn} digits={2} signed /> total
             </div>
           </div>
-          <MetricBox label="Available" value={money(balance.available, 2)}
+          <MetricBox label="Available" value={<DualValue usd={balance.available} digits={2} />}
             hint="Initial + realized − capital reserved by open positions" />
-          <MetricBox label="Reserved" value={money(balance.reserved, 2)}
+          <MetricBox label="Reserved" value={<DualValue usd={balance.reserved} digits={2} />}
             hint="Capital held against open positions (cash-secured amounts, max losses, debits)" />
-          <MetricBox label="Realized P&L" value={money(balance.realizedPnl, 2)}
+          <MetricBox label="Realized P&L" value={<DualValue usd={balance.realizedPnl} digits={2} />}
             highlight={balance.realizedPnl > 0 ? "green" : balance.realizedPnl < 0 ? "red" : "none"} />
           <MetricBox label="Unrealized"
-            value={balance.unrealizedPnl === null ? "—" : money(balance.unrealizedPnl, 2)}
+            value={balance.unrealizedPnl === null ? "—" : <DualValue usd={balance.unrealizedPnl} digits={2} />}
             highlight={(balance.unrealizedPnl ?? 0) > 0 ? "green" : (balance.unrealizedPnl ?? 0) < 0 ? "red" : "none"}
             hint="From theoretical marks, auto-refreshed every minute while this tab is open" />
           <MetricBox label="Win rate" value={stats.winRate === null ? "—" : pct(stats.winRate)}

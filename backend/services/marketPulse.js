@@ -143,6 +143,7 @@ const marketPulse = createMarketPulse();
 
 module.exports = {
   createMarketPulse,
+  fetchPulseViaPython, // reused by services/fx.js for the CAD=X quote
   breadthScore,
   trending,
   BREADTH_BASKET,

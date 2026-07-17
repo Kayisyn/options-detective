@@ -2,12 +2,13 @@
 // (Phase 7); in the browser we go through Vite's /api proxy to Express.
 import type {
   Account, CalcResult, EquityPoint, EtfDetail, EtfFilters, EtfRecord, EtfReference,
-  EtfScreenResult, EtfStrategy, HoldingsInfo, IcsConstraints, IcsResult,
+  EtfScreenResult, EtfStrategy, FxInfo, HoldingsInfo, IcsConstraints, IcsResult,
   JournalTrade, MarketPulse, PaperBalance, PaperHolding, PaperSettings,
   PaperState, Recommendation, ScreenResult,
 } from "../types";
 
 type Bridge = {
+  marketFx?: (refresh: boolean) => Promise<FxInfo>;
   authState?: () => Promise<AuthState>;
   authRegister?: (body: unknown) => Promise<{ account: Account }>;
   authLogin?: (body: unknown) => Promise<{ account: Account }>;
@@ -90,6 +91,11 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 const post = <T,>(path: string, body: unknown) => request<T>("POST", path, body);
 
 export const api = {
+  // v1.9.0 currency
+  marketFx(refresh = false): Promise<FxInfo> {
+    return bridge()?.marketFx?.(refresh)
+      ?? request("GET", `/market/fx${refresh ? "?refresh=1" : ""}`);
+  },
   // v1.6.0 local accounts
   authState(): Promise<AuthState> {
     return bridge()?.authState?.() ?? request("GET", "/auth/state");

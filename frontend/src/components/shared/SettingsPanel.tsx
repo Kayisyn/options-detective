@@ -24,12 +24,13 @@ interface SettingsPanelProps {
 // sections inside each tab stagger in 50ms apart. Selection applies
 // instantly and persists.
 
-type TabId = "appearance" | "customization" | "sidebar" | "scoring" | "complexity";
+type TabId = "appearance" | "customization" | "sidebar" | "currency" | "scoring" | "complexity";
 
 const SETTINGS_TABS: Array<{ id: TabId; label: string }> = [
   { id: "appearance", label: "Appearance" },
   { id: "customization", label: "Customization" },
   { id: "sidebar", label: "Sidebar" },
+  { id: "currency", label: "Currency" },
   { id: "scoring", label: "Scoring weights" },
   { id: "complexity", label: "Complexity" },
 ];
@@ -312,6 +313,91 @@ function SidebarTab() {
   );
 }
 
+// v1.9.0 currency: USD / CAD / dual display + exchange-rate management.
+// Market data and stored values stay USD; CAD is a display conversion —
+// realized trades convert at their stamped historical rate.
+function CurrencyTab() {
+  const mode = useStore((s) => s.currencyMode);
+  const autoUpdate = useStore((s) => s.fxAutoUpdate);
+  const rate = useStore((s) => s.fxRate);
+  const asOf = useStore((s) => s.fxAsOf);
+  const stale = useStore((s) => s.fxStale);
+  const busy = useStore((s) => s.fxBusy);
+  const setCurrency = useStore((s) => s.setCurrency);
+  const loadFx = useStore((s) => s.loadFx);
+  const showToast = useStore((s) => s.showToast);
+
+  const MODES = [
+    { id: "usd", label: "USD only", hint: "Default — everything in US dollars" },
+    { id: "cad", label: "CAD only", hint: "Converted at the exchange rate" },
+    { id: "dual", label: "Dual", hint: "US$ | C$ side by side" },
+  ] as const;
+
+  return (
+    <Section index={0}>
+      <div className="mb-3 rounded-md bg-dark-700/50 p-4" data-testid="currency-settings">
+        <div className="text-sm font-medium">Display currency</div>
+        <div className="mt-0.5 text-xs text-content-3">
+          Applies to P&amp;L, account values and stats. Quotes, strikes and
+          per-share prices stay in USD (their market currency). Closed trades
+          convert at the rate stamped when they closed; ≈ marks older trades
+          converted at today's rate.
+        </div>
+        <div className="mt-3 flex gap-1.5">
+          {MODES.map((m) => (
+            <button key={m.id} title={m.hint} data-currency-mode={m.id}
+              onClick={() => setCurrency({ mode: m.id })}
+              className={cx(
+                "rounded border px-2.5 py-1.5 text-xs transition-all duration-150 ease-out-quad",
+                mode === m.id
+                  ? "border-accent-primary/60 bg-accent-primary/15 text-accent-primary-text"
+                  : "border-dark-600 text-content-3 hover:border-dark-500 hover:text-content-2",
+              )}>
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-md bg-dark-700/50 p-4" data-testid="fx-rate-settings">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div className="text-sm font-medium">Exchange rate</div>
+            <div className="mt-0.5 font-mono text-sm text-content-2" data-testid="fx-rate-line">
+              {rate == null ? "No rate fetched yet" : `1 USD = ${rate.toFixed(4)} CAD`}
+              {stale && rate != null && (
+                <span className="ml-2 text-xs text-accent-orange"
+                  title="Not from a fresh fetch — last saved rate or the built-in fallback">
+                  stale
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-content-3">
+              {asOf ? `Last update: ${asOf.slice(0, 16).replace("T", " ")} UTC` : "Source: Yahoo (CAD=X), refreshed daily"}
+            </div>
+          </div>
+          <Button variant="secondary" size="sm" disabled={busy}
+            data-testid="fx-refresh"
+            onClick={async () => {
+              await loadFx(true);
+              const r = useStore.getState().fxRate;
+              showToast(r == null ? "Rate refresh failed" : `✓ 1 USD = ${r.toFixed(4)} CAD`);
+            }}>
+            {busy ? "Refreshing…" : "Refresh now"}
+          </Button>
+        </div>
+        <label className="mt-3 flex items-center gap-2 text-sm text-content-2">
+          <input type="checkbox" checked={autoUpdate}
+            onChange={(e) => setCurrency({ autoUpdate: e.target.checked })}
+            data-testid="fx-auto-update"
+            className="accent-accent-primary" />
+          Refresh automatically (daily)
+        </label>
+      </div>
+    </Section>
+  );
+}
+
 function ScoringTab() {
   const weights = useStore((s) => s.weights);
   const setWeights = useStore((s) => s.setWeights);
@@ -536,6 +622,7 @@ export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           {tab === "appearance" && <AppearanceTab />}
           {tab === "customization" && <CustomizationTab />}
           {tab === "sidebar" && <SidebarTab />}
+          {tab === "currency" && <CurrencyTab />}
           {tab === "scoring" && <ScoringTab />}
           {tab === "complexity" && <ComplexityTab />}
         </ViewTransition>
