@@ -39,16 +39,23 @@ def fetch_quotes(symbols):
         return quotes
     for sym in symbols:
         try:
-            frame = data[sym] if len(symbols) > 1 else data
+            # group_by="ticker" gives MultiIndex columns even for a SINGLE
+            # symbol (v1.9.0 fix — the old len()>1 check dropped solo
+            # fetches like the CAD=X exchange rate)
+            try:
+                frame = data[sym]
+            except (KeyError, TypeError):
+                frame = data  # flat columns (older yfinance single-ticker)
             closes = [float(x) for x in frame["Close"].dropna().tolist()]
             if len(closes) < 2:
                 continue
             price, prev = closes[-1], closes[-2]
             if prev <= 0:
                 continue
+            # 4dp: FX rates need the precision; equity displays re-round
             quotes[sym] = {
-                "price": round(price, 2),
-                "prevClose": round(prev, 2),
+                "price": round(price, 4),
+                "prevClose": round(prev, 4),
                 "changePct": round((price / prev - 1.0) * 100.0, 2),
             }
         except Exception:  # one bad symbol must not kill the batch

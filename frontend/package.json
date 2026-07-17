@@ -1,6 +1,6 @@
 {
   "name": "options-detective-frontend",
-  "version": "1.6.1",
+  "version": "1.9.0",
   "private": true,
   "type": "module",
   "scripts": {
