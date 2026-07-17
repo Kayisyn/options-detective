@@ -25,10 +25,35 @@ function mergeOne(staticEtf, metrics, nowMs) {
     otmCallStrike: m?.otmCallStrike ?? null,
     callVolume: m?.callVolume ?? null,
     dte: m?.dte ?? null,
+    // v1.9.0 metrics
+    perf52wPct: m?.perf52wPct ?? null,
+    dividendYieldPct: m?.dividendYieldPct ?? null,
+    atrPct20: m?.atrPct20 ?? null,
     asOf: m?.asOf ?? null,
     hasMetrics: m != null,
     stale: ageMs == null ? true : ageMs > STALE_AFTER_MS,
   };
+}
+
+// v1.9.0 theta rank: percentile of annualized call premium across the
+// universe's ETFs that have the metric — a documented proxy for "how much
+// time decay favors sellers here" (richer premium = more decay to harvest).
+// 0-100, higher = better for sellers. Computed over the merged universe so
+// it always reflects the same refresh generation as the premium itself.
+function attachThetaRank(list) {
+  const values = list
+    .map((e) => e.annualizedCallPremiumPct)
+    .filter((v) => v != null)
+    .sort((a, b) => a - b);
+  if (values.length < 2) {
+    return list.map((e) => ({ ...e, thetaRank: null }));
+  }
+  return list.map((e) => {
+    const v = e.annualizedCallPremiumPct;
+    if (v == null) return { ...e, thetaRank: null };
+    const below = values.filter((x) => x < v).length;
+    return { ...e, thetaRank: Math.round((below / (values.length - 1)) * 100) };
+  });
 }
 
 function fetchMetricsViaPython(tickers, { timeoutMs = REFRESH_TIMEOUT_MS } = {}) {
@@ -72,7 +97,7 @@ function createScreener({ store = defaultStore, fetchMetrics = fetchMetricsViaPy
   function universe() {
     const metrics = store.getMetrics();
     const nowMs = now();
-    return ETF_UNIVERSE.map((e) => mergeOne(e, metrics[e.ticker], nowMs));
+    return attachThetaRank(ETF_UNIVERSE.map((e) => mergeOne(e, metrics[e.ticker], nowMs)));
   }
 
   function reference() {

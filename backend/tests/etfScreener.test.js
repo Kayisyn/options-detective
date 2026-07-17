@@ -52,6 +52,45 @@ test("dynamic filters exclude ETFs missing the required metric", () => {
   assert.equal(passesFilters(etf({ ytdReturn: -5 }), { ytdMin: 0 }), false);
 });
 
+test("v1.9.0 filters: yield, 52w performance, ATR volatility, theta rank", () => {
+  const rec = etf({ dividendYieldPct: 1.8, perf52wPct: 14, atrPct20: 6.5, thetaRank: 72 });
+  // dividend yield range
+  assert.equal(passesFilters(rec, { yieldMin: 1 }), true);
+  assert.equal(passesFilters(rec, { yieldMin: 2 }), false);
+  assert.equal(passesFilters(rec, { yieldMax: 3 }), true);
+  assert.equal(passesFilters(rec, { yieldMax: 1 }), false);
+  // 52w performance
+  assert.equal(passesFilters(rec, { perf52wMin: 10 }), true);
+  assert.equal(passesFilters(rec, { perf52wMax: 10 }), false);
+  // ATR volatility band
+  assert.equal(passesFilters(rec, { atrMin: 5, atrMax: 15 }), true);
+  assert.equal(passesFilters(rec, { atrMax: 5 }), false);
+  // theta rank floor
+  assert.equal(passesFilters(rec, { thetaRankMin: 70 }), true);
+  assert.equal(passesFilters(rec, { thetaRankMin: 80 }), false);
+  // missing metric + active filter = excluded (never credit the unmeasured)
+  assert.equal(passesFilters(etf({ dividendYieldPct: null }), { yieldMin: 0.5 }), false);
+  assert.equal(passesFilters(etf({ atrPct20: null }), { atrMax: 10 }), false);
+  assert.equal(passesFilters(etf({ thetaRank: null }), { thetaRankMin: 10 }), false);
+});
+
+test("v1.9.0 theta rank is a premium percentile across the universe", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "od-etf-"));
+  const store = createEtfStore({ dir });
+  // three ETFs with known premiums -> deterministic percentiles
+  store.saveMetrics({
+    QQQ: { price: 400, annualizedCallPremiumPct: 30, asOf: new Date().toISOString() },
+    SPY: { price: 480, annualizedCallPremiumPct: 20, asOf: new Date().toISOString() },
+    VTI: { price: 240, annualizedCallPremiumPct: 10, asOf: new Date().toISOString() },
+  });
+  const screener = createScreener({ store });
+  const byTicker = Object.fromEntries(screener.universe().map((e) => [e.ticker, e]));
+  assert.equal(byTicker.QQQ.thetaRank, 100);  // richest premium
+  assert.equal(byTicker.SPY.thetaRank, 50);
+  assert.equal(byTicker.VTI.thetaRank, 0);    // leanest premium
+  assert.equal(byTicker.VOO.thetaRank, null); // no metrics -> no rank
+});
+
 test("scoring is bounded, weighted, and reflects the strategy", () => {
   const rich = etf({ annualizedCallPremiumPct: 25, callVolume: 6000, ivRank: 90, aumBillions: 120 });
   const cc = scoreFor(rich, "covered_call");

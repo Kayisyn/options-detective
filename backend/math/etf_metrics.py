@@ -11,12 +11,15 @@ history + ONE ~30-DTE expiration per ticker.
 Metrics per ticker:
   price                       latest close
   ytdReturn                   % return since the first close of this year
+  perf52wPct                  % return over the full 1y history window (v1.9.0)
   atmIv                       ATM implied vol at the chosen expiration
   ivRank                      today's ATM IV vs the 1y realized-vol range
                               (documented proxy, same as the rest of the app)
   annualizedCallPremiumPct    ~5% OTM call mid / price, annualized by DTE
   callVolume                  total call volume at the expiration (liquidity)
   dte                         days to the chosen expiration
+  dividendYieldPct            trailing-12M dividends / price (v1.9.0)
+  atrPct20                    20-day Average True Range as % of price (v1.9.0)
 """
 
 from __future__ import annotations
@@ -46,6 +49,41 @@ def _ytd_return(hist):
     if not base:
         return None
     return round((closes[-1] / base - 1.0) * 100.0, 2)
+
+
+def _trailing_dividend_yield_pct(hist, price):
+    """TTM dividends / price * 100. 0.0 when the fund paid nothing —
+    a real zero, not missing data (the Dividends column always exists
+    when history is fetched with actions=True)."""
+    if "Dividends" not in hist.columns or price <= 0:
+        return None
+    total = float(hist["Dividends"].sum())
+    return round(total / price * 100.0, 2)
+
+
+def _atr_pct_20(hist, price):
+    """Classic Wilder true range, simple 20-day mean, as % of price."""
+    needed = {"High", "Low", "Close"}
+    if not needed.issubset(hist.columns) or len(hist) < 21 or price <= 0:
+        return None
+    highs = [float(x) for x in hist["High"].tolist()]
+    lows = [float(x) for x in hist["Low"].tolist()]
+    closes = [float(x) for x in hist["Close"].tolist()]
+    trs = []
+    for i in range(1, len(closes)):
+        tr = max(highs[i] - lows[i],
+                 abs(highs[i] - closes[i - 1]),
+                 abs(lows[i] - closes[i - 1]))
+        trs.append(tr)
+    atr = sum(trs[-20:]) / 20.0
+    return round(atr / price * 100.0, 2)
+
+
+def _perf_52w_pct(closes):
+    """% return across the whole 1y history window."""
+    if len(closes) < 2 or closes[0] <= 0:
+        return None
+    return round((closes[-1] / closes[0] - 1.0) * 100.0, 2)
 
 
 def _pick_expiration(ticker, target_dte):
@@ -84,7 +122,8 @@ def fetch_one(symbol, target_dte):
     import yfinance as yf
 
     ticker = yf.Ticker(symbol)
-    hist = ticker.history(period="1y", auto_adjust=True)
+    # actions=True adds the Dividends column for the TTM yield (v1.9.0)
+    hist = ticker.history(period="1y", auto_adjust=True, actions=True)
     if hist is None or len(hist) == 0:
         raise ValueError("no price history")
     closes = [float(x) for x in hist["Close"].tolist()]
@@ -110,12 +149,15 @@ def fetch_one(symbol, target_dte):
     return {
         "price": round(price, 2),
         "ytdReturn": _ytd_return(hist),
+        "perf52wPct": _perf_52w_pct(closes),
         "atmIv": round(atm, 4) if atm is not None else None,
         "ivRank": rank,
         "annualizedCallPremiumPct": premium,
         "otmCallStrike": otm_strike,
         "callVolume": int(call_volume),
         "dte": dte,
+        "dividendYieldPct": _trailing_dividend_yield_pct(hist, price),
+        "atrPct20": _atr_pct_20(hist, price),
         "asOf": datetime.now(timezone.utc).isoformat(),
     }
 
