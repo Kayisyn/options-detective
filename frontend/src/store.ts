@@ -860,7 +860,8 @@ export const useStore = create<AppState>((set, get) => ({
   async screenEtf(filters, strategy) {
     set({ etfBusy: true, error: null });
     try {
-      const etfResult = await api.etfScreen({ filters, strategy, limit: 25 });
+      // v1.9.0: show the whole curated universe (~49 ETFs) — no pagination
+      const etfResult = await api.etfScreen({ filters, strategy, limit: 0 });
       set({ etfResult, etfBusy: false });
       if (!etfResult.anyMetrics) {
         set({ error: "No live metrics yet — hit “Refresh data” to fetch prices, IV and premiums." });

@@ -332,6 +332,11 @@ export interface EtfRecord {
   otmCallStrike: number | null;
   callVolume: number | null;
   dte: number | null;
+  // v1.9.0 metrics
+  perf52wPct: number | null;
+  dividendYieldPct: number | null;
+  atrPct20: number | null;
+  thetaRank: number | null;
   asOf: string | null;
   hasMetrics: boolean;
   stale: boolean;
@@ -373,6 +378,15 @@ export interface EtfFilters {
   ytdMin?: number | null;
   ytdMax?: number | null;
   minCallVolume?: number | null;
+  // v1.9.0 filters
+  yieldMin?: number | null;
+  yieldMax?: number | null;
+  perf52wMin?: number | null;
+  perf52wMax?: number | null;
+  atrMin?: number | null;
+  atrMax?: number | null;
+  thetaRankMin?: number | null;
+  thetaRankMax?: number | null;
 }
 
 export interface EtfScreenResult {
