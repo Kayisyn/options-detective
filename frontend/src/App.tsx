@@ -16,6 +16,7 @@ import { RightSidebar } from "./components/shared/Sidebars";
 import AuthGate from "./components/AuthGate";
 import ViewTransition from "./components/shared/ViewTransition";
 import { useMode } from "./contexts/ModeContext";
+import { useAlerts } from "./lib/useAlerts";
 import { useStore, type View } from "./store";
 
 // v1.4.0 naming: view ids stay stable (routes, tests, stored state); only
@@ -65,6 +66,7 @@ function MainApp() {
   const account = useStore((s) => s.account);
   const logout = useStore((s) => s.logout);
   const { expertMode, toggleMode } = useMode();
+  useAlerts(); // v1.9.0 notification sweeps (P&L / expiry / strategy score)
   // v1.7.1: the tutorial opens only in the session where the account was
   // created (never for returning sign-ins), and only until that account
   // completes or skips it once. Replayable from Help & Glossary.

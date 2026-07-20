@@ -12,6 +12,10 @@ import {
   deleteTemplate, downloadTemplates, duplicateTemplate, importTemplates,
   listTemplates, updateTemplate, type StrategyTemplate,
 } from "../../lib/templates";
+import {
+  clearAlertHistory, loadAlertHistory, loadAlertPrefs, notifyPermission,
+  requestNotifyPermission, saveAlertPrefs, type AlertPrefs,
+} from "../../lib/alerts";
 import Button from "../ui/Button";
 import { FormInput } from "../ui/Input";
 import Modal from "../ui/Modal";
@@ -30,7 +34,7 @@ interface SettingsPanelProps {
 // sections inside each tab stagger in 50ms apart. Selection applies
 // instantly and persists.
 
-type TabId = "appearance" | "customization" | "sidebar" | "currency" | "scoring" | "complexity" | "templates" | "account";
+type TabId = "appearance" | "customization" | "sidebar" | "currency" | "scoring" | "complexity" | "templates" | "alerts" | "account";
 
 const SETTINGS_TABS: Array<{ id: TabId; label: string }> = [
   { id: "appearance", label: "Appearance" },
@@ -40,6 +44,7 @@ const SETTINGS_TABS: Array<{ id: TabId; label: string }> = [
   { id: "scoring", label: "Scoring" },
   { id: "complexity", label: "Complexity" },
   { id: "templates", label: "Templates" },
+  { id: "alerts", label: "Alerts" },
   { id: "account", label: "Account" },
 ];
 
@@ -684,6 +689,160 @@ function TemplatesTab() {
   );
 }
 
+// v1.9.0 Alerts tab: toggles + thresholds for the three alert types,
+// desktop-notification permission, and the 50-entry alert history.
+function AlertCheck({ checked, onChange, children, testid }: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  children: React.ReactNode;
+  testid?: string;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2 py-1 text-sm text-content-2 hover:text-content-1">
+      <input type="checkbox" checked={checked} data-testid={testid}
+        onChange={(e) => onChange(e.target.checked)}
+        className="accent-[rgb(var(--od-accent-primary))]" />
+      {children}
+    </label>
+  );
+}
+
+function AlertsTab() {
+  const [prefs, setPrefs] = useState<AlertPrefs>(loadAlertPrefs);
+  const [perm, setPerm] = useState(notifyPermission());
+  const [history, setHistory] = useState(loadAlertHistory);
+  const [showHistory, setShowHistory] = useState(false);
+
+  function update(patch: Partial<AlertPrefs>) {
+    const next = { ...prefs, ...patch };
+    setPrefs(next);
+    saveAlertPrefs(next);
+  }
+
+  const numField = (label: string, key: "pnlUp" | "pnlDown" | "scoreIvRank", prefix = "$") => (
+    <label className="flex items-center gap-2 text-sm text-content-2">
+      {label}
+      <span className="flex items-center gap-1">
+        <span className="text-content-3">{prefix}</span>
+        <input type="number" min={0} value={prefs[key]}
+          data-testid={`alert-${key}`}
+          onChange={(e) => update({ [key]: Math.max(0, Number(e.target.value) || 0) } as Partial<AlertPrefs>)}
+          className="w-24 rounded-md border border-white/10 bg-dark-800 px-2 py-1 text-sm text-content-1 focus:border-accent-primary focus:outline-none" />
+      </span>
+    </label>
+  );
+
+  return (
+    <div className="space-y-5" data-testid="alerts-tab">
+      <Section index={0}>
+        <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-heading">Desktop notifications</h3>
+        {perm === "granted" ? (
+          <p className="text-sm text-accent-green" data-testid="notify-status">
+            ✓ Enabled — alerts appear as OS notifications.
+          </p>
+        ) : perm === "unsupported" ? (
+          <p className="text-sm text-content-3" data-testid="notify-status">
+            Not available here — alerts fall back to in-app toasts.
+          </p>
+        ) : (
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm text-content-3" data-testid="notify-status">
+              {perm === "denied"
+                ? "Blocked by the system — alerts fall back to in-app toasts."
+                : "Alerts currently show as in-app toasts."}
+            </p>
+            {perm === "default" && (
+              <Button size="xs" variant="secondary" data-testid="notify-enable"
+                onClick={async () => setPerm(await requestNotifyPermission())}>
+                Enable desktop notifications
+              </Button>
+            )}
+          </div>
+        )}
+      </Section>
+
+      <Section index={1}>
+        <h3 className="mb-1 text-xs font-medium uppercase tracking-wide text-heading">P&L threshold</h3>
+        <AlertCheck checked={prefs.pnlEnabled} testid="alert-pnl-enabled"
+          onChange={(v) => update({ pnlEnabled: v })}>
+          Alert on today&apos;s realized P&L
+        </AlertCheck>
+        {prefs.pnlEnabled && (
+          <div className="ml-6 flex flex-wrap gap-4 pt-1">
+            {numField("Gain reaches +", "pnlUp")}
+            {numField("Loss reaches −", "pnlDown")}
+          </div>
+        )}
+      </Section>
+
+      <Section index={2}>
+        <h3 className="mb-1 text-xs font-medium uppercase tracking-wide text-heading">Position expiry</h3>
+        <AlertCheck checked={prefs.expiryEnabled} testid="alert-expiry-enabled"
+          onChange={(v) => update({ expiryEnabled: v })}>
+          Alert on upcoming expirations
+        </AlertCheck>
+        {prefs.expiryEnabled && (
+          <div className="ml-6 pt-1">
+            <AlertCheck checked={prefs.expiry7d} onChange={(v) => update({ expiry7d: v })}>
+              Within 7 days of expiration
+            </AlertCheck>
+            <AlertCheck checked={prefs.expiryDay} onChange={(v) => update({ expiryDay: v })}>
+              On expiration day
+            </AlertCheck>
+          </div>
+        )}
+      </Section>
+
+      <Section index={3}>
+        <h3 className="mb-1 text-xs font-medium uppercase tracking-wide text-heading">Strategy score</h3>
+        <AlertCheck checked={prefs.scoreEnabled} testid="alert-score-enabled"
+          onChange={(v) => update({ scoreEnabled: v })}>
+          Alert when the Asset Screener holds a high IV rank
+        </AlertCheck>
+        {prefs.scoreEnabled && (
+          <div className="ml-6 pt-1">
+            {numField("IV rank at least", "scoreIvRank", "")}
+          </div>
+        )}
+      </Section>
+
+      <Section index={4}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-medium uppercase tracking-wide text-heading">
+            History{history.length > 0 ? ` (${history.length})` : ""}
+          </h3>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="xs" onClick={() => setShowHistory((v) => !v)}
+              disabled={history.length === 0} data-testid="alert-history-toggle">
+              {showHistory ? "Hide" : "Show"}
+            </Button>
+            <Button variant="ghost" size="xs" disabled={history.length === 0}
+              onClick={() => { clearAlertHistory(); setHistory([]); }}>
+              Clear
+            </Button>
+          </div>
+        </div>
+        {showHistory && history.length > 0 && (
+          <div className="mt-2 max-h-56 space-y-1 overflow-y-auto" data-testid="alert-history">
+            {history.map((h) => (
+              <div key={h.key + h.at} className="rounded-md bg-dark-700/50 px-3 py-2 text-xs">
+                <div className="flex justify-between gap-2">
+                  <span className="font-medium text-content-1">{h.title}</span>
+                  <span className="shrink-0 text-content-3">{h.at.slice(0, 16).replace("T", " ")}</span>
+                </div>
+                <div className="text-content-3">{h.body}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        {history.length === 0 && (
+          <p className="mt-1 text-xs text-content-3">No alerts fired yet.</p>
+        )}
+      </Section>
+    </div>
+  );
+}
+
 // v1.7.2 Account tab: profile facts, password change, backup/restore and
 // the two destructive actions (clear data, delete account). Destructive
 // flows confirm inline — no nested modals inside Settings.
@@ -1074,6 +1233,7 @@ export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           {tab === "scoring" && <ScoringTab />}
           {tab === "complexity" && <ComplexityTab />}
           {tab === "templates" && <TemplatesTab />}
+          {tab === "alerts" && <AlertsTab />}
           {tab === "account" && <AccountTab />}
         </ViewTransition>
         <p className="mt-4 flex items-baseline justify-between text-xs text-content-3">
