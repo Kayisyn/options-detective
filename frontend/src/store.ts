@@ -210,6 +210,9 @@ interface AppState {
   accounts: Account[];
   authReady: boolean;  // boot check finished (splash → gate/app)
   authBusy: boolean;
+  // v1.7.1: true only in the session where the account was just created —
+  // the onboarding tutorial shows once, for fresh accounts only
+  freshAccount: boolean;
 
   savedTrades: JournalTrade[];
   trashedTrades: JournalTrade[]; // v1.5.1 soft-deleted positions
@@ -369,6 +372,7 @@ export const useStore = create<AppState>((set, get) => ({
   accounts: [],
   authReady: false,
   authBusy: false,
+  freshAccount: false,
 
   savedTrades: [],
   trashedTrades: [],
@@ -618,7 +622,7 @@ export const useStore = create<AppState>((set, get) => ({
     set({ authBusy: true });
     try {
       const { account } = await api.authLogin({ username, password, rememberMe });
-      set({ account, authBusy: false, error: null });
+      set({ account, freshAccount: false, authBusy: false, error: null });
     } catch (err) {
       set({ authBusy: false });
       throw err;
@@ -632,7 +636,7 @@ export const useStore = create<AppState>((set, get) => ({
       // no email verification in the local model — sign straight in
       const { account } = await api.authLogin({ username, password, rememberMe });
       const { accounts } = await api.authState();
-      set({ account, accounts, authBusy: false, error: null });
+      set({ account, accounts, freshAccount: true, authBusy: false, error: null });
     } catch (err) {
       set({ authBusy: false });
       throw err;
@@ -649,6 +653,7 @@ export const useStore = create<AppState>((set, get) => ({
     // the next account that signs in
     set({
       account: null,
+      freshAccount: false,
       view: "home",
       savedTrades: [], trashedTrades: [],
       paper: null, paperCurve: [],

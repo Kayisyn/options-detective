@@ -8,7 +8,7 @@ import Journal from "./components/Journal";
 import PaperTrading from "./components/PaperTrading";
 import Recommender from "./components/Recommender";
 import HelpDrawer from "./components/shared/HelpDrawer";
-import Onboarding, { ONBOARDED_KEY } from "./components/shared/Onboarding";
+import Onboarding, { hasCompletedOnboarding } from "./components/shared/Onboarding";
 import ParticleField from "./components/shared/ParticleField";
 import SettingsPanel from "./components/shared/SettingsPanel";
 import { RightSidebar } from "./components/shared/Sidebars";
@@ -63,13 +63,13 @@ function MainApp() {
   const account = useStore((s) => s.account);
   const logout = useStore((s) => s.logout);
   const { expertMode, toggleMode } = useMode();
-  const [onboardingOpen, setOnboardingOpen] = useState(() => {
-    try {
-      return localStorage.getItem(ONBOARDED_KEY) === null;
-    } catch {
-      return false;
-    }
-  });
+  // v1.7.1: the tutorial opens only in the session where the account was
+  // created (never for returning sign-ins), and only until that account
+  // completes or skips it once. Replayable from Help & Glossary.
+  const freshAccount = useStore((s) => s.freshAccount);
+  const [onboardingOpen, setOnboardingOpen] = useState(
+    () => freshAccount && account !== null && !hasCompletedOnboarding(account.username),
+  );
 
   // Keyboard shortcuts: Ctrl+K jumps to the Screener, Ctrl+Shift+?
   // reopens the walkthrough.
