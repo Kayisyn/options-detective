@@ -7,7 +7,9 @@ import {
   normalizeWeights, weightsEqual, weightsSum,
 } from "../../lib/scoring";
 import { strategyLabel } from "../../lib/format";
+import { api, type AccountBackup } from "../../lib/api";
 import Button from "../ui/Button";
+import { FormInput } from "../ui/Input";
 import Modal from "../ui/Modal";
 import ViewTransition from "./ViewTransition";
 import { SECTION_LABELS } from "./Sidebars";
@@ -24,7 +26,7 @@ interface SettingsPanelProps {
 // sections inside each tab stagger in 50ms apart. Selection applies
 // instantly and persists.
 
-type TabId = "appearance" | "customization" | "sidebar" | "currency" | "scoring" | "complexity";
+type TabId = "appearance" | "customization" | "sidebar" | "currency" | "scoring" | "complexity" | "account";
 
 const SETTINGS_TABS: Array<{ id: TabId; label: string }> = [
   { id: "appearance", label: "Appearance" },
@@ -33,6 +35,7 @@ const SETTINGS_TABS: Array<{ id: TabId; label: string }> = [
   { id: "currency", label: "Currency" },
   { id: "scoring", label: "Scoring weights" },
   { id: "complexity", label: "Complexity" },
+  { id: "account", label: "Account" },
 ];
 
 // staggered section reveal inside a freshly entered tab
@@ -558,6 +561,328 @@ function ComplexityTab() {
   );
 }
 
+// v1.7.2 Account tab: profile facts, password change, backup/restore and
+// the two destructive actions (clear data, delete account). Destructive
+// flows confirm inline — no nested modals inside Settings.
+
+const PW_RULES: Array<[string, (pw: string) => boolean]> = [
+  ["8+ characters", (pw) => pw.length >= 8],
+  ["a lowercase letter", (pw) => /[a-z]/.test(pw)],
+  ["an uppercase letter", (pw) => /[A-Z]/.test(pw)],
+  ["a number", (pw) => /[0-9]/.test(pw)],
+];
+
+// every persisted preference rides an od-prefixed localStorage key
+function snapshotPrefs(): Record<string, string> {
+  const prefs: Record<string, string> = {};
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith("od.") || key.startsWith("od-"))) {
+        prefs[key] = localStorage.getItem(key) ?? "";
+      }
+    }
+  } catch {
+    // private mode: back up server data only
+  }
+  return prefs;
+}
+
+function restorePrefs(prefs: Record<string, string> | undefined) {
+  if (!prefs) return;
+  try {
+    for (const [key, value] of Object.entries(prefs)) {
+      if (key.startsWith("od.") || key.startsWith("od-")) localStorage.setItem(key, value);
+    }
+  } catch {
+    // private mode: data restored, prefs stay as-is
+  }
+}
+
+function AccountTab() {
+  const account = useStore((s) => s.account);
+  const logout = useStore((s) => s.logout);
+  const bootAuth = useStore((s) => s.bootAuth);
+  const showToast = useStore((s) => s.showToast);
+
+  // security
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwDone, setPwDone] = useState(false);
+  const [pwBusy, setPwBusy] = useState(false);
+
+  // data management
+  const [pendingImport, setPendingImport] = useState<AccountBackup | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  // account actions
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deletePw, setDeletePw] = useState("");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  if (!account) return null;
+  const created = account.createdAt.slice(0, 10);
+  const lastLogin = account.lastLoginAt ? account.lastLoginAt.slice(0, 10) : "—";
+  const memberDays = Math.max(0, Math.floor((Date.now() - Date.parse(account.createdAt)) / 86_400_000));
+
+  async function onChangePassword() {
+    setPwError(null);
+    if (newPw !== confirmPw) {
+      setPwError("New passwords don't match");
+      return;
+    }
+    if (PW_RULES.some(([, ok]) => !ok(newPw))) {
+      setPwError("New password doesn't meet the requirements below");
+      return;
+    }
+    setPwBusy(true);
+    try {
+      await api.authChangePassword({ currentPassword: currentPw, newPassword: newPw });
+      setPwDone(true);
+      setCurrentPw(""); setNewPw(""); setConfirmPw("");
+      // spec: announce, then end the session so the new password is exercised
+      setTimeout(() => logout(), 10_000);
+    } catch (err) {
+      setPwError(err instanceof Error ? err.message : "Password change failed");
+    } finally {
+      setPwBusy(false);
+    }
+  }
+
+  async function onExport() {
+    setBusy(true);
+    try {
+      const backup = await api.accountExport();
+      backup.prefs = snapshotPrefs();
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `option-obelisk-backup-${account?.username}-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("✓ Backup downloaded");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function onPickImport(file: File | undefined) {
+    setImportError(null);
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result)) as AccountBackup;
+        if (parsed.app !== "option-obelisk" || typeof parsed.format !== "number") {
+          throw new Error("That file isn't an Option Obelisk backup");
+        }
+        setPendingImport(parsed);
+      } catch (err) {
+        setImportError(err instanceof Error ? err.message : "Unreadable backup file");
+      }
+    };
+    reader.onerror = () => setImportError("Could not read that file");
+    reader.readAsText(file);
+  }
+
+  async function onConfirmImport() {
+    if (!pendingImport) return;
+    setBusy(true);
+    try {
+      await api.accountImport(pendingImport);
+      restorePrefs(pendingImport.prefs);
+      showToast("✓ Data imported — reloading…");
+      setTimeout(() => window.location.reload(), 800);
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Import failed");
+      setPendingImport(null);
+      setBusy(false);
+    }
+  }
+
+  async function onConfirmClear() {
+    setBusy(true);
+    try {
+      await api.accountClear();
+      showToast("✓ All data cleared — reloading…");
+      setTimeout(() => window.location.reload(), 800);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Clear failed");
+      setBusy(false);
+      setConfirmClear(false);
+    }
+  }
+
+  async function onConfirmDelete() {
+    setDeleteError(null);
+    setBusy(true);
+    try {
+      await api.authDeleteAccount({ password: deletePw });
+      // the account is gone server-side; logout() clears the per-account
+      // slices, then bootAuth() refetches the (now shorter) account list so
+      // the sign-in gate doesn't offer a chip for the deleted account
+      await logout();
+      await bootAuth();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Delete failed");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6" data-testid="account-tab">
+      <Section index={0}>
+        <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-heading">Profile</h3>
+        <div className="rounded-lg bg-dark-700/50 p-3 text-sm">
+          <div className="flex justify-between py-1">
+            <span className="text-content-3">Username</span>
+            <span className="font-medium text-content-1" data-testid="account-username">{account.username}</span>
+          </div>
+          <div className="flex justify-between py-1">
+            <span className="text-content-3">Account created</span>
+            <span className="text-content-2">{created} ({memberDays} {memberDays === 1 ? "day" : "days"} ago)</span>
+          </div>
+          <div className="flex justify-between py-1">
+            <span className="text-content-3">Last sign-in</span>
+            <span className="text-content-2">{lastLogin}</span>
+          </div>
+        </div>
+      </Section>
+
+      <Section index={1}>
+        <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-heading">Security</h3>
+        {pwDone ? (
+          <div className="rounded-lg border border-accent-green/40 bg-accent-green/10 p-3 text-sm text-accent-green" data-testid="password-updated">
+            Password updated. You&apos;ll be signed out in 10 seconds — sign back
+            in with the new password.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <FormInput label="Current password" type="password" value={currentPw}
+              onChange={(e) => setCurrentPw(e.target.value)} data-testid="pw-current" />
+            <FormInput label="New password" type="password" value={newPw}
+              onChange={(e) => setNewPw(e.target.value)} data-testid="pw-new" />
+            <FormInput label="Confirm new password" type="password" value={confirmPw}
+              onChange={(e) => setConfirmPw(e.target.value)} data-testid="pw-confirm"
+              error={pwError ?? undefined} />
+            <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
+              {PW_RULES.map(([label, ok]) => (
+                <li key={label} className={ok(newPw) ? "text-accent-green" : "text-content-3"}>
+                  {ok(newPw) ? "✓" : "·"} {label}
+                </li>
+              ))}
+            </ul>
+            <Button size="sm" onClick={onChangePassword} data-testid="pw-submit"
+              disabled={pwBusy || !currentPw || !newPw || !confirmPw}>
+              {pwBusy ? "Updating…" : "Update password"}
+            </Button>
+          </div>
+        )}
+      </Section>
+
+      <Section index={2}>
+        <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-heading">Data management</h3>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" size="sm" onClick={onExport} disabled={busy} data-testid="export-data">
+            Export All Data
+          </Button>
+          <Button variant="secondary" size="sm" disabled={busy} data-testid="import-data"
+            onClick={() => fileRef.current?.click()}>
+            Import Data
+          </Button>
+          <input ref={fileRef} type="file" accept=".json,application/json" className="hidden"
+            data-testid="import-file"
+            onChange={(e) => { onPickImport(e.target.files?.[0]); e.target.value = ""; }} />
+          <Button variant="ghost" size="sm" disabled={busy} data-testid="clear-data"
+            className="text-accent-red hover:bg-accent-red/10"
+            onClick={() => setConfirmClear(true)}>
+            Clear All Data
+          </Button>
+        </div>
+        <p className="mt-2 text-xs text-content-3">
+          The backup JSON holds your positions, sandbox account, asset
+          watchlist and preferences. Importing overwrites current data.
+        </p>
+        {importError && (
+          <p className="mt-2 text-xs text-accent-red" data-testid="import-error">{importError}</p>
+        )}
+        {pendingImport && (
+          <div className="mt-2 rounded-lg border border-accent-orange/40 bg-accent-orange/10 p-3 text-sm" data-testid="import-confirm">
+            <p className="text-content-1">
+              This will overwrite existing data with the backup
+              {pendingImport.exportedAt ? ` from ${pendingImport.exportedAt.slice(0, 10)}` : ""}. Continue?
+            </p>
+            <div className="mt-2 flex gap-2">
+              <Button size="xs" onClick={onConfirmImport} disabled={busy} data-testid="import-confirm-yes">
+                {busy ? "Importing…" : "Import and overwrite"}
+              </Button>
+              <Button variant="ghost" size="xs" onClick={() => setPendingImport(null)} disabled={busy}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+        {confirmClear && (
+          <div className="mt-2 rounded-lg border border-accent-red/40 bg-accent-red/10 p-3 text-sm" data-testid="clear-confirm">
+            <p className="text-content-1">
+              This cannot be undone. Delete all positions, sandbox history and
+              watchlist data for <b>{account.username}</b>?
+            </p>
+            <div className="mt-2 flex gap-2">
+              <Button variant="destructive" size="xs" onClick={onConfirmClear} disabled={busy} data-testid="clear-confirm-yes">
+                {busy ? "Clearing…" : "Delete everything"}
+              </Button>
+              <Button variant="ghost" size="xs" onClick={() => setConfirmClear(false)} disabled={busy}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </Section>
+
+      <Section index={3}>
+        <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-heading">Account actions</h3>
+        {!confirmDelete ? (
+          <Button variant="ghost" size="sm" data-testid="delete-account"
+            className="text-accent-red hover:bg-accent-red/10"
+            onClick={() => setConfirmDelete(true)}>
+            Delete Account
+          </Button>
+        ) : (
+          <div className="rounded-lg border border-accent-red/40 bg-accent-red/10 p-3 text-sm" data-testid="delete-confirm">
+            <p className="font-medium text-content-1">Permanently delete this account?</p>
+            <p className="mt-1 text-content-2">
+              All positions, trades and settings for <b>{account.username}</b> will
+              be erased. This cannot be undone. Enter your password to confirm.
+            </p>
+            <FormInput label="Password" type="password" value={deletePw}
+              onChange={(e) => setDeletePw(e.target.value)} data-testid="delete-password"
+              error={deleteError ?? undefined} containerClassName="mt-2" />
+            <div className="mt-2 flex gap-2">
+              <Button variant="destructive" size="xs" onClick={onConfirmDelete}
+                disabled={busy || !deletePw} data-testid="delete-confirm-yes">
+                {busy ? "Deleting…" : "Delete Account"}
+              </Button>
+              <Button variant="ghost" size="xs" disabled={busy}
+                onClick={() => { setConfirmDelete(false); setDeletePw(""); setDeleteError(null); }}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </Section>
+    </div>
+  );
+}
+
 export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const showToast = useStore((s) => s.showToast);
   const [tab, setTab] = useState<TabId>("appearance");
@@ -625,6 +950,7 @@ export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           {tab === "currency" && <CurrencyTab />}
           {tab === "scoring" && <ScoringTab />}
           {tab === "complexity" && <ComplexityTab />}
+          {tab === "account" && <AccountTab />}
         </ViewTransition>
         <p className="mt-4 flex items-baseline justify-between text-xs text-content-3">
           <span>Settings apply instantly and persist on this machine.</span>

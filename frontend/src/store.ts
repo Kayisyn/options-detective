@@ -18,7 +18,7 @@ import type {
   Recommendation, ScreenParams, ScreenResult,
 } from "./types";
 
-export type View = "home" | "detector" | "calculator" | "recommender" | "journal" | "paper" | "etf" | "ics";
+export type View = "home" | "detector" | "calculator" | "recommender" | "journal" | "paper" | "etf" | "ics" | "analytics";
 
 const LAST_SCREEN_KEY = "od.lastScreen";
 const WEIGHTS_KEY = "od.weights.v1";

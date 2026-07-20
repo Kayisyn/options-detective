@@ -121,3 +121,40 @@ test("per-account isolation: trades + sandbox follow the active account", () => 
   session.clear();
   assert.throws(() => tradeStore.list(), /no active account/);
 });
+
+// v1.7.2 account settings ---------------------------------------------------
+
+test("changePassword verifies the current password and applies strength rules", () => {
+  const acct = accounts.register({ username: "rekey", password: "OldPass99" });
+  // wrong current password: rejected, old password still works
+  assert.throws(() => accounts.changePassword(acct.id, "WrongOld1", "NewPass11"),
+    /Current password is incorrect/);
+  assert.ok(accounts.authenticate({ username: "rekey", password: "OldPass99" }));
+  // weak new password: rejected by the same rules as register
+  assert.throws(() => accounts.changePassword(acct.id, "OldPass99", "weak"), /at least 8/);
+  // success: new password signs in, old one doesn't, remember token is dead
+  const token = accounts.issueRememberToken(acct.id);
+  accounts.changePassword(acct.id, "OldPass99", "NewPass11");
+  assert.ok(accounts.authenticate({ username: "rekey", password: "NewPass11" }));
+  assert.throws(() => accounts.authenticate({ username: "rekey", password: "OldPass99" }),
+    /Incorrect username or password/);
+  assert.equal(accounts.resolveRememberToken({ id: acct.id, token }), null);
+});
+
+test("deleteAccount is password-gated, removes the registry entry and the data dir", () => {
+  const acct = accounts.register({ username: "goner", password: "DeleteMe1" });
+  session.setActive(acct.id);
+  tradeStore.create({ symbol: "SPY", strategy: "covered_call", entryPrice: 2, entryQty: 1 });
+  const dir = path.join(ROOT, "accounts", acct.id);
+  assert.ok(fs.existsSync(dir));
+
+  assert.throws(() => accounts.deleteAccount(acct.id, "WrongPass1"), /Password is incorrect/);
+  assert.ok(accounts.list().some((a) => a.username === "goner"));
+
+  accounts.deleteAccount(acct.id, "DeleteMe1");
+  assert.equal(accounts.list().some((a) => a.username === "goner"), false);
+  assert.equal(fs.existsSync(dir), false);
+  assert.throws(() => accounts.authenticate({ username: "goner", password: "DeleteMe1" }),
+    /Incorrect username or password/);
+  session.clear();
+});

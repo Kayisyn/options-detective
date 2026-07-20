@@ -67,6 +67,11 @@ function registerIpc() {
   ipcMain.handle("api:auth:register", (_event, body) => forward("/auth/register", body));
   ipcMain.handle("api:auth:login", (_event, body) => forward("/auth/login", body));
   ipcMain.handle("api:auth:logout", () => forward("/auth/logout", {}));
+  ipcMain.handle("api:auth:change-password", (_event, body) => forward("/auth/change-password", body));
+  ipcMain.handle("api:auth:delete-account", (_event, body) => forward("/auth/delete-account", body));
+  ipcMain.handle("api:account:export", () => forward("/account/export"));
+  ipcMain.handle("api:account:import", (_event, body) => forward("/account/import", body));
+  ipcMain.handle("api:account:clear", () => forward("/account/clear", {}));
   ipcMain.handle("api:detect", (_event, body) => forward("/detect", body));
   ipcMain.handle("api:calculate", (_event, body) => forward("/calculate", body));
   ipcMain.handle("api:recommend", (_event, body) => forward("/recommend", body));

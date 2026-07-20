@@ -92,6 +92,28 @@ router.post("/logout", (_req, res) => send(res, () => {
   return { ok: true };
 }));
 
+// v1.7.2 account settings: re-key the signed-in account. The remember token
+// is invalidated server-side, so clear the boot file too.
+router.post("/change-password", (req, res) => send(res, () => {
+  const id = session.getActive();
+  if (!id) throw new accounts.AuthError("not signed in", 401);
+  const { currentPassword, newPassword } = req.body || {};
+  accounts.changePassword(id, currentPassword, newPassword);
+  clearRememberFile();
+  return { ok: true };
+}));
+
+// v1.7.2 account settings: permanently delete the signed-in account and its
+// data directory. Password-confirmed; ends the session.
+router.post("/delete-account", (req, res) => send(res, () => {
+  const id = session.getActive();
+  if (!id) throw new accounts.AuthError("not signed in", 401);
+  accounts.deleteAccount(id, (req.body || {}).password);
+  clearRememberFile();
+  session.clear();
+  return { ok: true, accounts: accounts.list() };
+}));
+
 // Middleware for per-account storage routes: 401 unless signed in.
 function requireAccount(req, res, next) {
   if (!session.getActive()) return res.status(401).json({ error: "not signed in" });

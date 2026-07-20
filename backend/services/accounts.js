@@ -213,10 +213,48 @@ function clearRememberToken(id) {
   }
 }
 
+// v1.7.2 account settings ---------------------------------------------------
+
+// Re-key the account. Requires the current password (401 on mismatch — same
+// status as a failed login) and applies the same strength rules as register.
+// Any remember token dies with the old password.
+function changePassword(id, currentPassword, newPassword) {
+  const state = load();
+  const account = state.accounts.find((a) => a.id === id);
+  if (!account) throw new AuthError("no such account", 404);
+  if (!verifyPassword(currentPassword, account.passwordHash)) {
+    throw new AuthError("Current password is incorrect", 401);
+  }
+  validatePassword(newPassword);
+  account.passwordHash = hashPassword(newPassword);
+  account.rememberHash = null;
+  persist(state);
+  return publicView(account);
+}
+
+// Remove the account from the registry and erase its data directory.
+// Requires the password — deleting every trade is not a two-click accident.
+function deleteAccount(id, password) {
+  const state = load();
+  const idx = state.accounts.findIndex((a) => a.id === id);
+  if (idx === -1) throw new AuthError("no such account", 404);
+  if (!verifyPassword(password, state.accounts[idx].passwordHash)) {
+    throw new AuthError("Password is incorrect", 401);
+  }
+  state.accounts.splice(idx, 1);
+  persist(state);
+  try {
+    fs.rmSync(accountDir(id), { recursive: true, force: true });
+  } catch {
+    // registry entry is gone either way; orphaned files are unreachable
+  }
+}
+
 module.exports = {
   AuthError,
   list, count, register, authenticate,
   issueRememberToken, resolveRememberToken, clearRememberToken,
+  changePassword, deleteAccount,
   // exposed for tests
   hashPassword, verifyPassword, validatePassword, validateUsername,
   REGISTRY,

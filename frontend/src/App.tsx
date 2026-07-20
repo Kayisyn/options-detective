@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Analytics from "./components/Analytics";
 import Calculator from "./components/Calculator";
 import Detector from "./components/Detector";
 import EtfScreener from "./components/EtfScreener";
@@ -27,6 +28,7 @@ const TABS: Array<{ id: View; label: string; hint: string }> = [
   { id: "calculator", label: "Analyzer", hint: "Analyze the trade math" },
   { id: "recommender", label: "Recommendations", hint: "Optimal strategies, compared and exportable" },
   { id: "journal", label: "Position Log", hint: "Your saved positions" },
+  { id: "analytics", label: "Analytics", hint: "Realized performance — equity curve, win rate, per-strategy stats" },
   { id: "paper", label: "Sandbox", hint: "Risk-free simulator with a practice budget" },
   { id: "etf", label: "Assets", hint: "Asset Screener — discover ETF option-selling candidates" },
 ];
@@ -113,6 +115,7 @@ function MainApp() {
     calculator: selected !== null,
     recommender: (screenResult?.candidates.length ?? 0) > 0,
     journal: true,
+    analytics: true,
     paper: true,
     etf: true,
     ics: true, // reached from the Asset Screener, not the nav
@@ -217,6 +220,7 @@ function MainApp() {
               {view === "calculator" && <Calculator />}
               {view === "recommender" && <Recommender />}
               {view === "journal" && <Journal />}
+              {view === "analytics" && <Analytics />}
               {view === "paper" && <PaperTrading />}
               {view === "etf" && <EtfScreener />}
               {view === "ics" && <IndexComponentScreener />}

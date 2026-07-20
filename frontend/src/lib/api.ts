@@ -13,6 +13,11 @@ type Bridge = {
   authRegister?: (body: unknown) => Promise<{ account: Account }>;
   authLogin?: (body: unknown) => Promise<{ account: Account }>;
   authLogout?: () => Promise<{ ok: boolean }>;
+  authChangePassword?: (body: unknown) => Promise<{ ok: boolean }>;
+  authDeleteAccount?: (body: unknown) => Promise<{ ok: boolean; accounts: Account[] }>;
+  accountExport?: () => Promise<AccountBackup>;
+  accountImport?: (body: unknown) => Promise<{ ok: boolean; restored: string[]; trades: number }>;
+  accountClear?: () => Promise<{ ok: boolean }>;
   detect?: (body: unknown) => Promise<ScreenResult>;
   calculate?: (body: unknown) => Promise<CalcResult>;
   recommend?: (body: unknown) => Promise<Recommendation>;
@@ -70,6 +75,16 @@ export interface AuthState {
   accounts: Account[];
 }
 
+// v1.7.2 account backup: data files pass through verbatim; prefs (theme,
+// currency, columns…) are added client-side from localStorage at export.
+export interface AccountBackup {
+  app: string;
+  format: number;
+  exportedAt: string;
+  data: { trades: unknown; paper: unknown; etf: unknown };
+  prefs?: Record<string, string>;
+}
+
 function bridge(): Bridge | null {
   return (window as { optionsDetective?: Bridge }).optionsDetective ?? null;
 }
@@ -108,6 +123,22 @@ export const api = {
   },
   authLogout(): Promise<{ ok: boolean }> {
     return bridge()?.authLogout?.() ?? post("/auth/logout", {});
+  },
+  // v1.7.2 account settings
+  authChangePassword(body: { currentPassword: string; newPassword: string }): Promise<{ ok: boolean }> {
+    return bridge()?.authChangePassword?.(body) ?? post("/auth/change-password", body);
+  },
+  authDeleteAccount(body: { password: string }): Promise<{ ok: boolean; accounts: Account[] }> {
+    return bridge()?.authDeleteAccount?.(body) ?? post("/auth/delete-account", body);
+  },
+  accountExport(): Promise<AccountBackup> {
+    return bridge()?.accountExport?.() ?? request("GET", "/account/export");
+  },
+  accountImport(body: AccountBackup): Promise<{ ok: boolean; restored: string[]; trades: number }> {
+    return bridge()?.accountImport?.(body) ?? post("/account/import", body);
+  },
+  accountClear(): Promise<{ ok: boolean }> {
+    return bridge()?.accountClear?.() ?? post("/account/clear", {});
   },
   detect(body: unknown): Promise<ScreenResult> {
     return bridge()?.detect?.(body) ?? post<ScreenResult>("/detect", body);

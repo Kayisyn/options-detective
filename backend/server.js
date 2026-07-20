@@ -11,11 +11,14 @@ const etfRouter = require("./routes/etf");
 const screenerRouter = require("./routes/screener");
 const marketRouter = require("./routes/market");
 const { router: authRouter, requireAccount } = require("./routes/auth");
+const accountRouter = require("./routes/account");
 const { callEngine, engineClient } = require("./services/mathEngine");
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: "1mb" }));
+// 10mb: account backups (v1.7.2 import) carry every trade incl. candidate
+// snapshots — far beyond the old 1mb API-payload ceiling
+app.use(express.json({ limit: "10mb" }));
 
 // Proves the whole pipeline: Express up + Python math engine reachable.
 app.get("/health", async (_req, res) => {
@@ -47,6 +50,7 @@ app.use("/journal", requireAccount, journalRouter);
 app.use("/trades", requireAccount, journalRouter); // pre-v1.1 alias
 app.use("/paper", requireAccount, paperRouter);
 app.use("/etf-screener", requireAccount, etfRouter);
+app.use("/account", requireAccount, accountRouter); // v1.7.2 backup/restore
 app.use("/screener", screenerRouter);
 app.use("/market", marketRouter);
 
