@@ -23,13 +23,32 @@ machine — relocate to the real vault path if one exists elsewhere.)
 
 ---
 
-*Note (Fable, 2026-07-19): version discrepancy RESOLVED per
-MASTER-BUILD-DIRECTIVE Phase 0 — the release originally shipped in-app as
-v1.9.0 (commits d35ed27…d602491) was renumbered to **v1.7.0** to match the
-roadmap. All package.json versions and source comments now say v1.7.0; the
-Settings panel footer displays the app version. The pre-launch suite
-(v1.7.1 onboarding → v1.9.2 premium-display fix) is being built on branch
-`feature/pre-launch-suite`.
-Premium-display bug confirmed in code: `Journal.tsx` cards render the
-per-share entry ("$2.50 × 2") but never the total dollar premium
-(entryPrice × qty × multiplier) — fix scheduled as v1.9.2 (Phase 8).*
+## Pre-Launch Suite Status (v1.9.2 Complete — 2026-07-20)
+
+MASTER-BUILD-DIRECTIVE executed end-to-end on branch
+`feature/pre-launch-suite`:
+
+- **Phase 0** `96ef44a` — renumbered v1.9.0 → v1.7.0 (versions, comments,
+  Settings-footer version display, isolated dev stack backend-alt/3002 +
+  frontend-alt/5174 `--mode isolated`)
+- **v1.7.1** `ffe035f` — onboarding: 4-step tutorial + ready screen,
+  per-account `onboardingComplete-<username>`, fresh accounts only
+- **v1.7.2** `b7e5d69` — Analytics view (overview/equity curve/metrics/
+  by-strategy, range + scope) + Settings → Account (password change,
+  export/import/clear, delete account); `/account` + auth routes
+- **v1.8.0** `27199cd` — CSV column picker (22 cols, %gain), watchlist
+  CSV, backup schema carries account identity, 150-trade round-trip test
+- **v1.8.1** `a7e6caa` — strategy templates (save/load/manage/file
+  export-import, `strategies:<username>`)
+- **v1.8.2** `9e4ecab` — advanced analytics (Sharpe/Sortino/Calmar,
+  drawdown chart, expectancy/recovery, MAE/MFE scatter)
+- **v1.9.0** `e4bec96` — alerts (P&L/expiry/IV-rank, OS notification +
+  toast fallback, dedup ledger, 50-entry history, Settings → Alerts)
+- **v1.9.1** `7a7542b` — ⋮ menu + Feedback & Bugs (pre-filled GitHub
+  issue, NO embedded token by design, offline queue)
+- **v1.9.2** `9cb50a2` — premium display fixed: cards show
+  collected/paid total (entryPrice × qty × multiplier)
+
+126/126 backend tests; every phase live-verified. Published as tag
+v1.9.2 (the directive's "v1.7.0" publish label was shorthand — the tag
+matches the shipped app version).*
