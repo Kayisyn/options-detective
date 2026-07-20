@@ -10,6 +10,7 @@ import { Badge, Card, MetricBox, PctBadge } from "./ui/Card";
 import { accountImpactPct, pctReturn } from "../lib/journalStats";
 import { FormInput } from "./ui/Input";
 import { CloseTradeModal } from "./Journal";
+import PremiumTotal from "./ui/PremiumTotal";
 import { SandboxCustomize, SandboxHoldings } from "./shared/SandboxCustomize";
 import { DualValue } from "../lib/currency";
 import type { EquityPoint, JournalTrade } from "../types";
@@ -253,6 +254,7 @@ export default function PaperTrading() {
                       <Badge variant={t.side === "debit" ? "blue" : "orange"}>{t.side}</Badge>
                       <span className="font-mono text-sm text-content-2">
                         ${t.entryPrice.toFixed(2)} × {t.entryQty}
+                        {" "}<PremiumTotal trade={t} />
                         {t.lastMark?.mark != null && (
                           <span title={`Current theoretical value per share (marked ${t.lastMark.at.slice(11, 16)} UTC)`}>
                             <span className="text-content-3"> → </span>

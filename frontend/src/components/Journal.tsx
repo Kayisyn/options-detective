@@ -13,6 +13,7 @@ import Button from "./ui/Button";
 import { Badge, Card, MetricBox, PctBadge } from "./ui/Card";
 import { FormInput, FormSelect } from "./ui/Input";
 import Modal from "./ui/Modal";
+import PremiumTotal, { premiumTotal } from "./ui/PremiumTotal";
 import type { CloseTradeInput, JournalTrade, NewTradeInput, TradeSide } from "../types";
 
 // Position Log view (renamed from Journal, v1.4.0): trade logging, live
@@ -259,6 +260,7 @@ export default function Journal() {
                   <span className="font-mono text-sm text-content-2">
                     ${t.entryPrice.toFixed(2)} × {t.entryQty}
                   </span>
+                  <PremiumTotal trade={t} />
                   <span className="text-xs text-content-3">{t.entryDate.slice(0, 10)}</span>
                   {t.tags.map((tag) => <Badge key={tag} variant="neutral">{tag}</Badge>)}
                   <span className="ml-auto flex items-center gap-2">
@@ -687,7 +689,9 @@ export function CloseTradeModal({ trade, onClose, onSubmit }: {
     <Modal open onClose={onClose} testid="close-trade-modal" maxWidth="max-w-md">
       <h2 className="mb-1 text-lg font-semibold">Close {trade.symbol} {strategyLabel(trade.strategy)}</h2>
       <p className="mb-3 text-xs text-content-3">
-        Entered {trade.side} ${trade.entryPrice.toFixed(2)} × {trade.entryQty}.
+        Entered {trade.side} ${trade.entryPrice.toFixed(2)} × {trade.entryQty}{" "}
+        ({trade.side === "credit" ? "premium collected" : "debit paid"}{" "}
+        <b className="text-content-2">{money(premiumTotal(trade))}</b>).
         P&L is computed server-side from your exit price.
       </p>
       <div className="grid grid-cols-2 gap-3">
