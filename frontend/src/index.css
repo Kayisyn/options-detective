@@ -1,0 +1,505 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Option Obelisk theme tokens (v1.4.x).
+   Pure-black obsidian surfaces (no blue tint) + vibrant violet
+   primary. Two themes, selected by a theme-* class on <html>;
+   obsidian is the default (:root with no class, id "dark" so
+   stored preferences keep working). Every surface, text tier and
+   accent rides these variables.
+
+   Accent SLOTS stay semantic: primary = CTAs/highlights/active
+   states, green = profit, red = loss, blue = info, orange =
+   warnings. on-accent = text sitting ON a primary fill (white on
+   violet; black on the B&W theme's white fills).
+
+   Violet contrast discipline: #9733FF is ~4.0:1 on obsidian, so
+   raw primary is reserved for CTA fills (white text on it is
+   4.9:1) and large display numbers. Small violet TEXT uses
+   --od-accent-primary-text (#B266FF, ~5.9:1) to hold WCAG AA.
+   ============================================================ */
+:root,
+:root.theme-dark {
+  --od-dark-900: 10 10 15;    /* #0a0a0f obsidian black */
+  --od-dark-800: 21 21 31;    /* #15151f deep charcoal */
+  --od-dark-700: 37 37 53;    /* #252535 obsidian surface */
+  --od-dark-600: 54 54 76;    /* #36364c borders */
+  --od-dark-500: 76 76 102;   /* #4c4c66 raised borders */
+  --od-text-1: 255 255 255;
+  --od-text-2: 240 240 240;   /* #f0f0f0 white subtle */
+  --od-text-3: 158 158 178;   /* #9e9eb2 tertiary / hints */
+  --od-heading: 158 158 178;  /* section/sidebar headers (= text-3 here;
+                                 the green theme gives it its own hue) */
+  --od-accent-primary: 151 51 255;       /* #9733FF violet */
+  --od-accent-primary-hover: 163 74 255; /* #A34AFF */
+  --od-accent-primary-text: 178 102 255; /* #B266FF AA-safe small text */
+  --od-on-accent: 255 255 255;    /* text on primary fills */
+  --od-accent-blue: 59 130 246;   /* info #3b82f6 */
+  --od-accent-green: 16 185 129;  /* profit #10b981 */
+  --od-accent-red: 239 68 68;     /* loss #ef4444 */
+  --od-accent-orange: 251 191 36; /* warning #fbbf24 */
+  --od-chart-spot: 6 182 212;     /* spot marker #06b6d4 cyan */
+  --od-glass-fill: 15 15 21;      /* rgba(15,15,21,.8) glass base */
+}
+
+/* ============================================================
+   Black & White — finance terminal mode. Pure black canvas,
+   white text, every accent slot collapses to grayscale. Flat
+   surfaces (glass effects disabled below), crisp white borders.
+   Profit reads bright, loss reads dim; the +/- signs carry the
+   semantics. The brief's #555-#777 status grays fail WCAG AA on
+   black, so text-bearing slots are lifted to >= 6:1 while
+   keeping the dim-vs-bright hierarchy.
+   ============================================================ */
+:root.theme-bw {
+  --od-dark-900: 0 0 0;       /* pure black canvas */
+  --od-dark-800: 10 10 10;    /* #0a0a0a flat panels */
+  --od-dark-700: 26 26 26;    /* #1a1a1a inputs / surfaces */
+  --od-dark-600: 51 51 51;    /* #333333 borders (brief) */
+  --od-dark-500: 82 82 82;    /* #525252 raised borders */
+  --od-text-1: 255 255 255;
+  --od-text-2: 235 235 235;
+  --od-text-3: 163 163 163;   /* #a3a3a3, ~8.6:1 on black */
+  --od-heading: 163 163 163;  /* headers stay the tertiary gray */
+  --od-accent-primary: 255 255 255;      /* CTAs/highlights turn white */
+  --od-accent-primary-hover: 224 224 224;
+  --od-accent-primary-text: 255 255 255;
+  --od-on-accent: 0 0 0;          /* black text on white fills */
+  --od-accent-blue: 168 168 168;  /* info    #a8a8a8 ~7.4:1 */
+  --od-accent-green: 235 235 235; /* profit  #ebebeb bright */
+  --od-accent-red: 150 150 150;   /* loss    #969696 ~6.1:1 dim */
+  --od-accent-orange: 200 200 200;/* warning #c8c8c8 */
+  --od-chart-spot: 190 190 190;   /* spot marker, mid gray */
+  --od-glass-fill: 0 0 0;
+}
+
+/* ============================================================
+   Emerald Green — terminal green mode (v1.6.1). Semantic color
+   hierarchy per the green-theme spec: Emerald titles/CTAs, Jade
+   section headers, MINT profit numbers (deliberately distinct
+   from the emerald titles), Sage tertiary text, teal info,
+   pistachio chart "now" marker. Losses stay red — never green.
+   Glass, halos, liquid shimmer, particles and charts all ride
+   these slots, so no component changes are needed beyond the
+   --od-heading hierarchy hook.
+
+   Contrast (on #0a0f0a): emerald #10b981 ~7.5:1, jade #059669
+   ~5.0:1 (12px semibold headers, AA), mint #6ee7b7 ~12:1, sage
+   #78a59a ~6.9:1; dark-on-emerald CTA text ~7.5:1.
+   ============================================================ */
+:root.theme-green {
+  --od-dark-900: 10 15 10;    /* #0a0f0a page background */
+  --od-dark-800: 20 22 20;    /* #141614 deep surfaces */
+  --od-dark-700: 26 32 26;    /* #1a201a cards / inputs */
+  --od-dark-600: 45 58 45;    /* #2d3a2d borders / mid */
+  --od-dark-500: 61 74 61;    /* #3d4a3d raised / hover */
+  --od-text-1: 255 255 255;
+  --od-text-2: 240 240 240;
+  --od-text-3: 120 165 154;   /* Sage #78a59a — tertiary text, hints */
+  --od-heading: 5 150 105;    /* Jade #059669 — section/sidebar headers */
+  --od-accent-primary: 16 185 129;       /* Emerald Bright #10b981 */
+  --od-accent-primary-hover: 52 211 153; /* Emerald Light #34d399 */
+  --od-accent-primary-text: 52 211 153;  /* small emerald text, ~9.9:1 */
+  --od-on-accent: 10 15 10;       /* dark text on emerald fills */
+  --od-accent-blue: 20 184 166;   /* info -> Teal #14b8a6 */
+  --od-accent-green: 110 231 183; /* profit -> MINT #6ee7b7 (≠ titles) */
+  --od-accent-red: 239 68 68;     /* loss stays red #ef4444 */
+  --od-accent-orange: 251 191 36; /* warnings stay amber (never green) */
+  --od-chart-spot: 163 230 53;    /* Pistachio #a3e635 — "now" marker */
+  --od-glass-fill: 15 20 15;      /* rgba(15,20,15,.8) glass base */
+}
+/* Emerald-tinted glass edge (the base rule's white/15 reads gray here) */
+:root.theme-green .card-glass {
+  border-color: rgb(16 185 129 / 0.18);
+}
+
+body {
+  @apply bg-dark-900 font-sans text-content-1 antialiased;
+}
+
+/* Ambient depth layer: two large, very faint accent radials fixed behind
+   the content. This is what the glass cards actually refract — without it
+   backdrop-blur over a flat page is invisible. pointer-events-none + fixed
+   so it never repaints on scroll. Rides the accent token (v1.6.1): violet
+   on obsidian, emerald on green; hidden on B&W. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 600px at 12% -10%, rgb(var(--od-accent-primary) / 0.09), transparent 60%),
+    radial-gradient(1100px 700px at 105% 110%, rgb(var(--od-accent-primary) / 0.07), transparent 55%),
+    radial-gradient(700px 500px at 85% 15%, rgb(255 255 255 / 0.02), transparent 60%);
+}
+
+@layer components {
+  /* Glassmorphic surface: obsidian glass fill, 30px refraction blur,
+     1px glass edge + inset top highlight for the physical-edge read. */
+  .card-glass {
+    @apply rounded-lg border border-white/15 bg-glass backdrop-blur-glass;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.06),
+      0 8px 32px rgb(0 0 0 / 0.2);
+  }
+  .card-glass-hover {
+    @apply transition-all duration-200 ease-out-quad hover:scale-[1.01];
+  }
+  /* v1.5.0 interactive focus glow: hover/focus reads as a violet (white
+     on B&W) halo around the surface. */
+  .card-glass-hover:hover,
+  .card-glass-hover:focus-visible {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.08),
+      0 0 25px rgb(var(--od-accent-primary) / 0.35),
+      0 8px 32px rgb(var(--od-accent-primary) / 0.2);
+    border-color: rgb(var(--od-accent-primary-hover) / 0.35);
+  }
+
+  /* ==========================================================
+     v1.5.0 liquid glass. Two statically-painted gradient phases
+     crossfade on a 3s cycle — the shimmer appears to flow across
+     the surface, but the browser only composites opacity (the
+     gradients are never repainted, nothing needs overflow
+     clipping, tooltips escape cards untouched). Color rides the
+     accent token: violet on obsidian, white on Black & White.
+     ========================================================== */
+  .liquid-glass {
+    position: relative;
+  }
+  .liquid-glass::before,
+  .liquid-glass::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      100deg,
+      transparent 0%,
+      rgb(var(--od-accent-primary) / 0.10) 22%,
+      transparent 45%,
+      rgb(var(--od-accent-primary) / 0.07) 70%,
+      transparent 95%
+    );
+    background-size: 200% 100%;
+  }
+  .liquid-glass::before {
+    background-position: 0% 0;
+    animation: liquid-phase-a 3s ease-in-out infinite;
+  }
+  .liquid-glass::after {
+    background-position: 66% 0;
+    animation: liquid-phase-b 3s ease-in-out infinite;
+  }
+
+  /* Primary-CTA treatment: breathing neon halo (::before, box-shadow
+     painted once, only its opacity animates) + a single-phase inner
+     shimmer (::after). Pairs with .liquid-btn-ripple for press feedback. */
+  .od-halo {
+    position: relative;
+    /* own stacking context: the z:-1 halo pseudo must sit just under the
+       button fill, never behind an opaque ancestor (B&W cards have no
+       backdrop-filter context) */
+    isolation: isolate;
+  }
+  .od-halo::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: -1;
+    box-shadow:
+      0 0 20px rgb(var(--od-accent-primary) / 0.45),
+      0 0 40px rgb(var(--od-accent-primary) / 0.22);
+    animation: halo-breathe 3s ease-in-out infinite;
+  }
+  .od-halo:disabled::before,
+  .od-halo:disabled::after {
+    animation: none;
+    opacity: 0;
+  }
+  .od-halo:hover::before,
+  .od-halo:focus-visible::before {
+    box-shadow:
+      0 0 30px rgb(var(--od-accent-primary) / 0.5),
+      0 0 60px rgb(var(--od-accent-primary) / 0.25);
+    animation-play-state: paused;
+    opacity: 1;
+  }
+  .od-halo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      transparent 0%,
+      rgb(255 255 255 / 0.14) 30%,
+      transparent 55%,
+      rgb(255 255 255 / 0.08) 80%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: liquid-phase-a 3s ease-in-out infinite;
+  }
+
+  /* v1.5.0 contextual P&L glow: winners radiate green, losers red
+     (grayscale bright/dim on B&W). Static shadows — painted once. */
+  .glow-pnl-win {
+    border-color: rgb(var(--od-accent-green) / 0.3) !important;
+    box-shadow:
+      0 0 20px rgb(var(--od-accent-green) / 0.35),
+      inset 0 0 15px rgb(var(--od-accent-green) / 0.08);
+  }
+  .glow-pnl-loss {
+    border-color: rgb(var(--od-accent-red) / 0.3) !important;
+    box-shadow:
+      0 0 20px rgb(var(--od-accent-red) / 0.35),
+      inset 0 0 15px rgb(var(--od-accent-red) / 0.08);
+  }
+}
+
+@keyframes liquid-phase-a {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+@keyframes liquid-phase-b {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 1; }
+}
+@keyframes halo-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+/* focused input: the glow slowly breathes (one element at a time, so the
+   box-shadow repaint is negligible) */
+@keyframes input-glow {
+  0%, 100% { box-shadow: 0 0 12px rgb(var(--od-accent-primary) / 0.35); }
+  50% { box-shadow: 0 0 24px rgb(var(--od-accent-primary) / 0.55); }
+}
+.od-input:focus {
+  animation: input-glow 3s ease-in-out infinite;
+}
+
+/* ============================================================
+   v1.5.1 performance debug toggles. Liquid glass + glow effects
+   are gated by a class on <html> (lib/fxClasses.ts) so the user
+   can isolate a scroll-stutter culprit from Settings. Parallax is
+   gated in JS (ParticleField reads the store flag).
+   ============================================================ */
+:root.fx-no-liquid .liquid-glass::before,
+:root.fx-no-liquid .liquid-glass::after,
+:root.fx-no-liquid .od-halo::after {
+  animation: none;
+  opacity: 0;
+}
+:root.fx-no-glow .od-halo::before {
+  animation: none;
+  opacity: 0;
+  box-shadow: none;
+}
+:root.fx-no-glow .od-halo:hover::before,
+:root.fx-no-glow .od-halo:focus-visible::before {
+  box-shadow: none;
+}
+:root.fx-no-glow .glow-pnl-win,
+:root.fx-no-glow .glow-pnl-loss {
+  box-shadow: none;
+}
+:root.fx-no-glow .od-input:focus {
+  animation: none;
+  box-shadow: none;
+}
+:root.fx-no-glow .card-glass-hover:hover {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 8px 32px rgb(0 0 0 / 0.2);
+}
+:root.fx-no-glow .shadow-accent-glow,
+:root.fx-no-glow .shadow-glow {
+  box-shadow: none !important;
+}
+
+/* ============================================================
+   Black & White theme: kill every glass effect. Flat panels,
+   crisp white borders, no blur, no glow, no ambient radials.
+   Specificity (:root.theme-bw .x) outranks the utility classes.
+   ============================================================ */
+:root.theme-bw body::before {
+  display: none;
+}
+:root.theme-bw .card-glass {
+  background-color: rgb(10 10 10);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: rgb(255 255 255 / 0.25);
+  box-shadow: none;
+}
+:root.theme-bw .card-glass-hover:hover {
+  border-color: rgb(255 255 255 / 0.7);
+  box-shadow: none;
+}
+:root.theme-bw .bg-glass {
+  background-color: rgb(0 0 0 / 0.92);
+}
+:root.theme-bw .backdrop-blur-glass,
+:root.theme-bw .backdrop-blur-sm {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+/* Primary CTAs invert terminal-style: white fill, black text (via
+   --od-on-accent). Destructive fills are light gray in B&W, so their
+   label flips to black for contrast. */
+:root.theme-bw .od-btn-destructive {
+  color: rgb(0 0 0);
+}
+/* Pictographic emoji render in full color regardless of CSS color, so
+   the terminal theme desaturates them. */
+:root.theme-bw .emoji-icon {
+  filter: grayscale(1);
+}
+
+/* Solid fallback when the user asks for reduced transparency. */
+@media (prefers-reduced-transparency: reduce) {
+  .card-glass {
+    background-color: rgb(var(--od-dark-800));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  body::before {
+    display: none;
+  }
+}
+
+/* v1.5.0 chart trace-in: a left-to-right wipe over the freshly drawn
+   chart — reads as the line tracing its path. clip-path animations ride
+   the compositor in Chromium; recharts' own point-interpolation animation
+   (the "pixel shifting") is disabled at the chart level. */
+.chart-trace {
+  animation: chart-trace 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* v1.5.2 payoff-label halo: SVG text gets a background-colored outline
+   painted UNDER the glyph fill (paint-order), so labels stay readable
+   where they cross the curve, dotted lines or the P&L fill. Rides
+   --od-dark-900, so it's obsidian on the default theme and pure black
+   on Black & White. Crisper than a text-shadow blur at 10px sizes. */
+.payoff-label {
+  paint-order: stroke;
+  stroke: rgb(var(--od-dark-900) / 0.9);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+@keyframes chart-trace {
+  0% { clip-path: inset(0 100% 0 0); }
+  100% { clip-path: inset(0 0 0 0); }
+}
+
+/* Settings panel: fixed header, scrolling body. The thumb rides the
+   accent primary, so it reads violet-tinted on obsidian and gray on
+   Black & White without theme-specific rules. */
+.settings-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--od-accent-primary) / 0.35) transparent;
+}
+.settings-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.settings-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.settings-scroll::-webkit-scrollbar-thumb {
+  background: rgb(var(--od-accent-primary) / 0.35);
+  border-radius: 4px;
+  border: none;
+}
+.settings-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--od-accent-primary) / 0.55);
+}
+
+/* Settings tab strip: the active-tab underline slides between tabs on
+   a GPU-only translateX + scaleX (the bar itself is 1px wide and gets
+   stretched to the measured tab width). */
+.settings-tab-underline {
+  transform-origin: left;
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Dark scrollbars so the chrome doesn't break the obsidian shell. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: rgb(var(--od-dark-900));
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--od-dark-600));
+  border-radius: 5px;
+  border: 2px solid rgb(var(--od-dark-900));
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--od-dark-500));
+}
+
+/* Motion kill switch. v1.5.0: keyed off a `motion-off` class on <html>
+   instead of the raw media query — lib/motionPref.ts resolves the user's
+   in-app preference (system / always on / off) against
+   prefers-reduced-motion and stamps the class. Near-instant durations keep
+   animationend firing for the view-transition state machine, but kill the
+   movement and the pulse. */
+:root.motion-off .animate-view-exit,
+:root.motion-off .animate-view-enter,
+:root.motion-off .animate-card-enter,
+:root.motion-off .animate-modal-enter,
+:root.motion-off .animate-modal-exit,
+:root.motion-off .animate-drawer-enter,
+:root.motion-off .animate-drawer-exit,
+:root.motion-off .animate-toast-in,
+:root.motion-off .animate-fade-in,
+:root.motion-off .animate-shake,
+:root.motion-off .animate-valid-check,
+:root.motion-off .animate-badge-pulse,
+:root.motion-off .animate-ripple,
+:root.motion-off .animate-value-flash {
+  animation-duration: 1ms !important;
+  animation-delay: 0ms !important;
+}
+:root.motion-off .animate-pulse,
+:root.motion-off .animate-skeleton {
+  animation: none;
+}
+/* loading must stay indicated without motion: the runner parks mid-track */
+:root.motion-off .animate-loader-slide {
+  animation: none;
+  transform: translateX(100%);
+}
+:root.motion-off .chart-trace {
+  animation: none;
+}
+:root.motion-off .card-glass-hover,
+:root.motion-off .card-glass-hover:hover {
+  transform: none;
+}
+:root.motion-off .settings-tab-underline {
+  transition-duration: 1ms;
+}
+/* v1.5.0: liquid shimmer, breathing halos and the focused-input pulse
+   all stop; the static base treatment stays. */
+:root.motion-off .liquid-glass::before,
+:root.motion-off .liquid-glass::after,
+:root.motion-off .od-halo::before,
+:root.motion-off .od-halo::after,
+:root.motion-off .od-input:focus {
+  animation: none;
+}
+:root.motion-off .liquid-glass::after,
+:root.motion-off .od-halo::after {
+  opacity: 0.3;
+}

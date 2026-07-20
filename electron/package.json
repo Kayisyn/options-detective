@@ -1,0 +1,61 @@
+{
+  "name": "options-detective-electron",
+  "version": "1.9.2",
+  "private": true,
+  "description": "Electron shell for Option Obelisk (formerly Options Detective)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.optionsdetective.desktop",
+    "productName": "Option Obelisk",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../frontend/dist",
+        "to": "frontend-dist"
+      },
+      {
+        "from": "../backend",
+        "to": "backend",
+        "filter": [
+          "**/*",
+          "!math/**",
+          "!data/**",
+          "!tests/**",
+          "!**/*.md"
+        ]
+      },
+      {
+        "from": "../backend/math/dist/od-math",
+        "to": "od-math"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "artifactName": "Option-Obelisk-Setup-${version}.${ext}"
+    },
+    "compression": "normal"
+  }
+}
