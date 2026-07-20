@@ -1,6 +1,6 @@
 {
   "name": "options-detective-electron",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "private": true,
   "description": "Electron shell for Option Obelisk (formerly Options Detective)",
   "main": "main.js",
