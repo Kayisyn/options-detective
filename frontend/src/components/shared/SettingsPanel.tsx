@@ -8,6 +8,10 @@ import {
 } from "../../lib/scoring";
 import { strategyLabel } from "../../lib/format";
 import { api, type AccountBackup } from "../../lib/api";
+import {
+  deleteTemplate, downloadTemplates, duplicateTemplate, importTemplates,
+  listTemplates, updateTemplate, type StrategyTemplate,
+} from "../../lib/templates";
 import Button from "../ui/Button";
 import { FormInput } from "../ui/Input";
 import Modal from "../ui/Modal";
@@ -26,15 +30,16 @@ interface SettingsPanelProps {
 // sections inside each tab stagger in 50ms apart. Selection applies
 // instantly and persists.
 
-type TabId = "appearance" | "customization" | "sidebar" | "currency" | "scoring" | "complexity" | "account";
+type TabId = "appearance" | "customization" | "sidebar" | "currency" | "scoring" | "complexity" | "templates" | "account";
 
 const SETTINGS_TABS: Array<{ id: TabId; label: string }> = [
   { id: "appearance", label: "Appearance" },
   { id: "customization", label: "Customization" },
   { id: "sidebar", label: "Sidebar" },
   { id: "currency", label: "Currency" },
-  { id: "scoring", label: "Scoring weights" },
+  { id: "scoring", label: "Scoring" },
   { id: "complexity", label: "Complexity" },
+  { id: "templates", label: "Templates" },
   { id: "account", label: "Account" },
 ];
 
@@ -561,6 +566,124 @@ function ComplexityTab() {
   );
 }
 
+// v1.8.1 Templates tab: manage the Asset Screener's saved filter templates
+// (create happens in the screener via "Save as Template").
+function TemplatesTab() {
+  const account = useStore((s) => s.account);
+  const showToast = useStore((s) => s.showToast);
+  const username = account?.username ?? "default";
+  const [templates, setTemplates] = useState<StrategyTemplate[]>(() => listTemplates(username));
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const refresh = () => setTemplates(listTemplates(username));
+
+  function startEdit(t: StrategyTemplate) {
+    setEditingId(t.id);
+    setEditName(t.name);
+    setEditDesc(t.description);
+  }
+
+  function saveEdit() {
+    if (!editingId) return;
+    updateTemplate(username, editingId, { name: editName, description: editDesc });
+    setEditingId(null);
+    refresh();
+  }
+
+  function onImportFile(file: File | undefined) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const added = importTemplates(username, String(reader.result));
+        refresh();
+        showToast(`✓ Imported ${added} ${added === 1 ? "template" : "templates"}`);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Template import failed");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  return (
+    <div className="space-y-4" data-testid="templates-tab">
+      <Section index={0}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-content-3">
+            Saved Asset Screener filter sets. Create one from the screener via
+            <b className="text-content-2"> Save as Template</b>.
+          </p>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="xs" disabled={templates.length === 0}
+              onClick={() => downloadTemplates(username)} data-testid="templates-export">
+              Export file
+            </Button>
+            <Button variant="ghost" size="xs" onClick={() => fileRef.current?.click()}
+              data-testid="templates-import">
+              Import file
+            </Button>
+            <input ref={fileRef} type="file" accept=".json,application/json" className="hidden"
+              onChange={(e) => { onImportFile(e.target.files?.[0]); e.target.value = ""; }} />
+          </div>
+        </div>
+      </Section>
+      <Section index={1}>
+        {templates.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-dark-600 p-4 text-center text-sm text-content-3">
+            No templates yet.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {templates.map((t) => (
+              <div key={t.id} className="rounded-lg bg-dark-700/50 p-3" data-template-id={t.id}>
+                {editingId === t.id ? (
+                  <div className="space-y-2">
+                    <FormInput label="Name" value={editName}
+                      onChange={(e) => setEditName(e.target.value)} />
+                    <FormInput label="Description" value={editDesc}
+                      onChange={(e) => setEditDesc(e.target.value)} />
+                    <div className="flex gap-2">
+                      <Button size="xs" onClick={saveEdit} disabled={!editName.trim()}>Save</Button>
+                      <Button variant="ghost" size="xs" onClick={() => setEditingId(null)}>Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-content-1">{t.name}</div>
+                      {t.description && (
+                        <div className="text-xs text-content-3">{t.description}</div>
+                      )}
+                      <div className="mt-0.5 text-[11px] text-content-3">
+                        {strategyLabel(t.strategy)} · saved {t.createdAt.slice(0, 10)} · used{" "}
+                        {t.usageCount ?? 0}×
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 gap-1.5">
+                      <Button variant="ghost" size="xs" onClick={() => startEdit(t)}>Edit</Button>
+                      <Button variant="ghost" size="xs"
+                        onClick={() => { duplicateTemplate(username, t.id); refresh(); }}>
+                        Duplicate
+                      </Button>
+                      <Button variant="ghost" size="xs" className="text-accent-red hover:bg-accent-red/10"
+                        onClick={() => { deleteTemplate(username, t.id); refresh(); }}>
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+    </div>
+  );
+}
+
 // v1.7.2 Account tab: profile facts, password change, backup/restore and
 // the two destructive actions (clear data, delete account). Destructive
 // flows confirm inline — no nested modals inside Settings.
@@ -903,7 +1026,7 @@ export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   }
 
   return (
-    <Modal open={open} onClose={close} testid="settings-panel" flush>
+    <Modal open={open} onClose={close} testid="settings-panel" flush maxWidth="max-w-2xl">
       {/* fixed header: title + close, then the tab strip */}
       <div className="shrink-0 border-b border-white/10 px-6 pt-5">
         <div className="mb-3 flex items-center justify-between">
@@ -950,6 +1073,7 @@ export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           {tab === "currency" && <CurrencyTab />}
           {tab === "scoring" && <ScoringTab />}
           {tab === "complexity" && <ComplexityTab />}
+          {tab === "templates" && <TemplatesTab />}
           {tab === "account" && <AccountTab />}
         </ViewTransition>
         <p className="mt-4 flex items-baseline justify-between text-xs text-content-3">

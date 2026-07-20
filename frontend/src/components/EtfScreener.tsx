@@ -3,7 +3,11 @@ import { useStore } from "../store";
 import { money, num, pct } from "../lib/format";
 import { api } from "../lib/api";
 import { downloadWatchlistCsv } from "../lib/journalCsv";
+import {
+  bumpUsage, createTemplate, listTemplates, type StrategyTemplate,
+} from "../lib/templates";
 import { cx } from "../lib/cx";
+import Modal from "./ui/Modal";
 import Button from "./ui/Button";
 import { RadarIcon } from "./ui/Icons";
 import { Badge, Card, MetricBox } from "./ui/Card";
@@ -322,6 +326,10 @@ export default function EtfScreener() {
   const [showFilters, setShowFilters] = useState(false);
   const [showColumns, setShowColumns] = useState(false);
   const [columns, setColumns] = useState<ColumnConfig>(readColumns);
+  // v1.8.1 strategy templates (per-account saves; presets stay read-only)
+  const username = s.account?.username ?? "default";
+  const [myTemplates, setMyTemplates] = useState<StrategyTemplate[]>(() => listTemplates(username));
+  const [saveTplOpen, setSaveTplOpen] = useState(false);
 
   useEffect(() => {
     s.loadEtfReference().then(() => s.screenEtf(filters, strategy));
@@ -341,6 +349,20 @@ export default function EtfScreener() {
   function applyPreset(id: string) {
     const preset = ref?.presets.find((p) => p.id === id);
     if (preset) runScreen({ sectors: [], assetClasses: [], ...preset.filters }, preset.strategy);
+  }
+
+  // load-template dropdown: "tpl:<id>" = user save, "preset:<id>" = built-in
+  function applyTemplateChoice(choice: string) {
+    if (choice.startsWith("preset:")) {
+      applyPreset(choice.slice(7));
+      return;
+    }
+    const t = myTemplates.find((x) => x.id === choice.slice(4));
+    if (!t) return;
+    runScreen({ sectors: [], assetClasses: [], ...t.filters }, t.strategy);
+    bumpUsage(username, t.id);
+    setMyTemplates(listTemplates(username));
+    s.showToast(`✓ Loaded "${t.name}"`);
   }
 
   function toggleIn<T extends string>(key: "sectors" | "assetClasses", value: T) {
@@ -420,6 +442,24 @@ export default function EtfScreener() {
           className="rounded-md border border-dark-600 px-3 py-2 text-sm text-content-3 hover:text-content-2">
           {showFilters ? "Hide filters" : "Custom filters"}
         </button>
+        {/* v1.8.1: load a saved template or a built-in preset */}
+        <select value="" data-testid="etf-load-template" aria-label="Load template"
+          onChange={(e) => { if (e.target.value) applyTemplateChoice(e.target.value); }}
+          className="rounded-md border border-dark-600 bg-dark-800 px-2.5 py-2 text-sm text-content-3 focus:border-accent-primary focus:outline-none">
+          <option value="">Load template…</option>
+          {myTemplates.length > 0 && (
+            <optgroup label="My templates">
+              {myTemplates.map((t) => (
+                <option key={t.id} value={`tpl:${t.id}`}>{t.name}</option>
+              ))}
+            </optgroup>
+          )}
+          <optgroup label="Default templates">
+            {ref?.presets.map((p) => (
+              <option key={p.id} value={`preset:${p.id}`}>{p.name}</option>
+            ))}
+          </optgroup>
+        </select>
       </div>
 
       {showFilters && ref && (
@@ -485,9 +525,21 @@ export default function EtfScreener() {
             <Button size="sm" onClick={() => runScreen()} data-testid="etf-apply">Apply filters</Button>
             <Button variant="ghost" size="sm"
               onClick={() => runScreen({ sectors: [], assetClasses: [] }, strategy)}>Clear</Button>
+            <Button variant="secondary" size="sm" data-testid="etf-save-template"
+              onClick={() => setSaveTplOpen(true)}>
+              Save as Template
+            </Button>
           </div>
         </Card>
       )}
+
+      <SaveTemplateModal open={saveTplOpen} onClose={() => setSaveTplOpen(false)}
+        onSave={(name, description) => {
+          createTemplate(username, { name, description, strategy, filters });
+          setMyTemplates(listTemplates(username));
+          setSaveTplOpen(false);
+          s.showToast(`✓ Template "${name}" saved`);
+        }} />
 
       {/* results */}
       {result && (
@@ -689,5 +741,52 @@ export default function EtfScreener() {
         </div>
       )}
     </section>
+  );
+}
+
+// v1.8.1: name + optional description for the current filter set. Managing
+// saves (rename, duplicate, delete, file export/import) lives in
+// Settings → Templates.
+function SaveTemplateModal({ open, onClose, onSave }: {
+  open: boolean;
+  onClose: () => void;
+  onSave: (name: string, description: string) => void;
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+
+  function submit() {
+    if (!name.trim()) return;
+    onSave(name, description);
+    setName("");
+    setDescription("");
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} testid="save-template-modal" maxWidth="max-w-sm">
+      <h2 className="text-lg font-semibold">Save as Template</h2>
+      <p className="mt-1 text-sm text-content-3">
+        Saves the current strategy and every filter, ready to reload from the
+        “Load template…” menu.
+      </p>
+      <div className="mt-3 space-y-2">
+        <FormInput label="Template name" value={name} autoFocus
+          placeholder="Bullish spreads — IV rank > 70"
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+          data-testid="template-name" />
+        <FormInput label="Description (optional)" value={description}
+          placeholder="4-6 week calls, tight spreads"
+          onChange={(e) => setDescription(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+          data-testid="template-description" />
+      </div>
+      <div className="mt-4 flex justify-end gap-2">
+        <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+        <Button size="sm" disabled={!name.trim()} onClick={submit} data-testid="template-save">
+          Save Template
+        </Button>
+      </div>
+    </Modal>
   );
 }
