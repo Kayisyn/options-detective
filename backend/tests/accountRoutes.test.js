@@ -61,4 +61,18 @@ test("account export → clear → import round-trips trades", async (t) => {
   assert.equal((await call("POST", "/account/import", { app: "other", format: 1 })).status, 400);
   assert.equal((await call("POST", "/account/import",
     { app: "option-obelisk", format: 1, data: { trades: "not-a-list" } })).status, 400);
+
+  // v1.8.0: exports carry the account identity
+  assert.equal(exported.account.username, "roundtrip");
+
+  // v1.8.0 large-file handling: a 150-trade backup imports and re-exports
+  const big = exported.data.trades[0];
+  const many = Array.from({ length: 150 }, (_, i) => ({
+    ...big, id: `bulk-${i}`, symbol: `T${i % 7}`,
+  }));
+  const bulk = await call("POST", "/account/import",
+    { app: "option-obelisk", format: 1, data: { trades: many } });
+  assert.equal(bulk.json.trades, 150);
+  assert.equal((await call("GET", "/journal")).json.trades.length, 150);
+  assert.equal((await call("GET", "/account/export")).json.data.trades.length, 150);
 });

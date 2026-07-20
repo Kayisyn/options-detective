@@ -3,7 +3,10 @@ import { useStore } from "../store";
 import { money, pct, strategyLabel } from "../lib/format";
 import { ALL_STRATEGY_TYPES } from "../lib/copy";
 import { accountImpactPct, journalStats, pctReturn } from "../lib/journalStats";
-import { confirmationText, downloadCsv } from "../lib/journalCsv";
+import {
+  CSV_COLUMNS, confirmationText, defaultCsvColumnIds, downloadCsv,
+  loadCsvColumnIds, saveCsvColumnIds,
+} from "../lib/journalCsv";
 import { cx } from "../lib/cx";
 import { DualValue } from "../lib/currency";
 import Button from "./ui/Button";
@@ -65,6 +68,7 @@ export default function Journal() {
   const [marksBusy, setMarksBusy] = useState(false);
   const [tab, setTab] = useState<"log" | "trash">("log"); // v1.5.1
   const [confirmClear, setConfirmClear] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false); // v1.8.0 column picker
 
   useEffect(() => {
     s.loadJournal();
@@ -112,7 +116,7 @@ export default function Journal() {
             {marksBusy ? "Refreshing…" : "Refresh marks"}
           </Button>
           <Button variant="ghost" size="sm" disabled={s.savedTrades.length === 0}
-            onClick={() => downloadCsv(s.savedTrades)} data-testid="export-csv">
+            onClick={() => setExportOpen(true)} data-testid="export-csv">
             Export CSV
           </Button>
         </div>
@@ -352,6 +356,10 @@ export default function Journal() {
       <ClearAllModal open={confirmClear} onClose={() => setConfirmClear(false)}
         onConfirm={async () => { await s.clearAllPositions(); setConfirmClear(false); }} />
 
+      <CsvExportModal open={exportOpen} onClose={() => setExportOpen(false)}
+        trades={s.savedTrades}
+        onExported={() => { setExportOpen(false); s.showToast("✓ CSV downloaded"); }} />
+
       <LogTradeModal open={logOpen} onClose={() => setLogOpen(false)}
         onSubmit={async (input) => {
           // paper trades go through the paper engine (budget reservation)
@@ -369,6 +377,62 @@ export default function Journal() {
           if (ok) setCloseTarget(null);
         }} />
     </section>
+  );
+}
+
+// v1.8.0 CSV export with selectable columns. The picked set persists
+// (od.csvColumns.v1) so the next export starts from the same shape.
+function CsvExportModal({ open, onClose, trades, onExported }: {
+  open: boolean;
+  onClose: () => void;
+  trades: JournalTrade[];
+  onExported: () => void;
+}) {
+  const [ids, setIds] = useState<string[]>(loadCsvColumnIds);
+
+  function toggle(id: string) {
+    setIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} testid="csv-export-modal" maxWidth="max-w-md">
+      <h2 className="text-lg font-semibold">Export Position Log CSV</h2>
+      <p className="mt-1 text-sm text-content-3">
+        Pick the columns to include — the selection is remembered.
+      </p>
+      <div className="mt-3 grid max-h-72 grid-cols-2 gap-x-3 overflow-y-auto">
+        {CSV_COLUMNS.map((c) => (
+          <label key={c.id} className="flex cursor-pointer items-center gap-2 py-1 text-sm text-content-2 hover:text-content-1">
+            <input type="checkbox" checked={ids.includes(c.id)} onChange={() => toggle(c.id)}
+              data-csv-column={c.id}
+              className="accent-[rgb(var(--od-accent-primary))]" />
+            {c.label}
+          </label>
+        ))}
+      </div>
+      <div className="mt-2 flex gap-3 text-xs">
+        <button className="text-content-3 underline underline-offset-2 hover:text-accent-primary-text"
+          onClick={() => setIds(CSV_COLUMNS.map((c) => c.id))}>
+          Select all
+        </button>
+        <button className="text-content-3 underline underline-offset-2 hover:text-accent-primary-text"
+          onClick={() => setIds(defaultCsvColumnIds())}>
+          Reset to defaults
+        </button>
+      </div>
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <span className="text-xs text-content-3">
+          {trades.length} {trades.length === 1 ? "trade" : "trades"} · {ids.length} {ids.length === 1 ? "column" : "columns"}
+        </span>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+          <Button size="sm" disabled={ids.length === 0} data-testid="csv-download"
+            onClick={() => { saveCsvColumnIds(ids); downloadCsv(trades, ids); onExported(); }}>
+            Download CSV
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 

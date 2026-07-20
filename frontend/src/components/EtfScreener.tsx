@@ -1,6 +1,8 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useStore } from "../store";
 import { money, num, pct } from "../lib/format";
+import { api } from "../lib/api";
+import { downloadWatchlistCsv } from "../lib/journalCsv";
 import { cx } from "../lib/cx";
 import Button from "./ui/Button";
 import { RadarIcon } from "./ui/Icons";
@@ -657,7 +659,24 @@ export default function EtfScreener() {
 
       {s.etfWatchlist.length > 0 && (
         <div>
-          <h3 className="mb-1 text-sm font-medium uppercase tracking-wide text-heading">Watchlist</h3>
+          <div className="mb-1 flex items-center gap-3">
+            <h3 className="text-sm font-medium uppercase tracking-wide text-heading">Watchlist</h3>
+            {/* v1.8.0: watchlist rows as CSV (fresh records at click time) */}
+            <button
+              data-testid="watchlist-export-csv"
+              className="text-xs text-content-3 underline underline-offset-2 transition-colors duration-150 hover:text-accent-primary-text"
+              onClick={async () => {
+                try {
+                  const { etfs } = await api.etfWatchlist();
+                  downloadWatchlistCsv(etfs);
+                  s.showToast("✓ Watchlist CSV downloaded");
+                } catch {
+                  s.showToast("Watchlist export failed");
+                }
+              }}>
+              Export CSV
+            </button>
+          </div>
           <div className="flex flex-wrap gap-2" data-testid="etf-watchlist">
             {s.etfWatchlist.map((t) => (
               <Badge key={t} variant="neutral"

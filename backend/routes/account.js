@@ -12,6 +12,7 @@ const fs = require("fs");
 const path = require("path");
 
 const session = require("../services/session");
+const accounts = require("../services/accounts");
 
 const router = Router();
 const EXPORT_FORMAT = 1;
@@ -37,10 +38,13 @@ function writeFileAtomic(file, value) {
 }
 
 router.get("/export", (_req, res) => {
+  const active = accounts.list().find((a) => a.id === session.getActive()) ?? null;
   res.json({
     app: "option-obelisk",
     format: EXPORT_FORMAT,
     exportedAt: new Date().toISOString(),
+    // v1.8.0 schema: identify whose backup this is (display-only on import)
+    account: active ? { username: active.username, createdAt: active.createdAt } : null,
     data: readData(),
   });
 });
