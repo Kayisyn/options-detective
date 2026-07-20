@@ -8,7 +8,7 @@ import { Badge, Card, MetricBox } from "./ui/Card";
 import { FormInput, FormSelect } from "./ui/Input";
 import type { EtfFilters, EtfRecord, EtfStrategy } from "../types";
 
-// Asset Screener. v1.9.0: full filter set (yield / 52w performance / ATR
+// Asset Screener. v1.7.0: full filter set (yield / 52w performance / ATR
 // volatility / theta rank / options volume + quick band presets), primary +
 // secondary sorting, configurable + reorderable columns (persisted), and
 // rule-based strategy recommendations per ETF. All metrics backend-fetched;
@@ -71,7 +71,7 @@ function compareBy(key: SortKey) {
   };
 }
 
-// ---- configurable columns (v1.9.0) ----------------------------------------
+// ---- configurable columns (v1.7.0) ----------------------------------------
 // Ticker leads and Score trails always; everything between is toggleable and
 // reorderable, persisted per machine.
 interface ColumnDef {
@@ -188,7 +188,7 @@ function bandActive(filters: EtfFilters, group: (typeof BANDS)[number], band: Ba
   });
 }
 
-// ---- strategy recommendations (v1.9.0, spec logic on our metrics) ----------
+// ---- strategy recommendations (v1.7.0, spec logic on our metrics) ----------
 interface Rec { name: string; reason: string; confidence: "high" | "medium" | "low" }
 
 function recommendStrategies(e: EtfRecord): Rec[] {
@@ -437,7 +437,7 @@ export default function EtfScreener() {
             {numInput("Min AUM ($B)", "minAum", { width: "w-28" })}
             {numInput("Max expense %", "maxExpenseRatioPct", { step: "0.01", width: "w-28" })}
           </div>
-          {/* v1.9.0 metric filters */}
+          {/* v1.7.0 metric filters */}
           <div className="flex flex-wrap items-end gap-3">
             {numInput("Yield min %", "yieldMin", { step: "0.1" })}
             {numInput("Yield max %", "yieldMax", { step: "0.1" })}
@@ -587,7 +587,7 @@ export default function EtfScreener() {
                             </div>
                           )}
 
-                          {/* v1.9.0 rule-based strategy recommendations */}
+                          {/* v1.7.0 rule-based strategy recommendations */}
                           {(() => {
                             const recs = recommendStrategies(e);
                             if (recs.length === 0) return null;

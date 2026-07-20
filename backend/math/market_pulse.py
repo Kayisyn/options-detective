@@ -40,7 +40,7 @@ def fetch_quotes(symbols):
     for sym in symbols:
         try:
             # group_by="ticker" gives MultiIndex columns even for a SINGLE
-            # symbol (v1.9.0 fix — the old len()>1 check dropped solo
+            # symbol (v1.7.0 fix — the old len()>1 check dropped solo
             # fetches like the CAD=X exchange rate)
             try:
                 frame = data[sym]

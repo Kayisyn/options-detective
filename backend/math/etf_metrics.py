@@ -11,15 +11,15 @@ history + ONE ~30-DTE expiration per ticker.
 Metrics per ticker:
   price                       latest close
   ytdReturn                   % return since the first close of this year
-  perf52wPct                  % return over the full 1y history window (v1.9.0)
+  perf52wPct                  % return over the full 1y history window (v1.7.0)
   atmIv                       ATM implied vol at the chosen expiration
   ivRank                      today's ATM IV vs the 1y realized-vol range
                               (documented proxy, same as the rest of the app)
   annualizedCallPremiumPct    ~5% OTM call mid / price, annualized by DTE
   callVolume                  total call volume at the expiration (liquidity)
   dte                         days to the chosen expiration
-  dividendYieldPct            trailing-12M dividends / price (v1.9.0)
-  atrPct20                    20-day Average True Range as % of price (v1.9.0)
+  dividendYieldPct            trailing-12M dividends / price (v1.7.0)
+  atrPct20                    20-day Average True Range as % of price (v1.7.0)
 """
 
 from __future__ import annotations
@@ -122,7 +122,7 @@ def fetch_one(symbol, target_dte):
     import yfinance as yf
 
     ticker = yf.Ticker(symbol)
-    # actions=True adds the Dividends column for the TTM yield (v1.9.0)
+    # actions=True adds the Dividends column for the TTM yield (v1.7.0)
     hist = ticker.history(period="1y", auto_adjust=True, actions=True)
     if hist is None or len(hist) == 0:
         raise ValueError("no price history")

@@ -18,9 +18,16 @@
     {
       "name": "frontend-alt",
       "runtimeExecutable": "C:\\Users\\usmaa\\AppData\\Local\\Programs\\node\\node.exe",
-      "runtimeArgs": ["node_modules/vite/bin/vite.js", "--port", "5174", "--strictPort"],
+      "runtimeArgs": ["node_modules/vite/bin/vite.js", "--port", "5174", "--strictPort", "--mode", "isolated"],
       "cwd": "frontend",
       "port": 5174
+    },
+    {
+      "name": "backend-alt",
+      "runtimeExecutable": "C:\\Users\\usmaa\\AppData\\Local\\Programs\\node\\node.exe",
+      "runtimeArgs": ["scripts/dev-isolated.js"],
+      "cwd": "backend",
+      "port": 3002
     }
   ]
 }

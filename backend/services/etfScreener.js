@@ -25,7 +25,7 @@ function mergeOne(staticEtf, metrics, nowMs) {
     otmCallStrike: m?.otmCallStrike ?? null,
     callVolume: m?.callVolume ?? null,
     dte: m?.dte ?? null,
-    // v1.9.0 metrics
+    // v1.7.0 metrics
     perf52wPct: m?.perf52wPct ?? null,
     dividendYieldPct: m?.dividendYieldPct ?? null,
     atrPct20: m?.atrPct20 ?? null,
@@ -35,7 +35,7 @@ function mergeOne(staticEtf, metrics, nowMs) {
   };
 }
 
-// v1.9.0 theta rank: percentile of annualized call premium across the
+// v1.7.0 theta rank: percentile of annualized call premium across the
 // universe's ETFs that have the metric — a documented proxy for "how much
 // time decay favors sellers here" (richer premium = more decay to harvest).
 // 0-100, higher = better for sellers. Computed over the merged universe so

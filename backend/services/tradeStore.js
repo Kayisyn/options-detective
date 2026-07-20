@@ -41,14 +41,14 @@ function migrateV2(entry) {
   if (entry.reservedCapital === undefined) entry.reservedCapital = null;
   // v1.5.1 soft-delete: null = active, ISO string = in trash
   if (entry.deletedAt === undefined) entry.deletedAt = null;
-  // v1.9.0 currency: USD/CAD rate at entry / at close (null = unknown;
+  // v1.7.0 currency: USD/CAD rate at entry / at close (null = unknown;
   // the frontend falls back to the current rate and marks it approximate)
   if (entry.exchangeRateUsed === undefined) entry.exchangeRateUsed = null;
   if (entry.exchangeRateAtClose === undefined) entry.exchangeRateAtClose = null;
   return entry;
 }
 
-// v1.9.0: the current USD→CAD rate, read synchronously from the fx cache so
+// v1.7.0: the current USD→CAD rate, read synchronously from the fx cache so
 // trade creation stays sync. Lazy require avoids a cycle; null when the app
 // has never fetched a rate (harmless — display falls back to current).
 function fxRateNow() {
@@ -338,7 +338,7 @@ function createTradeStore({ dir, getDir, now = () => new Date() } = {}) {
     trade.exitDate = exitDate ? String(exitDate) : nowIso;
     trade.closedAt = nowIso;
     trade.actualPnl = pnlOf(trade, exit);
-    trade.exchangeRateAtClose = fxRateNow(); // v1.9.0 historical CAD accuracy
+    trade.exchangeRateAtClose = fxRateNow(); // v1.7.0 historical CAD accuracy
     trade.mae = assertFiniteNumber(mae, "mae", { allowNull: true }) ?? trade.mae;
     trade.mfe = assertFiniteNumber(mfe, "mfe", { allowNull: true }) ?? trade.mfe;
     trade.status = "closed";
@@ -468,7 +468,7 @@ function createTradeStore({ dir, getDir, now = () => new Date() } = {}) {
     trade.closedAt = now().toISOString();
     trade.actualPnl = pnl;
     trade.status = status;
-    trade.exchangeRateAtClose = fxRateNow(); // v1.9.0
+    trade.exchangeRateAtClose = fxRateNow(); // v1.7.0
     if (note) trade.notes = trade.notes ? `${trade.notes}\n${note}` : note;
     const outcome = pnl > 0 ? "Winner" : pnl < 0 ? "Loser" : "Breakeven";
     trade.tags = [...new Set([...trade.tags, status === "assigned" ? "Assigned" : "Expired", outcome])];

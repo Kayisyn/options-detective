@@ -97,7 +97,7 @@ function MainApp() {
   useEffect(() => {
     loadJournal();
     loadEtfWatchlist().then(() => loadPulse());
-    // v1.9.0: hydrate the USD→CAD rate (backend caches it daily; this only
+    // v1.7.0: hydrate the USD→CAD rate (backend caches it daily; this only
     // forces a refetch when auto-update is on and the cache has gone stale)
     useStore.getState().loadFx();
     const interval = setInterval(() => {

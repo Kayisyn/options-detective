@@ -168,7 +168,7 @@ export type TradeStatus = "open" | "closed" | "assigned" | "expired";
 // Journal trade, v1.1 Phase A. Prices are per unit as brokers quote them
 // (per spread for options, per share for stock); dollar P&L multiplies by
 // qty × multiplier. Credit positions profit when the closing price falls.
-// v1.9.0 currency
+// v1.7.0 currency
 export interface FxInfo {
   rate: number;          // 1 USD = rate CAD
   asOf: string | null;
@@ -192,7 +192,7 @@ export interface JournalTrade {
   paper: boolean;
   archived: boolean;
   deletedAt: string | null; // v1.5.1 soft delete: null = active, ISO = in trash
-  // v1.9.0 currency: USD→CAD rate stamped at entry / at close (null on
+  // v1.7.0 currency: USD→CAD rate stamped at entry / at close (null on
   // legacy trades or when no rate had ever been fetched)
   exchangeRateUsed?: number | null;
   exchangeRateAtClose?: number | null;
@@ -345,7 +345,7 @@ export interface EtfRecord {
   otmCallStrike: number | null;
   callVolume: number | null;
   dte: number | null;
-  // v1.9.0 metrics
+  // v1.7.0 metrics
   perf52wPct: number | null;
   dividendYieldPct: number | null;
   atrPct20: number | null;
@@ -391,7 +391,7 @@ export interface EtfFilters {
   ytdMin?: number | null;
   ytdMax?: number | null;
   minCallVolume?: number | null;
-  // v1.9.0 filters
+  // v1.7.0 filters
   yieldMin?: number | null;
   yieldMax?: number | null;
   perf52wMin?: number | null;

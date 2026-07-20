@@ -14,7 +14,7 @@ const COLUMNS: Array<[string, (t: JournalTrade) => string | number | null]> = [
   ["exit_date", (t) => t.exitDate],
   ["exit_price", (t) => t.exitPrice],
   ["actual_pnl", (t) => t.actualPnl],
-  // v1.9.0 CAD columns: realized converts at the stamped close/entry rate
+  // v1.7.0 CAD columns: realized converts at the stamped close/entry rate
   // (blank when the trade predates rate stamping — no invented history)
   ["fx_rate_used", (t) => t.exchangeRateAtClose ?? t.exchangeRateUsed ?? null],
   ["actual_pnl_cad", (t) => {

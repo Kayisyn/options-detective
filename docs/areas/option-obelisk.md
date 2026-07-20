@@ -23,12 +23,13 @@ machine — relocate to the real vault path if one exists elsewhere.)
 
 ---
 
-*Note (Fable, 2026-07-17): the release described above shipped in-app as
-**v1.9.0** (package.json versions, git commits d35ed27…d602491, and the
-built app all say 1.9.0), per the v1.9.0 build prompt's own "ship as
-v1.9.0" instruction. If the roadmap is being renumbered so this counts as
-v1.7.0 and onboarding becomes v1.7.1, the app versions should be
-renumbered to match (or this label adjusted) — flag which way to go.
-Bug confirmed in code: `Journal.tsx` cards render the per-share entry
-("$2.50 × 2") but never the total dollar premium
-(entryPrice × qty × multiplier).*
+*Note (Fable, 2026-07-19): version discrepancy RESOLVED per
+MASTER-BUILD-DIRECTIVE Phase 0 — the release originally shipped in-app as
+v1.9.0 (commits d35ed27…d602491) was renumbered to **v1.7.0** to match the
+roadmap. All package.json versions and source comments now say v1.7.0; the
+Settings panel footer displays the app version. The pre-launch suite
+(v1.7.1 onboarding → v1.9.2 premium-display fix) is being built on branch
+`feature/pre-launch-suite`.
+Premium-display bug confirmed in code: `Journal.tsx` cards render the
+per-share entry ("$2.50 × 2") but never the total dollar premium
+(entryPrice × qty × multiplier) — fix scheduled as v1.9.2 (Phase 8).*

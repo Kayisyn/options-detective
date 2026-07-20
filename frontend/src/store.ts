@@ -25,9 +25,9 @@ const WEIGHTS_KEY = "od.weights.v1";
 const PROFILES_KEY = "od.weightProfiles.v1";
 const FX_KEY = "od.fx.v1"; // v1.5.0 visual-effects prefs
 const SIDEBAR_ORDER_KEY = "od.sidebarOrder.v1"; // v1.5.1
-const CURRENCY_KEY = "od.currency.v1"; // v1.9.0
+const CURRENCY_KEY = "od.currency.v1"; // v1.7.0
 
-// v1.9.0 currency display preference (per machine, like themes)
+// v1.7.0 currency display preference (per machine, like themes)
 interface CurrencyPrefs {
   mode: "usd" | "cad" | "dual";
   autoUpdate: boolean;
@@ -251,7 +251,7 @@ interface AppState {
   fxLiquidGlass: boolean;
   fxGlow: boolean;
 
-  // v1.9.0 currency (prefs persisted; rate fetched)
+  // v1.7.0 currency (prefs persisted; rate fetched)
   currencyMode: "usd" | "cad" | "dual";
   fxAutoUpdate: boolean;
   fxRate: number | null;   // 1 USD = fxRate CAD
@@ -574,7 +574,7 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  // v1.9.0 currency --------------------------------------------------------
+  // v1.7.0 currency --------------------------------------------------------
 
   // Load the USD→CAD rate. refresh=true forces a refetch (Settings button);
   // otherwise the backend serves its daily cache. autoUpdate=false still
@@ -933,7 +933,7 @@ export const useStore = create<AppState>((set, get) => ({
   async screenEtf(filters, strategy) {
     set({ etfBusy: true, error: null });
     try {
-      // v1.9.0: show the whole curated universe (~49 ETFs) — no pagination
+      // v1.7.0: show the whole curated universe (~49 ETFs) — no pagination
       const etfResult = await api.etfScreen({ filters, strategy, limit: 0 });
       set({ etfResult, etfBusy: false });
       if (!etfResult.anyMetrics) {

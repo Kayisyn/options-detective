@@ -313,7 +313,7 @@ function SidebarTab() {
   );
 }
 
-// v1.9.0 currency: USD / CAD / dual display + exchange-rate management.
+// v1.7.0 currency: USD / CAD / dual display + exchange-rate management.
 // Market data and stored values stay USD; CAD is a display conversion —
 // realized trades convert at their stamped historical rate.
 function CurrencyTab() {
@@ -626,8 +626,9 @@ export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           {tab === "scoring" && <ScoringTab />}
           {tab === "complexity" && <ComplexityTab />}
         </ViewTransition>
-        <p className="mt-4 text-xs text-content-3">
-          Settings apply instantly and persist on this machine.
+        <p className="mt-4 flex items-baseline justify-between text-xs text-content-3">
+          <span>Settings apply instantly and persist on this machine.</span>
+          <span data-testid="app-version">Option Obelisk v{__APP_VERSION__}</span>
         </p>
       </div>
     </Modal>

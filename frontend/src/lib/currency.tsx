@@ -1,7 +1,7 @@
 import { useStore } from "../store";
 import { money } from "./format";
 
-// v1.9.0 CAD support. All market data and stored trade values remain USD —
+// v1.7.0 CAD support. All market data and stored trade values remain USD —
 // CAD is a DISPLAY conversion. Realized (closed) values convert at the rate
 // stamped on the trade (historical accuracy per spec); live/unrealized
 // values convert at the current rate. When a historical rate is missing

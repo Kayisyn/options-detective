@@ -1,4 +1,4 @@
-// v1.9.0 USD→CAD exchange rate service.
+// v1.7.0 USD→CAD exchange rate service.
 //
 // Rate comes from Yahoo's CAD=X ticker through the same market_pulse fetch
 // the sidebars use — no external API key (the spec's fixer.io needs one).

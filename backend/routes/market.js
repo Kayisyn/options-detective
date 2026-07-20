@@ -1,7 +1,7 @@
 // Market pulse for the sidebars (v1.5.0):
 //   GET /market/pulse?watch=AAPL,VGT -> { breadth, trending, watch, news, asOf }
 // One cached fetch feeds breadth, trending, watchlist quotes and headlines.
-// v1.9.0 currency:
+// v1.7.0 currency:
 //   GET /market/fx[?refresh=1] -> { rate, asOf, stale } (USD -> CAD)
 const express = require("express");
 

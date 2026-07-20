@@ -87,7 +87,7 @@ function passesFilters(etf, f = {}) {
   if (!dyn(etf.ivRank, f.ivRankMin, f.ivRankMax)) return false;
   if (!dyn(etf.annualizedCallPremiumPct, f.premiumMin, f.premiumMax)) return false;
   if (!dyn(etf.ytdReturn, f.ytdMin, f.ytdMax)) return false;
-  // v1.9.0 filters
+  // v1.7.0 filters
   if (!dyn(etf.dividendYieldPct, f.yieldMin, f.yieldMax)) return false;
   if (!dyn(etf.perf52wPct, f.perf52wMin, f.perf52wMax)) return false;
   if (!dyn(etf.atrPct20, f.atrMin, f.atrMax)) return false;

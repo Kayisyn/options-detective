@@ -91,7 +91,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 const post = <T,>(path: string, body: unknown) => request<T>("POST", path, body);
 
 export const api = {
-  // v1.9.0 currency
+  // v1.7.0 currency
   marketFx(refresh = false): Promise<FxInfo> {
     return bridge()?.marketFx?.(refresh)
       ?? request("GET", `/market/fx${refresh ? "?refresh=1" : ""}`);

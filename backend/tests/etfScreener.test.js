@@ -52,7 +52,7 @@ test("dynamic filters exclude ETFs missing the required metric", () => {
   assert.equal(passesFilters(etf({ ytdReturn: -5 }), { ytdMin: 0 }), false);
 });
 
-test("v1.9.0 filters: yield, 52w performance, ATR volatility, theta rank", () => {
+test("v1.7.0 filters: yield, 52w performance, ATR volatility, theta rank", () => {
   const rec = etf({ dividendYieldPct: 1.8, perf52wPct: 14, atrPct20: 6.5, thetaRank: 72 });
   // dividend yield range
   assert.equal(passesFilters(rec, { yieldMin: 1 }), true);
@@ -74,7 +74,7 @@ test("v1.9.0 filters: yield, 52w performance, ATR volatility, theta rank", () =>
   assert.equal(passesFilters(etf({ thetaRank: null }), { thetaRankMin: 10 }), false);
 });
 
-test("v1.9.0 theta rank is a premium percentile across the universe", () => {
+test("v1.7.0 theta rank is a premium percentile across the universe", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "od-etf-"));
   const store = createEtfStore({ dir });
   // three ETFs with known premiums -> deterministic percentiles
