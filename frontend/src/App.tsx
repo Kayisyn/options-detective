@@ -8,10 +8,11 @@ import IndexComponentScreener from "./components/IndexComponentScreener";
 import Journal from "./components/Journal";
 import PaperTrading from "./components/PaperTrading";
 import Recommender from "./components/Recommender";
+import FeedbackModal from "./components/shared/FeedbackModal";
 import HelpDrawer from "./components/shared/HelpDrawer";
 import Onboarding, { hasCompletedOnboarding } from "./components/shared/Onboarding";
 import ParticleField from "./components/shared/ParticleField";
-import SettingsPanel from "./components/shared/SettingsPanel";
+import SettingsPanel, { type TabId as SettingsTabId } from "./components/shared/SettingsPanel";
 import { RightSidebar } from "./components/shared/Sidebars";
 import AuthGate from "./components/AuthGate";
 import ViewTransition from "./components/shared/ViewTransition";
@@ -74,6 +75,10 @@ function MainApp() {
   const [onboardingOpen, setOnboardingOpen] = useState(
     () => freshAccount && account !== null && !hasCompletedOnboarding(account.username),
   );
+  // v1.9.1: ⋮ menu + Feedback & Bugs modal; settings can deep-link to a tab
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<SettingsTabId | null>(null);
 
   // Keyboard shortcuts: Ctrl+K jumps to the Screener, Ctrl+Shift+?
   // reopens the walkthrough.
@@ -129,7 +134,9 @@ function MainApp() {
   return (
     <div className="min-h-screen">
       <Onboarding open={onboardingOpen} onClose={() => setOnboardingOpen(false)} />
-      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsPanel open={settingsOpen} openTab={settingsTab}
+        onClose={() => { setSettingsOpen(false); setSettingsTab(null); }} />
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       <HelpDrawer onReplayWalkthrough={() => setOnboardingOpen(true)} />
       {toast && (
         <div
@@ -195,6 +202,43 @@ function MainApp() {
             >
               ?
             </button>
+            {/* v1.9.1 ⋮ menu: Settings / Account / Help / Feedback & Bugs */}
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                title="More"
+                data-testid="more-menu-button"
+                aria-label="More options"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                className="rounded-md px-3 py-1.5 text-sm text-content-3 transition-all duration-150 ease-out-quad hover:bg-dark-700 hover:text-content-1"
+              >
+                ⋮
+              </button>
+              {menuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" aria-hidden
+                    onClick={() => setMenuOpen(false)} />
+                  <div role="menu" data-testid="more-menu"
+                    className="card-glass absolute right-0 top-full z-50 mt-1 w-52 animate-card-enter p-1.5">
+                    {([
+                      ["≡ Settings", () => { setSettingsTab(null); setSettingsOpen(true); }],
+                      ["⚙ Account", () => { setSettingsTab("account"); setSettingsOpen(true); }],
+                      ["❓ Help & Glossary", () => openHelp()],
+                      ["📋 Feedback & Bugs", () => setFeedbackOpen(true)],
+                    ] as const).map(([label, action]) => (
+                      <button key={label} role="menuitem"
+                        data-testid={`menu-${label.slice(2).toLowerCase().replace(/[^a-z]+/g, "-")}`}
+                        onClick={() => { setMenuOpen(false); action(); }}
+                        className="block w-full rounded px-3 py-2 text-left text-sm text-content-2 transition-colors duration-150 hover:bg-dark-700 hover:text-content-1"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
             <span className="mx-1 h-6 w-px bg-white/10" />
             <button
               onClick={() => logout()}

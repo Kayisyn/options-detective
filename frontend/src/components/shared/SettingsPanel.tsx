@@ -26,6 +26,8 @@ import { cx } from "../../lib/cx";
 interface SettingsPanelProps {
   open: boolean;
   onClose: () => void;
+  /** v1.9.1: jump straight to a tab when opened (⋮ menu → Account) */
+  openTab?: TabId | null;
 }
 
 // Settings, v1.4.x: fixed header (title + close), tab strip with a sliding
@@ -34,7 +36,7 @@ interface SettingsPanelProps {
 // sections inside each tab stagger in 50ms apart. Selection applies
 // instantly and persists.
 
-type TabId = "appearance" | "customization" | "sidebar" | "currency" | "scoring" | "complexity" | "templates" | "alerts" | "account";
+export type TabId = "appearance" | "customization" | "sidebar" | "currency" | "scoring" | "complexity" | "templates" | "alerts" | "account";
 
 const SETTINGS_TABS: Array<{ id: TabId; label: string }> = [
   { id: "appearance", label: "Appearance" },
@@ -1165,9 +1167,14 @@ function AccountTab() {
   );
 }
 
-export default function SettingsPanel({ open, onClose }: SettingsPanelProps) {
+export default function SettingsPanel({ open, onClose, openTab }: SettingsPanelProps) {
   const showToast = useStore((s) => s.showToast);
   const [tab, setTab] = useState<TabId>("appearance");
+
+  // ⋮ menu deep-link: land on the requested tab each time it opens with one
+  useLayoutEffect(() => {
+    if (open && openTab) setTab(openTab);
+  }, [open, openTab]);
   const tabRefs = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({});
   const [underline, setUnderline] = useState({ x: 0, w: 0 });
 
