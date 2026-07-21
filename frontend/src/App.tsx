@@ -15,8 +15,10 @@ const PaperTrading = lazy(() => import("./components/PaperTrading"));
 import FeedbackModal from "./components/shared/FeedbackModal";
 import HelpDrawer from "./components/shared/HelpDrawer";
 import Onboarding, { hasCompletedOnboarding } from "./components/shared/Onboarding";
+import ObeliskInsignia from "./components/shared/ObeliskInsignia";
 import ParticleField from "./components/shared/ParticleField";
 import SettingsPanel, { type TabId as SettingsTabId } from "./components/shared/SettingsPanel";
+import SplashScreen from "./components/shared/SplashScreen";
 import { RightSidebar } from "./components/shared/Sidebars";
 import AuthGate from "./components/AuthGate";
 import ViewTransition from "./components/shared/ViewTransition";
@@ -38,22 +40,6 @@ const TABS: Array<{ id: View; label: string; hint: string }> = [
   { id: "paper", label: "Sandbox", hint: "Risk-free simulator with a practice budget" },
   { id: "etf", label: "Assets", hint: "Asset Screener — discover ETF option-selling candidates" },
 ];
-
-// Minimal geometric obelisk mark. Gradient stops ride the accent tokens,
-// so the mark is violet on obsidian and white on the B&W theme.
-function ObeliskMark() {
-  return (
-    <svg width="18" height="24" viewBox="0 0 18 24" aria-hidden className="shrink-0">
-      <defs>
-        <linearGradient id="obelisk-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" style={{ stopColor: "rgb(var(--od-accent-primary-hover))" }} />
-          <stop offset="1" style={{ stopColor: "rgb(var(--od-accent-primary))" }} />
-        </linearGradient>
-      </defs>
-      <path d="M6 24 L7 6 L9 0 L11 6 L12 24 Z" fill="url(#obelisk-grad)" />
-    </svg>
-  );
-}
 
 // Suspense fallback for a lazy view chunk — mirrors the boot splash's
 // pulsing accent bar so the load reads as intentional, not a flash.
@@ -182,7 +168,7 @@ function MainApp() {
             title="Home"
             data-testid="logo"
           >
-            <ObeliskMark />
+            <ObeliskInsignia size={24} />
             Option Obelisk
           </button>
           <nav className="flex flex-wrap items-center gap-1">
@@ -336,21 +322,27 @@ export default function App() {
   const account = useStore((s) => s.account);
   const bootAuth = useStore((s) => s.bootAuth);
 
+  // v1.10.2: the launch splash shows until the boot check finishes AND a short
+  // minimum has elapsed, so the branded splash reads as intentional even when
+  // the backend answers instantly (in the packaged app the backend spawn makes
+  // authReady the longer wait). Then it crossfades out.
+  const [minElapsed, setMinElapsed] = useState(false);
+  const [splashGone, setSplashGone] = useState(false);
+  const bootDone = authReady && minElapsed;
+
   useEffect(() => {
     bootAuth();
+    const t = setTimeout(() => setMinElapsed(true), 1400);
+    return () => clearTimeout(t);
   }, [bootAuth]);
 
   return (
     <>
       <ParticleField />
-      {!authReady ? (
-        <div className="flex min-h-[100dvh] items-center justify-center">
-          <div className="h-8 w-2 animate-pulse rounded-full bg-gradient-to-b from-accent-primary-hover to-accent-primary" />
-        </div>
-      ) : account ? (
-        <MainApp />
-      ) : (
-        <AuthGate />
+      {/* the app mounts behind the splash so the fade-out reveals it */}
+      {bootDone && (account ? <MainApp /> : <AuthGate />)}
+      {!splashGone && (
+        <SplashScreen leaving={bootDone} onExited={() => setSplashGone(true)} />
       )}
     </>
   );

@@ -401,6 +401,22 @@ body::before {
   100% { clip-path: inset(0 0 0 0); }
 }
 
+/* v1.10.2 launch splash: the insignia breathes with an accent-colored halo */
+@keyframes obelisk-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgb(var(--od-accent-primary) / 0.35));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 22px rgb(var(--od-accent-primary) / 0.7));
+    transform: scale(1.045);
+  }
+}
+.obelisk-glow {
+  animation: obelisk-glow 2.6s ease-in-out infinite;
+  will-change: filter, transform;
+}
+
 /* Settings panel: fixed header, scrolling body. The thumb rides the
    accent primary, so it reads violet-tinted on obsidian and gray on
    Black & White without theme-specific rules. */
@@ -482,6 +498,11 @@ body::before {
 }
 :root.motion-off .chart-trace {
   animation: none;
+}
+/* splash insignia: keep a static halo, no pulse, when motion is off */
+:root.motion-off .obelisk-glow {
+  animation: none;
+  filter: drop-shadow(0 0 10px rgb(var(--od-accent-primary) / 0.45));
 }
 :root.motion-off .card-glass-hover,
 :root.motion-off .card-glass-hover:hover {
