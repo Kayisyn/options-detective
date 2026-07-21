@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../store";
-import { money, pct, strategyLabel } from "../lib/format";
+import { money, pct, pnlClass, strategyLabel } from "../lib/format";
 import { ALL_STRATEGY_TYPES } from "../lib/copy";
 import { accountImpactPct, journalStats, pctReturn } from "../lib/journalStats";
 import {
@@ -30,11 +31,6 @@ function displayPnl(t: JournalTrade): { value: number | null; realized: boolean 
   return { value: t.lastMark?.unrealizedPnl ?? null, realized: false };
 }
 
-function pnlClass(v: number | null): string {
-  if (v === null) return "text-content-3";
-  return v > 0 ? "text-accent-green" : v < 0 ? "text-accent-red" : "text-content-2";
-}
-
 function applyJournalFilters(
   trades: JournalTrade[], status: StatusFilter, scope: ScopeFilter,
   symbol: string, sort: JournalSort,
@@ -58,7 +54,20 @@ function applyJournalFilters(
 }
 
 export default function Journal() {
-  const s = useStore();
+  // v1.10.1: field selectors — see Recommender for the rationale
+  const s = useStore(useShallow((st) => ({
+    savedTrades: st.savedTrades, trashedTrades: st.trashedTrades, paper: st.paper,
+    exportedId: st.exportedId,
+    loadJournal: st.loadJournal, loadTrash: st.loadTrash, loadPaper: st.loadPaper,
+    logTrade: st.logTrade, openPaperTrade: st.openPaperTrade,
+    closeTrade: st.closeTrade, closePaperTrade: st.closePaperTrade,
+    updateTrade: st.updateTrade, exportTrade: st.exportTrade,
+    refreshMarks: st.refreshMarks, clearAllPositions: st.clearAllPositions,
+    trashPosition: st.trashPosition, restorePosition: st.restorePosition,
+    deletePositionForever: st.deletePositionForever,
+    restoreAllTrash: st.restoreAllTrash, purgeTrash: st.purgeTrash,
+    showToast: st.showToast,
+  })));
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [scope, setScope] = useState<ScopeFilter>("all");
   const [symbolFilter, setSymbolFilter] = useState("");

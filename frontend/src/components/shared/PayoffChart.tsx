@@ -4,6 +4,7 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { money } from "../../lib/format";
+import { cssVar } from "../../lib/cssVar";
 import { useTheme } from "../../contexts/ThemeContext";
 import type { PayoffPoint } from "../../types";
 
@@ -17,12 +18,8 @@ interface PayoffChartProps {
 }
 
 // Color coding per ux-design-polish-brief §2.4, resolved from the active
-// theme's CSS variables (recharts needs concrete strings, so we read them
-// per render; useTheme() makes the chart re-render on theme switches).
-function cssVar(name: string, fallback: string): string {
-  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return v ? `rgb(${v})` : fallback;
-}
+// theme's CSS variables via lib/cssVar (recharts needs concrete strings;
+// useTheme() below makes the chart re-render on theme switches).
 
 function themeColors() {
   return {

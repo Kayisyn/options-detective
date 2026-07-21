@@ -5,7 +5,7 @@ import {
   type CandidateFilters, type SortSpec,
 } from "./lib/candidateQuery";
 import {
-  COMPONENT_KEYS, DEFAULT_WEIGHTS, effectiveScore, weightsEqual,
+  DEFAULT_WEIGHTS, effectiveScore, weightsEqual,
   type ScoreWeights,
 } from "./lib/scoring";
 import { applyMotionPref, type MotionPref } from "./lib/motionPref";
@@ -17,170 +17,26 @@ import type {
   JournalTrade, Leg, MarketPulse, NewTradeInput, PaperSettings, PaperState,
   Recommendation, ScreenParams, ScreenResult,
 } from "./types";
+// v1.10.1: localStorage persistence lives in lib/storePersist (pure helpers).
+import {
+  DEFAULT_SIDEBAR_ORDER, LAST_SCREEN_KEY, PROFILES_KEY, WEIGHTS_KEY,
+  readCurrencyPrefs, writeCurrencyPrefs, readSidebarOrder, writeSidebarOrder,
+  readStoredFx, writeStoredFx, readStoredWeights, readStoredProfiles,
+  type FxPrefs, type SidebarSection, type WeightProfile,
+} from "./lib/storePersist";
+
+// re-export the public persistence names so existing imports keep resolving
+// against "./store" unchanged (Home uses readLastScreen; Settings/Sidebars
+// use SidebarSection)
+export { readLastScreen, DEFAULT_SIDEBAR_ORDER } from "./lib/storePersist";
+export type { SidebarSection, WeightProfile } from "./lib/storePersist";
 
 export type View = "home" | "detector" | "calculator" | "recommender" | "journal" | "paper" | "etf" | "ics" | "analytics";
-
-const LAST_SCREEN_KEY = "od.lastScreen";
-const WEIGHTS_KEY = "od.weights.v1";
-const PROFILES_KEY = "od.weightProfiles.v1";
-const FX_KEY = "od.fx.v1"; // v1.5.0 visual-effects prefs
-const SIDEBAR_ORDER_KEY = "od.sidebarOrder.v1"; // v1.5.1
-const CURRENCY_KEY = "od.currency.v1"; // v1.7.0
-
-// v1.7.0 currency display preference (per machine, like themes)
-interface CurrencyPrefs {
-  mode: "usd" | "cad" | "dual";
-  autoUpdate: boolean;
-}
-
-const DEFAULT_CURRENCY: CurrencyPrefs = { mode: "usd", autoUpdate: true };
-
-function readCurrencyPrefs(): CurrencyPrefs {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(CURRENCY_KEY) ?? "null");
-    if (!parsed || typeof parsed !== "object") return { ...DEFAULT_CURRENCY };
-    const mode = (parsed as CurrencyPrefs).mode;
-    return {
-      mode: mode === "cad" || mode === "dual" ? mode : "usd",
-      autoUpdate: typeof (parsed as CurrencyPrefs).autoUpdate === "boolean"
-        ? (parsed as CurrencyPrefs).autoUpdate : true,
-    };
-  } catch {
-    return { ...DEFAULT_CURRENCY };
-  }
-}
-
-function writeCurrencyPrefs(prefs: CurrencyPrefs) {
-  try {
-    localStorage.setItem(CURRENCY_KEY, JSON.stringify(prefs));
-  } catch { /* private mode */ }
-}
-
-// v1.5.1: the right sidebar holds all five sections; the user reorders them
-// in Settings and the order persists.
-export type SidebarSection = "watchlist" | "recentTrades" | "breadth" | "trending" | "news";
-export const DEFAULT_SIDEBAR_ORDER: SidebarSection[] =
-  ["watchlist", "recentTrades", "breadth", "trending", "news"];
-
-function readSidebarOrder(): SidebarSection[] {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(SIDEBAR_ORDER_KEY) ?? "null");
-    const known = new Set<string>(DEFAULT_SIDEBAR_ORDER);
-    const order: SidebarSection[] = [];
-    if (Array.isArray(parsed)) {
-      for (const s of parsed) {
-        if (known.has(s) && !order.includes(s as SidebarSection)) order.push(s as SidebarSection);
-      }
-    }
-    // append any section missing from storage (forward-compat with new sections)
-    for (const s of DEFAULT_SIDEBAR_ORDER) if (!order.includes(s)) order.push(s);
-    return order;
-  } catch {
-    return [...DEFAULT_SIDEBAR_ORDER];
-  }
-}
-
-function writeSidebarOrder(order: SidebarSection[]) {
-  try {
-    localStorage.setItem(SIDEBAR_ORDER_KEY, JSON.stringify(order));
-  } catch {
-    // private mode: order lives for the session only
-  }
-}
-
-interface FxPrefs {
-  particles: boolean;
-  particleCount: number; // 50-300
-  motion: MotionPref;    // system | on | off
-  // v1.5.1 performance debug toggles — all default ON (preserve visuals)
-  parallax: boolean;     // cursor depth shift on the particle layer
-  liquidGlass: boolean;  // flowing shimmer on cards/buttons/inputs
-  glow: boolean;         // neon halo + P&L + focus box-shadow glows
-}
-
-const DEFAULT_FX: FxPrefs = {
-  particles: true, particleCount: 200, motion: "system",
-  parallax: true, liquidGlass: true, glow: true,
-};
-
-// older payloads predate the debug toggles; a missing flag defaults ON
-function readBool(v: unknown, fallback: boolean): boolean {
-  return typeof v === "boolean" ? v : fallback;
-}
-
-function readStoredFx(): FxPrefs {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(FX_KEY) ?? "null");
-    if (!parsed || typeof parsed !== "object") return { ...DEFAULT_FX };
-    const p = parsed as Partial<FxPrefs>;
-    const count = Number(p.particleCount);
-    return {
-      particles: readBool(p.particles, DEFAULT_FX.particles),
-      particleCount: Number.isFinite(count)
-        ? Math.min(300, Math.max(50, Math.round(count))) : DEFAULT_FX.particleCount,
-      motion: p.motion === "on" || p.motion === "off" ? p.motion : "system",
-      parallax: readBool(p.parallax, DEFAULT_FX.parallax),
-      liquidGlass: readBool(p.liquidGlass, DEFAULT_FX.liquidGlass),
-      glow: readBool(p.glow, DEFAULT_FX.glow),
-    };
-  } catch {
-    return { ...DEFAULT_FX };
-  }
-}
 
 // stamp <html> classes (motion-off, fx-no-*) before the first render so
 // entrance animations and effect gating resolve correctly from frame one
 applyMotionPref(readStoredFx().motion);
 applyFxClasses(readStoredFx());
-
-function writeStoredFx(fx: FxPrefs) {
-  try {
-    localStorage.setItem(FX_KEY, JSON.stringify(fx));
-  } catch {
-    // private mode: prefs live for the session only
-  }
-}
-
-export interface WeightProfile {
-  name: string;
-  weights: ScoreWeights;
-}
-
-function isWeights(x: unknown): x is ScoreWeights {
-  return !!x && typeof x === "object"
-    && COMPONENT_KEYS.every((k) => typeof (x as Record<string, unknown>)[k] === "number");
-}
-
-function readStoredWeights(): ScoreWeights {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(WEIGHTS_KEY) ?? "null");
-    return isWeights(parsed) ? parsed : { ...DEFAULT_WEIGHTS };
-  } catch {
-    return { ...DEFAULT_WEIGHTS };
-  }
-}
-
-function readStoredProfiles(): WeightProfile[] {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(PROFILES_KEY) ?? "null");
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((p) => typeof p?.name === "string" && isWeights(p?.weights));
-  } catch {
-    return [];
-  }
-}
-
-export function readLastScreen(): { symbol: string; at: number } | null {
-  try {
-    const raw = localStorage.getItem(LAST_SCREEN_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return typeof parsed?.symbol === "string" && typeof parsed?.at === "number"
-      ? parsed : null;
-  } catch {
-    return null;
-  }
-}
 
 type Status = "idle" | "screening" | "calculating" | "recommending";
 

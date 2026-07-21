@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../store";
 import { money, num, pct, shortDate, signed, strategyLabel } from "../lib/format";
 import Button from "./ui/Button";
@@ -63,7 +64,16 @@ function riskReward(c: Candidate): string {
 
 // View 1: symbol + intent -> ranked candidate cards across all expirations.
 export default function Detector() {
-  const s = useStore();
+  // v1.10.1: field selectors — see Recommender for the rationale
+  const s = useStore(useShallow((st) => ({
+    symbol: st.symbol, filters: st.filters, sort: st.sort, status: st.status,
+    screenResult: st.screenResult, weights: st.weights, capital: st.capital,
+    definedRiskOnly: st.definedRiskOnly, directionalView: st.directionalView,
+    screen: st.screen, recommend: st.recommend, openCandidate: st.openCandidate,
+    patchFilters: st.patchFilters, clearFilters: st.clearFilters,
+    setIntent: st.setIntent, setSort: st.setSort, setView: st.setView,
+    setWeights: st.setWeights, openHelp: st.openHelp,
+  })));
   const { expertMode } = useMode();
   const result = s.screenResult;
   const screening = s.status === "screening";

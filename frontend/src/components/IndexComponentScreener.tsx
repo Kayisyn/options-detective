@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../store";
 import { money, pct, shortDate, strategyLabel } from "../lib/format";
 import { cx } from "../lib/cx";
@@ -32,7 +33,13 @@ function sortValue(c: IcsCandidate, key: SortKey): number {
 }
 
 export default function IndexComponentScreener() {
-  const s = useStore();
+  // v1.10.1: field selectors — see Recommender for the rationale
+  const s = useStore(useShallow((st) => ({
+    icsBusy: st.icsBusy, icsError: st.icsError, icsEtf: st.icsEtf,
+    icsResult: st.icsResult, icsScrollY: st.icsScrollY, icsView: st.icsView,
+    runIcs: st.runIcs, patchIcsView: st.patchIcsView,
+    openCandidate: st.openCandidate, setView: st.setView,
+  })));
   const result = s.icsResult;
 
   const { sectors, subset, strategy, sort, shown } = s.icsView;

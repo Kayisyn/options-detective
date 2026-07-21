@@ -30,6 +30,13 @@ function round2(x: number): number {
   return Math.round(x * 100) / 100;
 }
 
+// The position's premium/debit basis in dollars: per-unit entry price ×
+// quantity × contract multiplier. Single source of truth for % returns,
+// the premium-collected/debit-paid display, and analytics.
+export function positionBasis(t: JournalTrade): number {
+  return Math.abs(t.entryPrice) * t.entryQty * t.multiplier;
+}
+
 function buckets(trades: JournalTrade[], keyOf: (t: JournalTrade) => string): PnlBucket[] {
   const map = new Map<string, PnlBucket>();
   for (const t of trades) {
@@ -49,7 +56,7 @@ function buckets(trades: JournalTrade[], keyOf: (t: JournalTrade) => string): Pn
 // The P&L numbers are backend-computed and side-aware, so credit positions
 // come out right (+60% = kept 60% of the credit received).
 export function pctReturn(t: JournalTrade): number | null {
-  const basis = Math.abs(t.entryPrice) * t.entryQty * t.multiplier;
+  const basis = positionBasis(t);
   if (!basis) return null;
   const pnl = t.status !== "open"
     ? t.actualPnl
@@ -63,8 +70,7 @@ export function pctReturn(t: JournalTrade): number | null {
 // held back at open.
 export function accountImpactPct(t: JournalTrade, accountValue: number | null | undefined): number | null {
   if (!t.paper || !accountValue || accountValue <= 0) return null;
-  const notional = t.reservedCapital
-    ?? Math.abs(t.entryPrice) * t.entryQty * t.multiplier;
+  const notional = t.reservedCapital ?? positionBasis(t);
   return (notional / accountValue) * 100;
 }
 

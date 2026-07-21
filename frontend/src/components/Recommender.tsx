@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../store";
 import { money, pct, shortDate, strategyLabel } from "../lib/format";
 import { DEFAULT_SORT, sortCandidates, type SortSpec } from "../lib/candidateQuery";
@@ -12,7 +13,14 @@ import { useMode } from "../contexts/ModeContext";
 // strategy under the active sort is featured full-width with the violet
 // glow; the rest rank below. Trade-off facts and broker export unchanged.
 export default function Recommender() {
-  const s = useStore();
+  // v1.10.1: subscribe only to the fields/actions this view uses, so
+  // unrelated background writes (pulse, fx, paper marks) don't re-render it
+  const s = useStore(useShallow((st) => ({
+    recommendation: st.recommendation, status: st.status, weights: st.weights,
+    exportedId: st.exportedId, savedTrades: st.savedTrades,
+    loadJournal: st.loadJournal, openCandidate: st.openCandidate,
+    exportTrade: st.exportTrade, saveToJournal: st.saveToJournal,
+  })));
   const { expertMode } = useMode();
   const rec = s.recommendation;
   // local re-ordering of the top five (v1.1 §1); rank badges keep the

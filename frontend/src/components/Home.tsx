@@ -1,4 +1,5 @@
 import { useEffect, type ComponentType, type SVGProps } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { readLastScreen, useStore } from "../store";
 import { pct, strategyLabel } from "../lib/format";
 import Button from "./ui/Button";
@@ -43,7 +44,12 @@ function mostUsedStrategy(trades: { strategy: string }[]): string | null {
 }
 
 export default function Home() {
-  const s = useStore();
+  // v1.10.1: field selectors — see Recommender for the rationale
+  const s = useStore(useShallow((st) => ({
+    paper: st.paper, savedTrades: st.savedTrades,
+    loadJournal: st.loadJournal, loadPaper: st.loadPaper,
+    setView: st.setView, setSettingsOpen: st.setSettingsOpen, openHelp: st.openHelp,
+  })));
   const lastScreen = readLastScreen();
 
   useEffect(() => {

@@ -2,6 +2,7 @@
 // display sums over backend-computed realized P&L — no P&L is derived here.
 // Only settled trades (closed/assigned/expired with a stored actualPnl)
 // participate; open positions never move the equity curve.
+import { positionBasis } from "./journalStats";
 import type { JournalTrade } from "../types";
 
 export type RangeId = "30d" | "3m" | "6m" | "all";
@@ -111,7 +112,7 @@ export interface AdvancedStats {
 }
 
 function pctReturnOf(t: JournalTrade): number | null {
-  const basis = Math.abs(t.entryPrice) * t.entryQty * t.multiplier;
+  const basis = positionBasis(t);
   if (!basis || t.actualPnl === null) return null;
   return t.actualPnl / basis;
 }
@@ -181,7 +182,7 @@ export function advancedStats(trades: JournalTrade[], range: RangeId): AdvancedS
 
   // ---- MAE/MFE: only trades where marks were actually observed
   const maeMfe: MaeMfePoint[] = settled.flatMap((t) => {
-    const basis = Math.abs(t.entryPrice) * t.entryQty * t.multiplier;
+    const basis = positionBasis(t);
     if (!basis || t.mae === null || t.mfe === null) return [];
     return [{
       symbol: t.symbol,

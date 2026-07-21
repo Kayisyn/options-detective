@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../store";
-import { money, pct, strategyLabel } from "../lib/format";
+import { money, pct, pnlClass, strategyLabel } from "../lib/format";
+import { cssVar } from "../lib/cssVar";
 import { useTheme } from "../contexts/ThemeContext";
 import Button from "./ui/Button";
 import { Badge, Card, MetricBox, PctBadge } from "./ui/Card";
@@ -18,16 +20,6 @@ import type { EquityPoint, JournalTrade } from "../types";
 // Sandbox view (renamed from Paper Trading, v1.4.0): three-column layout —
 // stats sidebar, open positions center, equity curve right. All money
 // numbers come from the backend paper engine; this view only renders them.
-
-function cssVar(name: string, fallback: string): string {
-  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return v ? `rgb(${v})` : fallback;
-}
-
-function pnlClass(v: number | null): string {
-  if (v === null) return "text-content-3";
-  return v > 0 ? "text-accent-green" : v < 0 ? "text-accent-red" : "text-content-2";
-}
 
 function dteOf(expiration: string | null): number | null {
   if (!expiration) return null;
@@ -77,7 +69,13 @@ function EquityCurve({ points, days }: { points: EquityPoint[]; days: number }) 
 }
 
 export default function PaperTrading() {
-  const s = useStore();
+  // v1.10.1: field selectors — see Recommender for the rationale
+  const s = useStore(useShallow((st) => ({
+    paper: st.paper, paperCurve: st.paperCurve, paperMarking: st.paperMarking,
+    loadPaper: st.loadPaper, processPaper: st.processPaper,
+    createPaperAccount: st.createPaperAccount, resetPaper: st.resetPaper,
+    closePaperTrade: st.closePaperTrade,
+  })));
   const [initial, setInitial] = useState("50000");
   const [busy, setBusy] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);

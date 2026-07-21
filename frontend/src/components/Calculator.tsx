@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../store";
 import { money, num, pct, shortDate, signed, strategyLabel } from "../lib/format";
 import PayoffChart from "./shared/PayoffChart";
@@ -38,7 +39,12 @@ function narrative(result: CalcResult, symbol: string): string | null {
 // View 2: payoff diagram + greeks + leg detail for the selected candidate,
 // with strike adjustments (repriced at Black-Scholes theoretical, labelled).
 export default function Calculator() {
-  const s = useStore();
+  // v1.10.1: field selectors — see Recommender for the rationale
+  const s = useStore(useShallow((st) => ({
+    calcResult: st.calcResult, selected: st.selected, status: st.status,
+    capital: st.capital, riskTolerancePct: st.riskTolerancePct,
+    compareCandidates: st.compareCandidates, openHelp: st.openHelp,
+  })));
   const { expertMode } = useMode();
   const candidate = s.selected;
   const result = s.calcResult;
