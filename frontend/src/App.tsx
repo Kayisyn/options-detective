@@ -1,13 +1,17 @@
-import { useEffect, useState } from "react";
-import Analytics from "./components/Analytics";
-import Calculator from "./components/Calculator";
+import { lazy, Suspense, useEffect, useState } from "react";
 import Detector from "./components/Detector";
 import EtfScreener from "./components/EtfScreener";
 import Home from "./components/Home";
 import IndexComponentScreener from "./components/IndexComponentScreener";
 import Journal from "./components/Journal";
-import PaperTrading from "./components/PaperTrading";
 import Recommender from "./components/Recommender";
+
+// v1.9.3: the three recharts consumers — Analyzer (payoff chart), Sandbox
+// and Analytics (equity/drawdown/scatter) — are code-split so the ~84 KB
+// gzipped charting library loads on demand, not on the initial Home paint.
+const Analytics = lazy(() => import("./components/Analytics"));
+const Calculator = lazy(() => import("./components/Calculator"));
+const PaperTrading = lazy(() => import("./components/PaperTrading"));
 import FeedbackModal from "./components/shared/FeedbackModal";
 import HelpDrawer from "./components/shared/HelpDrawer";
 import Onboarding, { hasCompletedOnboarding } from "./components/shared/Onboarding";
@@ -48,6 +52,16 @@ function ObeliskMark() {
       </defs>
       <path d="M6 24 L7 6 L9 0 L11 6 L12 24 Z" fill="url(#obelisk-grad)" />
     </svg>
+  );
+}
+
+// Suspense fallback for a lazy view chunk — mirrors the boot splash's
+// pulsing accent bar so the load reads as intentional, not a flash.
+function ViewLoading() {
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center" data-testid="view-loading">
+      <div className="h-8 w-2 animate-pulse rounded-full bg-gradient-to-b from-accent-primary-hover to-accent-primary" />
+    </div>
   );
 }
 
@@ -261,15 +275,19 @@ function MainApp() {
         <main className="min-w-0 flex-1 overflow-x-hidden py-6">
           <div className="mx-auto max-w-7xl">
             <ViewTransition viewKey={view}>
-              {view === "home" && <Home />}
-              {view === "detector" && <Detector />}
-              {view === "calculator" && <Calculator />}
-              {view === "recommender" && <Recommender />}
-              {view === "journal" && <Journal />}
-              {view === "analytics" && <Analytics />}
-              {view === "paper" && <PaperTrading />}
-              {view === "etf" && <EtfScreener />}
-              {view === "ics" && <IndexComponentScreener />}
+              {/* Suspense catches the lazy chart chunk on first visit to
+                  Analyzer / Sandbox / Analytics; other views render eagerly */}
+              <Suspense fallback={<ViewLoading />}>
+                {view === "home" && <Home />}
+                {view === "detector" && <Detector />}
+                {view === "calculator" && <Calculator />}
+                {view === "recommender" && <Recommender />}
+                {view === "journal" && <Journal />}
+                {view === "analytics" && <Analytics />}
+                {view === "paper" && <PaperTrading />}
+                {view === "etf" && <EtfScreener />}
+                {view === "ics" && <IndexComponentScreener />}
+              </Suspense>
             </ViewTransition>
           </div>
         </main>
