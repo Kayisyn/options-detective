@@ -2,6 +2,7 @@
 // v1.8.0: columns are selectable — CSV_COLUMNS is the catalog (id, label,
 // on-by-default), the chosen ids persist under od.csvColumns.v1, and
 // journalToCsv takes the selection. Watchlist CSV export lives here too.
+import { positionBasis } from "./journalStats";
 import type { EtfRecord, JournalTrade } from "../types";
 
 export interface CsvColumn {
@@ -14,7 +15,7 @@ export interface CsvColumn {
 // %gain mirrors lib/journalStats.pctReturn: signed P&L over the premium
 // basis (realized when settled, marked when open)
 function pctGain(t: JournalTrade): number | null {
-  const basis = Math.abs(t.entryPrice) * t.entryQty * t.multiplier;
+  const basis = positionBasis(t);
   if (!basis) return null;
   const pnl = t.status !== "open" ? t.actualPnl : t.lastMark?.unrealizedPnl ?? null;
   if (pnl === null) return null;

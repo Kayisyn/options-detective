@@ -1,11 +1,13 @@
 import { money } from "../../lib/format";
+import { positionBasis } from "../../lib/journalStats";
 import type { JournalTrade } from "../../types";
 
 // v1.9.2: the total dollar premium at entry — the long-missing card line.
 // The form takes a per-unit price as brokers quote it; the position's cash
-// impact is price × qty × multiplier. Credits collect it, debits pay it.
+// impact is price × qty × multiplier (positionBasis). Credits collect it,
+// debits pay it.
 export function premiumTotal(t: JournalTrade): number {
-  return Math.abs(t.entryPrice) * t.entryQty * t.multiplier;
+  return positionBasis(t);
 }
 
 export default function PremiumTotal({ trade }: { trade: JournalTrade }) {

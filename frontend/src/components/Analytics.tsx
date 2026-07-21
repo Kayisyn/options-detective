@@ -4,7 +4,8 @@ import {
   ScatterChart, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { useStore } from "../store";
-import { money, pct, strategyLabel } from "../lib/format";
+import { money, pct, pnlClass, strategyLabel } from "../lib/format";
+import { cssVar } from "../lib/cssVar";
 import { useTheme } from "../contexts/ThemeContext";
 import {
   advancedStats, dashboardStats, RANGES,
@@ -20,16 +21,6 @@ import { cx } from "../lib/cx";
 // time-range filter. Aggregation lives in lib/analytics.ts.
 
 type Scope = "all" | "real" | "paper";
-
-function cssVar(name: string, fallback: string): string {
-  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return v ? `rgb(${v})` : fallback;
-}
-
-function pnlClass(v: number | null): string {
-  if (v === null) return "text-content-3";
-  return v > 0 ? "text-accent-green" : v < 0 ? "text-accent-red" : "text-content-2";
-}
 
 function signedMoney(v: number): string {
   return `${v > 0 ? "+" : ""}${money(v)}`;

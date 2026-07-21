@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../store";
-import { money, pct, strategyLabel } from "../lib/format";
+import { money, pct, pnlClass, strategyLabel } from "../lib/format";
 import { ALL_STRATEGY_TYPES } from "../lib/copy";
 import { accountImpactPct, journalStats, pctReturn } from "../lib/journalStats";
 import {
@@ -29,11 +29,6 @@ type JournalSort = "newest" | "oldest" | "pnlDesc" | "pnlAsc" | "symbol";
 function displayPnl(t: JournalTrade): { value: number | null; realized: boolean } {
   if (t.status !== "open") return { value: t.actualPnl, realized: true };
   return { value: t.lastMark?.unrealizedPnl ?? null, realized: false };
-}
-
-function pnlClass(v: number | null): string {
-  if (v === null) return "text-content-3";
-  return v > 0 ? "text-accent-green" : v < 0 ? "text-accent-red" : "text-content-2";
 }
 
 function applyJournalFilters(

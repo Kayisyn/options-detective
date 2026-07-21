@@ -28,6 +28,13 @@ export function strategyLabel(strategyType: string): string {
   return strategyType.replace(/_/g, " ");
 }
 
+// Tailwind text color for a signed P&L value: green profit, red loss,
+// neutral for zero, muted for unknown. Shared across the P&L views.
+export function pnlClass(v: number | null): string {
+  if (v === null) return "text-content-3";
+  return v > 0 ? "text-accent-green" : v < 0 ? "text-accent-red" : "text-content-2";
+}
+
 // "2026-08-21" -> "Aug 21"
 export function shortDate(isoDate: string): string {
   const d = new Date(`${isoDate}T12:00:00Z`);
