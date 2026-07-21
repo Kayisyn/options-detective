@@ -439,6 +439,26 @@ body::before {
   background: rgb(var(--od-accent-primary) / 0.55);
 }
 
+/* v1.10.2: the Settings tab strip scrolls horizontally when the tabs don't
+   fit, with a thin themed scrollbar that matches the body's. */
+.settings-tabs {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--od-accent-primary) / 0.35) transparent;
+}
+.settings-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+.settings-tabs::-webkit-scrollbar-track {
+  background: transparent;
+}
+.settings-tabs::-webkit-scrollbar-thumb {
+  background: rgb(var(--od-accent-primary) / 0.35);
+  border-radius: 2px;
+}
+.settings-tabs::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--od-accent-primary) / 0.55);
+}
+
 /* Settings tab strip: the active-tab underline slides between tabs on
    a GPU-only translateX + scaleX (the bar itself is 1px wide and gets
    stretched to the measured tab width). */

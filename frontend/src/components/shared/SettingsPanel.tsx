@@ -69,7 +69,9 @@ export default function SettingsPanel({ open, onClose, openTab }: SettingsPanelP
           <h2 className="text-xl font-semibold">Settings</h2>
           <Button variant="ghost" size="xs" onClick={close} aria-label="Close settings">✕</Button>
         </div>
-        <div className="relative flex gap-1" role="tablist" aria-label="Settings sections">
+        {/* v1.10.2: scroll horizontally when the 9 tabs don't fit, so none
+            are cut off on the right edge */}
+        <div className="settings-tabs relative flex gap-1 overflow-x-auto pb-1" role="tablist" aria-label="Settings sections">
           {SETTINGS_TABS.map((t) => (
             <button
               key={t.id}
@@ -79,7 +81,7 @@ export default function SettingsPanel({ open, onClose, openTab }: SettingsPanelP
               data-settings-tab={t.id}
               onClick={() => setTab(t.id)}
               className={cx(
-                "group relative rounded-t px-3 pb-2.5 pt-1 text-sm transition-all duration-150 ease-out-quad",
+                "group relative shrink-0 rounded-t px-3 pb-2.5 pt-1 text-sm transition-all duration-150 ease-out-quad",
                 tab === t.id
                   ? "text-content-1"
                   : "text-content-2 opacity-60 hover:scale-[1.02] hover:opacity-100",
@@ -94,7 +96,7 @@ export default function SettingsPanel({ open, onClose, openTab }: SettingsPanelP
           ))}
           <span
             aria-hidden
-            className="settings-tab-underline absolute bottom-0 left-0 h-0.5 w-px bg-accent-primary"
+            className="settings-tab-underline absolute bottom-1 left-0 h-0.5 w-px bg-accent-primary"
             style={{ transform: `translateX(${underline.x}px) scaleX(${underline.w})` }}
           />
         </div>
