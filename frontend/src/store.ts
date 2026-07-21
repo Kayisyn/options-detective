@@ -17,7 +17,7 @@ import type {
   JournalTrade, Leg, MarketPulse, NewTradeInput, PaperSettings, PaperState,
   Recommendation, ScreenParams, ScreenResult,
 } from "./types";
-// v1.9.3: localStorage persistence lives in lib/storePersist (pure helpers).
+// v1.10.1: localStorage persistence lives in lib/storePersist (pure helpers).
 import {
   DEFAULT_SIDEBAR_ORDER, LAST_SCREEN_KEY, PROFILES_KEY, WEIGHTS_KEY,
   readCurrencyPrefs, writeCurrencyPrefs, readSidebarOrder, writeSidebarOrder,

@@ -4,7 +4,7 @@ import Button from "../ui/Button";
 import Modal from "../ui/Modal";
 import ViewTransition from "./ViewTransition";
 import { cx } from "../../lib/cx";
-// v1.9.3: the tab components live in SettingsTabs.tsx; this file is the shell
+// v1.10.1: the tab components live in SettingsTabs.tsx; this file is the shell
 import {
   AppearanceTab, CustomizationTab, SidebarTab, CurrencyTab, ScoringTab,
   ComplexityTab, TemplatesTab, AlertsTab, AccountTab,

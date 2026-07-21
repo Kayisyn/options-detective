@@ -69,7 +69,7 @@ function EquityCurve({ points, days }: { points: EquityPoint[]; days: number }) 
 }
 
 export default function PaperTrading() {
-  // v1.9.3: field selectors — see Recommender for the rationale
+  // v1.10.1: field selectors — see Recommender for the rationale
   const s = useStore(useShallow((st) => ({
     paper: st.paper, paperCurve: st.paperCurve, paperMarking: st.paperMarking,
     loadPaper: st.loadPaper, processPaper: st.processPaper,

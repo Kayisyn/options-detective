@@ -39,7 +39,7 @@ function narrative(result: CalcResult, symbol: string): string | null {
 // View 2: payoff diagram + greeks + leg detail for the selected candidate,
 // with strike adjustments (repriced at Black-Scholes theoretical, labelled).
 export default function Calculator() {
-  // v1.9.3: field selectors — see Recommender for the rationale
+  // v1.10.1: field selectors — see Recommender for the rationale
   const s = useStore(useShallow((st) => ({
     calcResult: st.calcResult, selected: st.selected, status: st.status,
     capital: st.capital, riskTolerancePct: st.riskTolerancePct,

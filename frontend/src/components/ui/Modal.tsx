@@ -9,7 +9,7 @@ const FOCUSABLE =
 // with slide-up + scale 0.95 -> 1 over 250ms ease-out, exits with the
 // reverse over 150ms ease-in, then unmounts. Backdrop click and Escape
 // both close.
-// v1.9.3 a11y: role=dialog/aria-modal, focus moves into the panel on open,
+// v1.10.1 a11y: role=dialog/aria-modal, focus moves into the panel on open,
 // Tab is trapped inside, and focus returns to the trigger on close.
 export default function Modal({
   open, onClose, children, testid, maxWidth = "max-w-xl", flush = false,

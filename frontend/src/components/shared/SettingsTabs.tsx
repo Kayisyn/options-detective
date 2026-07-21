@@ -21,7 +21,7 @@ import { FormInput } from "../ui/Input";
 import { SECTION_LABELS } from "./Sidebars";
 import { cx } from "../../lib/cx";
 
-// v1.9.3: the Settings tab components, extracted from SettingsPanel.tsx so
+// v1.10.1: the Settings tab components, extracted from SettingsPanel.tsx so
 // that file holds only the modal shell + tab strip. Behaviour unchanged.
 
 function Section({ index, children }: { index: number; children: ReactNode }) {

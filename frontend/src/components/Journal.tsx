@@ -54,7 +54,7 @@ function applyJournalFilters(
 }
 
 export default function Journal() {
-  // v1.9.3: field selectors — see Recommender for the rationale
+  // v1.10.1: field selectors — see Recommender for the rationale
   const s = useStore(useShallow((st) => ({
     savedTrades: st.savedTrades, trashedTrades: st.trashedTrades, paper: st.paper,
     exportedId: st.exportedId,

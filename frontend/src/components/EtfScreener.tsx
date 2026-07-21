@@ -318,7 +318,7 @@ function ColumnSettings({ config, onChange, onClose }: {
 }
 
 export default function EtfScreener() {
-  // v1.9.3: field selectors — see Recommender for the rationale
+  // v1.10.1: field selectors — see Recommender for the rationale
   const s = useStore(useShallow((st) => ({
     account: st.account, etfBusy: st.etfBusy, etfReference: st.etfReference,
     etfResult: st.etfResult, etfWatchlist: st.etfWatchlist,

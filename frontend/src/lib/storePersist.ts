@@ -1,4 +1,4 @@
-// v1.9.3: the store's localStorage persistence layer, extracted from
+// v1.10.1: the store's localStorage persistence layer, extracted from
 // store.ts so the store file holds state + actions and this file owns the
 // read/write/validate helpers. Pure functions — no store dependency — so
 // moving them here cannot change runtime behavior. store.ts re-exports the

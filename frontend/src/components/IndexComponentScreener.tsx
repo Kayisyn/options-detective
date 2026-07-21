@@ -33,7 +33,7 @@ function sortValue(c: IcsCandidate, key: SortKey): number {
 }
 
 export default function IndexComponentScreener() {
-  // v1.9.3: field selectors — see Recommender for the rationale
+  // v1.10.1: field selectors — see Recommender for the rationale
   const s = useStore(useShallow((st) => ({
     icsBusy: st.icsBusy, icsError: st.icsError, icsEtf: st.icsEtf,
     icsResult: st.icsResult, icsScrollY: st.icsScrollY, icsView: st.icsView,

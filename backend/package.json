@@ -1,6 +1,6 @@
 {
   "name": "options-detective-backend",
-  "version": "1.9.3",
+  "version": "1.10.1",
   "private": true,
   "description": "Express API + Python math engine bridge for Options Detective",
   "main": "server.js",

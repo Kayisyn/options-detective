@@ -13,7 +13,7 @@ import { useMode } from "../contexts/ModeContext";
 // strategy under the active sort is featured full-width with the violet
 // glow; the rest rank below. Trade-off facts and broker export unchanged.
 export default function Recommender() {
-  // v1.9.3: subscribe only to the fields/actions this view uses, so
+  // v1.10.1: subscribe only to the fields/actions this view uses, so
   // unrelated background writes (pulse, fx, paper marks) don't re-render it
   const s = useStore(useShallow((st) => ({
     recommendation: st.recommendation, status: st.status, weights: st.weights,

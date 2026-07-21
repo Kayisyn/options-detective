@@ -6,7 +6,7 @@ import IndexComponentScreener from "./components/IndexComponentScreener";
 import Journal from "./components/Journal";
 import Recommender from "./components/Recommender";
 
-// v1.9.3: the three recharts consumers — Analyzer (payoff chart), Sandbox
+// v1.10.1: the three recharts consumers — Analyzer (payoff chart), Sandbox
 // and Analytics (equity/drawdown/scatter) — are code-split so the ~84 KB
 // gzipped charting library loads on demand, not on the initial Home paint.
 const Analytics = lazy(() => import("./components/Analytics"));
@@ -147,7 +147,7 @@ function MainApp() {
 
   return (
     <div className="min-h-screen">
-      {/* v1.9.3 a11y: first focusable — jump past the nav to the view */}
+      {/* v1.10.1 a11y: first focusable — jump past the nav to the view */}
       <a
         href="#main-content"
         data-testid="skip-link"
@@ -160,7 +160,7 @@ function MainApp() {
         onClose={() => { setSettingsOpen(false); setSettingsTab(null); }} />
       <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       <HelpDrawer onReplayWalkthrough={() => setOnboardingOpen(true)} />
-      {/* v1.9.3 a11y: persistent polite live region so toast confirmations
+      {/* v1.10.1 a11y: persistent polite live region so toast confirmations
           (saved, exported, alerts…) are announced to screen readers */}
       <div role="status" aria-live="polite" className="sr-only" data-testid="toast-live">
         {toast ?? ""}

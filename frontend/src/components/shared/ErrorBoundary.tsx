@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
-// v1.9.3: crash safety. A render throw anywhere below this boundary (a
+// v1.10.1: crash safety. A render throw anywhere below this boundary (a
 // malformed stored trade, an unexpected null from a future data shape)
 // would otherwise blank the whole Electron window with no recovery path —
 // there's no browser reload button the user reaches for. This catches it and

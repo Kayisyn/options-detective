@@ -64,7 +64,7 @@ function riskReward(c: Candidate): string {
 
 // View 1: symbol + intent -> ranked candidate cards across all expirations.
 export default function Detector() {
-  // v1.9.3: field selectors — see Recommender for the rationale
+  // v1.10.1: field selectors — see Recommender for the rationale
   const s = useStore(useShallow((st) => ({
     symbol: st.symbol, filters: st.filters, sort: st.sort, status: st.status,
     screenResult: st.screenResult, weights: st.weights, capital: st.capital,

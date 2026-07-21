@@ -44,7 +44,7 @@ function mostUsedStrategy(trades: { strategy: string }[]): string | null {
 }
 
 export default function Home() {
-  // v1.9.3: field selectors — see Recommender for the rationale
+  // v1.10.1: field selectors — see Recommender for the rationale
   const s = useStore(useShallow((st) => ({
     paper: st.paper, savedTrades: st.savedTrades,
     loadJournal: st.loadJournal, loadPaper: st.loadPaper,
