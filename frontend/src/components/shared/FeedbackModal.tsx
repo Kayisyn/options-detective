@@ -58,10 +58,10 @@ export default function FeedbackModal({ open, onClose }: {
       entry.status = "opened";
       enqueueFeedback(entry);
       window.open(issueUrl(entry), "_blank", "noopener");
-      showToast("✓ Opening a pre-filled GitHub issue — hit Submit there to send");
+      showToast("✓ Opening a pre-filled GitHub issue, hit Submit there to send");
     } else {
       enqueueFeedback(entry);
-      showToast("Saved locally — reopen Feedback & Bugs to send when back online");
+      showToast("Saved locally, reopen Feedback & Bugs to send when back online");
     }
     setQueue(loadFeedbackQueue());
     setText("");
@@ -89,7 +89,7 @@ export default function FeedbackModal({ open, onClose }: {
     <Modal open={open} onClose={onClose} testid="feedback-modal" maxWidth="max-w-md">
       <h2 className="text-lg font-semibold">Feedback &amp; Bug Reports</h2>
       <p className="mt-1 text-sm text-content-3">
-        Sends as a pre-filled GitHub issue from your own account — review it
+        Sends as a pre-filled GitHub issue from your own account, review it
         before submitting there.
       </p>
 
@@ -152,7 +152,7 @@ export default function FeedbackModal({ open, onClose }: {
         <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
         <Button variant="secondary" size="sm" disabled={!text.trim()}
           onClick={() => copy(makeEntry())} data-testid="feedback-copy"
-          title="Copy the report as text — paste it anywhere">
+          title="Copy the report as text, paste it anywhere">
           Copy
         </Button>
         <Button size="sm" disabled={!text.trim()} onClick={send} data-testid="feedback-send">

@@ -8,7 +8,7 @@ import { money } from "./format";
 // (legacy trades) the current rate applies and the value is marked ≈.
 
 export function moneyCad(x: number | null | undefined, digits = 0): string {
-  if (x == null || Number.isNaN(x)) return "—";
+  if (x == null || Number.isNaN(x)) return "-";
   return `C${money(x, digits)}`;
 }
 
@@ -33,7 +33,7 @@ export function formatFx(
     digits?: number; histRate?: number | null; signed?: boolean;
   } = {},
 ): string {
-  if (usd == null || Number.isNaN(usd)) return "—";
+  if (usd == null || Number.isNaN(usd)) return "-";
   const sign = signed && usd >= 0 ? "+" : "";
   const usdStr = `${sign}${money(usd, digits)}`;
   if (mode === "usd" || rate == null) return usdStr;

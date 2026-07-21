@@ -139,7 +139,7 @@ export function CustomizationTab() {
         <div className="text-sm font-medium">Performance</div>
         <div className="mt-0.5 text-xs text-content-3">
           If scrolling feels sluggish, toggle these off to find the culprit.
-          All default on — turning one off only affects visuals, never data.
+          All default on, turning one off only affects visuals, never data.
         </div>
 
         <div className="mt-2 divide-y divide-white/5">
@@ -317,7 +317,7 @@ export function CurrencyTab() {
   const showToast = useStore((s) => s.showToast);
 
   const MODES = [
-    { id: "usd", label: "USD only", hint: "Default — everything in US dollars" },
+    { id: "usd", label: "USD only", hint: "Default, everything in US dollars" },
     { id: "cad", label: "CAD only", hint: "Converted at the exchange rate" },
     { id: "dual", label: "Dual", hint: "US$ | C$ side by side" },
   ] as const;
@@ -356,7 +356,7 @@ export function CurrencyTab() {
               {rate == null ? "No rate fetched yet" : `1 USD = ${rate.toFixed(4)} CAD`}
               {stale && rate != null && (
                 <span className="ml-2 text-xs text-accent-orange"
-                  title="Not from a fresh fetch — last saved rate or the built-in fallback">
+                  title="Not from a fresh fetch, last saved rate or the built-in fallback">
                   stale
                 </span>
               )}
@@ -425,7 +425,7 @@ export function ScoringTab() {
             </ul>
             <p>
               Changes apply instantly to the current screen and to Optimal
-              Strategies — no re-screening needed.
+              Strategies, no re-screening needed.
             </p>
           </div>
         </details>
@@ -473,7 +473,7 @@ export function ScoringTab() {
 
         <div className="mt-2 flex items-center gap-2 text-xs" data-testid="weight-sum">
           <span className={sumOk ? "text-accent-green" : "text-accent-orange"}>
-            Sum: {sum.toFixed(2)} {sumOk ? "✓" : "— should be 1.00"}
+            Sum: {sum.toFixed(2)} {sumOk ? "✓" : "(should total 1.00)"}
           </span>
           {!sumOk && (
             <Button variant="secondary" size="xs"
@@ -536,7 +536,7 @@ export function ComplexityTab() {
           <div className="text-xs text-content-3">
             {expertMode
               ? "All greeks, scores and metrics visible"
-              : "Simplified view — plain-language explanations, greeks tucked away"}
+              : "Simplified view, plain-language explanations, greeks tucked away"}
           </div>
         </div>
         <Button variant="secondary" size="sm" onClick={toggleMode}>
@@ -714,17 +714,17 @@ export function AlertsTab() {
         <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-heading">Desktop notifications</h3>
         {perm === "granted" ? (
           <p className="text-sm text-accent-green" data-testid="notify-status">
-            ✓ Enabled — alerts appear as OS notifications.
+            ✓ Enabled, alerts appear as OS notifications.
           </p>
         ) : perm === "unsupported" ? (
           <p className="text-sm text-content-3" data-testid="notify-status">
-            Not available here — alerts fall back to in-app toasts.
+            Not available here, alerts fall back to in-app toasts.
           </p>
         ) : (
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-sm text-content-3" data-testid="notify-status">
               {perm === "denied"
-                ? "Blocked by the system — alerts fall back to in-app toasts."
+                ? "Blocked by the system, alerts fall back to in-app toasts."
                 : "Alerts currently show as in-app toasts."}
             </p>
             {perm === "default" && (
@@ -885,7 +885,7 @@ export function AccountTab() {
 
   if (!account) return null;
   const created = account.createdAt.slice(0, 10);
-  const lastLogin = account.lastLoginAt ? account.lastLoginAt.slice(0, 10) : "—";
+  const lastLogin = account.lastLoginAt ? account.lastLoginAt.slice(0, 10) : "-";
   const memberDays = Math.max(0, Math.floor((Date.now() - Date.parse(account.createdAt)) / 86_400_000));
 
   async function onChangePassword() {
@@ -957,7 +957,7 @@ export function AccountTab() {
     try {
       await api.accountImport(pendingImport);
       restorePrefs(pendingImport.prefs);
-      showToast("✓ Data imported — reloading…");
+      showToast("✓ Data imported, reloading…");
       setTimeout(() => window.location.reload(), 800);
     } catch (err) {
       setImportError(friendlyError(err));
@@ -970,7 +970,7 @@ export function AccountTab() {
     setBusy(true);
     try {
       await api.accountClear();
-      showToast("✓ All data cleared — reloading…");
+      showToast("✓ All data cleared, reloading…");
       setTimeout(() => window.location.reload(), 800);
     } catch (err) {
       showToast(friendlyError(err));
@@ -1019,7 +1019,7 @@ export function AccountTab() {
         <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-heading">Security</h3>
         {pwDone ? (
           <div className="rounded-lg border border-accent-green/40 bg-accent-green/10 p-3 text-sm text-accent-green" data-testid="password-updated">
-            Password updated. You&apos;ll be signed out in 10 seconds — sign back
+            Password updated. You&apos;ll be signed out in 10 seconds, sign back
             in with the new password.
           </div>
         ) : (

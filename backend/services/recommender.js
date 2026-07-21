@@ -51,7 +51,7 @@ function tradeoffPair(a, b) {
   if ((a.payoff.maxLoss === null) !== (b.payoff.maxLoss === null)) {
     const defined = a.payoff.maxLoss === null ? b : a;
     const open = a.payoff.maxLoss === null ? a : b;
-    facts.push(`${label(defined)} has defined risk (max loss ${money(defined.payoff.maxLoss)}); ${label(open)} does not — its loss is unlimited.`);
+    facts.push(`${label(defined)} has defined risk (max loss ${money(defined.payoff.maxLoss)}); ${label(open)} does not. Its loss is unlimited.`);
   }
   if (a.legs.length !== b.legs.length) {
     const [simple, complex] = a.legs.length < b.legs.length ? [a, b] : [b, a];

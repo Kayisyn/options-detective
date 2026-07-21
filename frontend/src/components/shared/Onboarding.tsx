@@ -165,7 +165,7 @@ export default function Onboarding({ open, onClose }: {
                   Track options strategies with precision analytics.
                 </p>
                 <p className="mt-2 text-sm text-content-2">
-                  Built for traders who want real data, not guesses — every
+                  Built for traders who want real data, not guesses, every
                   number comes from a deterministic math engine, nothing is
                   estimated by an AI.
                 </p>
@@ -185,7 +185,7 @@ export default function Onboarding({ open, onClose }: {
                 </p>
                 <ul className="mt-3 list-none">
                   <Feature>
-                    Type a ticker in the Screener — every expiration and
+                    Type a ticker in the Screener, every expiration and
                     eligible strategy is priced and ranked.
                   </Feature>
                   <Feature>
@@ -197,7 +197,7 @@ export default function Onboarding({ open, onClose }: {
                   </Feature>
                 </ul>
                 <Tip>
-                  Start with the Asset Screener&apos;s “Liquid” volume band — it
+                  Start with the Asset Screener&apos;s “Liquid” volume band, it
                   pre-filters for chains you can actually trade.
                 </Tip>
               </>
@@ -216,7 +216,7 @@ export default function Onboarding({ open, onClose }: {
                 </p>
                 <ul className="mt-3 list-none">
                   <Feature>
-                    Build spreads, iron condors, straddles — any multi-leg
+                    Build spreads, iron condors, straddles, any multi-leg
                     combination.
                   </Feature>
                   <Feature>
@@ -224,7 +224,7 @@ export default function Onboarding({ open, onClose }: {
                     payoff chart.
                   </Feature>
                   <Feature>
-                    Edit strikes to explore — greeks and probabilities are
+                    Edit strikes to explore, greeks and probabilities are
                     repriced as you go.
                   </Feature>
                 </ul>
@@ -253,7 +253,7 @@ export default function Onboarding({ open, onClose }: {
                 </ul>
                 <QuickSettings />
                 <p className="mt-3 text-xs text-content-3">
-                  Change these anytime in ⚙ Settings — along with motion,
+                  Change these anytime in ⚙ Settings, along with motion,
                   effects and scoring weights.
                 </p>
               </>

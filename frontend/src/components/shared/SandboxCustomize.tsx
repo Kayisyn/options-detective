@@ -236,7 +236,7 @@ function SeedMoney({ initialBalance }: { initialBalance: number }) {
           disabled={!valid || (!changed && !confirming)}
           data-testid="seed-money-apply" onClick={apply}
         >
-          {confirming ? `Confirm — archives ${tradeCount}` : "Apply"}
+          {confirming ? `Confirm, archives ${tradeCount}` : "Apply"}
         </Button>
       </div>
     </div>

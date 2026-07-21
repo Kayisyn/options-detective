@@ -77,7 +77,7 @@ function createPaperTrading({
         return round2(input.maxLossTarget);
       }
       throw new TypeError(
-        "paper credit trades need an assignmentStrike (cash-secured) or a maxLossTarget — otherwise the simulator cannot reserve risk capital");
+        "paper credit trades need an assignmentStrike (cash-secured) or a maxLossTarget, otherwise the simulator cannot reserve risk capital");
     }
     if (Number.isFinite(input.maxLossTarget) && input.maxLossTarget > 0) {
       return round2(input.maxLossTarget);
@@ -148,7 +148,7 @@ function createPaperTrading({
   function requireBudget() {
     const budget = paperStore.getBudget();
     if (!budget) {
-      throw new TypeError("no paper account yet — set an initial balance first");
+      throw new TypeError("no paper account yet. Set an initial balance first");
     }
     return budget;
   }
@@ -181,7 +181,7 @@ function createPaperTrading({
 
   function close(id, payload) {
     const trade = tradeStore.get(id);
-    if (!trade.paper) throw new TypeError("not a paper trade — close it in the journal");
+    if (!trade.paper) throw new TypeError("not a paper trade. Close it in the journal");
     const closed = tradeStore.close(id, payload);
     chargeCommission(); // exit order
     snapshot();
@@ -257,13 +257,13 @@ function createPaperTrading({
 
       if (expired) {
         if (!settings.autoAssign) {
-          warnings.push(`${trade.symbol} ${trade.strategy}: expired — auto-assign is off, close it manually`);
+          warnings.push(`${trade.symbol} ${trade.strategy}: expired. Auto-assign is off, close it manually`);
           continue;
         }
         try {
           const settled = await settleAtExpiry(trade, spot, events);
           if (settled) continue;
-          warnings.push(`${trade.symbol} ${trade.strategy}: expired but has no legs or assignment strike — close it manually`);
+          warnings.push(`${trade.symbol} ${trade.strategy}: expired but has no legs or assignment strike. Close it manually`);
           continue;
         } catch (err) {
           warnings.push(`${trade.symbol} ${trade.strategy}: settlement failed (${err.message})`);
@@ -344,7 +344,7 @@ function createPaperTrading({
       tradeStore.settle(trade.id, {
         status: "expired",
         actualPnl: round2(trade.entryPrice * scale),
-        note: `Expired worthless, underlying $${spot.toFixed(2)} above $${strike} — premium kept.`,
+        note: `Expired worthless, underlying $${spot.toFixed(2)} above $${strike}. Premium kept.`,
       });
       chargeCommission();
       return true;
@@ -439,7 +439,7 @@ function createPaperTrading({
   function setBudget(initialBalance = DEFAULT_BALANCE) {
     const hadBudget = paperStore.getBudget() !== null;
     if (hadBudget) {
-      throw new TypeError("account exists — use reset to start over");
+      throw new TypeError("account exists. Use reset to start over");
     }
     const budget = paperStore.setBudget(initialBalance);
     snapshot();

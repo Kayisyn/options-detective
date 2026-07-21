@@ -88,9 +88,9 @@ interface ColumnDef {
   render: (e: EtfRecord) => React.ReactNode;
 }
 
-const num2 = (v: number | null, suffix = "") => (v == null ? "—" : `${num(v, 2)}${suffix}`);
+const num2 = (v: number | null, suffix = "") => (v == null ? "-" : `${num(v, 2)}${suffix}`);
 const signedPct = (v: number | null) =>
-  v == null ? <span>—</span> : (
+  v == null ? <span>-</span> : (
     <span className={v >= 0 ? "text-accent-green" : "text-accent-red"}>
       {v >= 0 ? "+" : ""}{num(v, 1)}%
     </span>
@@ -98,16 +98,16 @@ const signedPct = (v: number | null) =>
 
 const ALL_COLUMNS: ColumnDef[] = [
   { id: "sector", label: "Sector", defaultOn: true, render: (e) => <span className="text-content-2">{e.sector}</span> },
-  { id: "price", label: "Price", defaultOn: true, render: (e) => (e.price == null ? "—" : money(e.price, 2)) },
+  { id: "price", label: "Price", defaultOn: true, render: (e) => (e.price == null ? "-" : money(e.price, 2)) },
   { id: "premium", label: "Premium", defaultOn: true, render: (e) => <span className="text-accent-green">{num2(e.annualizedCallPremiumPct, "%")}</span> },
-  { id: "ivRank", label: "IV rank", defaultOn: true, render: (e) => (e.ivRank == null ? "—" : e.ivRank) },
+  { id: "ivRank", label: "IV rank", defaultOn: true, render: (e) => (e.ivRank == null ? "-" : e.ivRank) },
   { id: "expense", label: "Exp ratio", defaultOn: true, render: (e) => `${e.expenseRatioPct}%` },
   { id: "yield", label: "Dividend", defaultOn: true, render: (e) => num2(e.dividendYieldPct, "%") },
   { id: "aum", label: "AUM", defaultOn: true, render: (e) => `$${e.aumBillions}B` },
-  { id: "volume", label: "Opt volume", defaultOn: false, render: (e) => (e.callVolume == null ? "—" : e.callVolume.toLocaleString()) },
+  { id: "volume", label: "Opt volume", defaultOn: false, render: (e) => (e.callVolume == null ? "-" : e.callVolume.toLocaleString()) },
   { id: "perf52w", label: "52w perf", defaultOn: false, render: (e) => signedPct(e.perf52wPct) },
   { id: "volatility", label: "20d ATR", defaultOn: false, render: (e) => num2(e.atrPct20, "%") },
-  { id: "thetaRank", label: "Theta rank", defaultOn: false, render: (e) => (e.thetaRank == null ? "—" : e.thetaRank) },
+  { id: "thetaRank", label: "Theta rank", defaultOn: false, render: (e) => (e.thetaRank == null ? "-" : e.thetaRank) },
   { id: "ytd", label: "YTD", defaultOn: false, render: (e) => signedPct(e.ytdReturn) },
 ];
 
@@ -217,7 +217,7 @@ function recommendStrategies(e: EtfRecord): Rec[] {
     recs.push({ name: "Vertical Spreads", reason: "Defined risk, low cost to establish", confidence: "medium" });
   }
   if (iv < 50) {
-    recs.push({ name: "Long Calls / Puts", reason: "Low IV — options are cheap for directional plays", confidence: "low" });
+    recs.push({ name: "Long Calls / Puts", reason: "Low IV, options are cheap for directional plays", confidence: "low" });
   }
   const rank = { high: 0, medium: 1, low: 2 };
   return recs.sort((a, b) => rank[a.confidence] - rank[b.confidence]);
@@ -555,7 +555,7 @@ export default function EtfScreener() {
         <>
           <div className="flex flex-wrap items-center gap-3 text-sm">
             <span className="text-content-3">
-              {result.total} match — scored for <b className="text-content-1">{STRATEGY_LABEL[result.strategy]}</b>
+              {result.total} match, scored for <b className="text-content-1">{STRATEGY_LABEL[result.strategy]}</b>
             </span>
             <FormSelect label="" value={sort} className="py-1" data-testid="etf-sort"
               onChange={(e) => setSort(e.target.value as SortKey)}>
@@ -563,7 +563,7 @@ export default function EtfScreener() {
             </FormSelect>
             <FormSelect label="" value={sort2} className="py-1" data-testid="etf-sort2"
               onChange={(e) => setSort2(e.target.value as SortKey | "")}>
-              <option value="">then: —</option>
+              <option value="">then: none</option>
               {SORT_OPTIONS.filter((o) => o.id !== sort).map((o) => (
                 <option key={o.id} value={o.id}>then: {o.label}</option>
               ))}
@@ -628,13 +628,13 @@ export default function EtfScreener() {
                             <MetricBox label="Expense" value={`${e.expenseRatioPct}%`} />
                             <MetricBox label="AUM" value={`$${e.aumBillions}B`} />
                             <MetricBox label="Yield" value={num2(e.dividendYieldPct, "%")} />
-                            <MetricBox label="52w perf" value={e.perf52wPct == null ? "—" : `${e.perf52wPct >= 0 ? "+" : ""}${num(e.perf52wPct, 1)}%`}
+                            <MetricBox label="52w perf" value={e.perf52wPct == null ? "-" : `${e.perf52wPct >= 0 ? "+" : ""}${num(e.perf52wPct, 1)}%`}
                               highlight={(e.perf52wPct ?? 0) >= 0 ? "green" : "red"} />
                             <MetricBox label="20d ATR" value={num2(e.atrPct20, "%")} />
-                            <MetricBox label="Theta rank" value={e.thetaRank == null ? "—" : String(e.thetaRank)}
-                              hint="Percentile of annualized call premium across the universe — higher favors option sellers" />
-                            <MetricBox label="ATM IV" value={e.atmIv == null ? "—" : pct(e.atmIv)} />
-                            <MetricBox label="DTE" value={e.dte == null ? "—" : String(e.dte)} />
+                            <MetricBox label="Theta rank" value={e.thetaRank == null ? "-" : String(e.thetaRank)}
+                              hint="Percentile of annualized call premium across the universe, higher favors option sellers" />
+                            <MetricBox label="ATM IV" value={e.atmIv == null ? "-" : pct(e.atmIv)} />
+                            <MetricBox label="DTE" value={e.dte == null ? "-" : String(e.dte)} />
                           </div>
                           {e.scoreBreakdown && (
                             <div className="mb-3 space-y-1" data-testid="etf-breakdown">
@@ -780,7 +780,7 @@ function SaveTemplateModal({ open, onClose, onSave }: {
       </p>
       <div className="mt-3 space-y-2">
         <FormInput label="Template name" value={name} autoFocus
-          placeholder="Bullish spreads — IV rank > 70"
+          placeholder="Bullish spreads. IV rank > 70"
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
           data-testid="template-name" />

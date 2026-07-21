@@ -270,7 +270,7 @@ export const api = {
     } catch {
       // clipboard can be permission-gated in plain browsers; surface the
       // order so the user can copy it by hand rather than losing it
-      throw new Error(`Clipboard unavailable — copy manually: ${text}`);
+      throw new Error(`Clipboard unavailable, copy manually: ${text}`);
     }
   },
 };

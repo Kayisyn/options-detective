@@ -33,7 +33,7 @@ function makeParticles(count: number): Particle[] {
     velX: 0,
     velY: 0,
     driftPhase: Math.random() * Math.PI * 2,
-    driftSpeed: 0.2 + Math.random() * 0.3,   // rad/s — slow sway
+    driftSpeed: 0.2 + Math.random() * 0.3,   // rad/s, slow sway
     driftAmp: 6 + Math.random() * 10,        // px
     radius: 2.5 + Math.random() * 5,
     depth: Math.random(),

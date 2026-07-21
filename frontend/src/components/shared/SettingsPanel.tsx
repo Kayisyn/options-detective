@@ -56,7 +56,7 @@ export default function SettingsPanel({ open, onClose, openTab }: SettingsPanelP
 
   function close() {
     onClose();
-    showToast("✓ Settings saved"); // §5.4 — settings apply instantly
+    showToast("✓ Settings saved"); // §5.4, settings apply instantly
   }
 
   return (
@@ -100,10 +100,10 @@ export default function SettingsPanel({ open, onClose, openTab }: SettingsPanelP
         </div>
       </div>
 
-      {/* scrollable body — the header above never moves */}
+      {/* scrollable body, the header above never moves */}
       <div className="settings-scroll min-h-0 flex-1 overflow-y-auto px-6 py-4">
         {/* v1.10.2: a snappy 200ms opacity fade on tab change (keyed remount),
-            replacing the 500ms slide transition — lighter and higher-fps */}
+            replacing the 500ms slide transition, lighter and higher-fps */}
         <div key={tab} className="animate-fade-in">
           {tab === "appearance" && <AppearanceTab />}
           {tab === "customization" && <CustomizationTab />}

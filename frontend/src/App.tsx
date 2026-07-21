@@ -37,9 +37,9 @@ const TABS: Array<{ id: View; label: string; hint: string }> = [
   { id: "calculator", label: "Analyzer", hint: "Analyze the trade math" },
   { id: "recommender", label: "Recommendations", hint: "Optimal strategies, compared and exportable" },
   { id: "journal", label: "Position Log", hint: "Your saved positions" },
-  { id: "analytics", label: "Analytics", hint: "Realized performance — equity curve, win rate, per-strategy stats" },
+  { id: "analytics", label: "Analytics", hint: "Realized performance, equity curve, win rate, per-strategy stats" },
   { id: "paper", label: "Sandbox", hint: "Risk-free simulator with a practice budget" },
-  { id: "etf", label: "Assets", hint: "Asset Screener — discover ETF option-selling candidates" },
+  { id: "etf", label: "Assets", hint: "Asset Screener, discover ETF option-selling candidates" },
 ];
 
 // Suspense fallback for a lazy view chunk — mirrors the boot splash's
@@ -134,7 +134,7 @@ function MainApp() {
 
   return (
     <div className="min-h-screen">
-      {/* v1.10.1 a11y: first focusable — jump past the nav to the view */}
+      {/* v1.10.1 a11y: first focusable, jump past the nav to the view */}
       <a
         href="#main-content"
         data-testid="skip-link"
@@ -193,7 +193,7 @@ function MainApp() {
             <span className="mx-2 h-6 w-px bg-white/10" />
             <button
               onClick={toggleMode}
-              title="Switch complexity level — beginner hides greeks behind plain-language summaries"
+              title="Switch complexity level, beginner hides greeks behind plain-language summaries"
               data-testid="mode-toggle"
               className="rounded-md px-3 py-1.5 text-sm text-content-3 transition-all duration-150 ease-out-quad hover:bg-dark-700 hover:text-content-1"
             >
@@ -201,7 +201,7 @@ function MainApp() {
             </button>
             <button
               onClick={() => setSettingsOpen(true)}
-              title="Settings — theme, scoring and complexity"
+              title="Settings, theme, scoring and complexity"
               data-testid="settings-button"
               aria-label="Settings"
               className="rounded-md px-3 py-1.5 text-sm text-content-3 transition-all duration-150 ease-out-quad hover:bg-dark-700 hover:text-content-1"
@@ -260,7 +260,7 @@ function MainApp() {
             <span className="mx-1 h-6 w-px bg-white/10" />
             <button
               onClick={() => logout()}
-              title={account ? `Signed in as ${account.username} — sign out` : "Sign out"}
+              title={account ? `Signed in as ${account.username}, sign out` : "Sign out"}
               data-testid="logout-button"
               className="rounded-md px-3 py-1.5 text-sm text-content-3 transition-all duration-150 ease-out-quad hover:bg-dark-700 hover:text-accent-red"
             >
@@ -299,7 +299,7 @@ function MainApp() {
       </div>
 
       {/* v1.5.1 help affordance, bottom-left of Home. Rendered at the app
-          root (not inside the view) so `fixed` anchors to the viewport — a
+          root (not inside the view) so `fixed` anchors to the viewport, a
           transformed ViewTransition ancestor would otherwise capture it.
           Opens the same searchable Help & Glossary as Ctrl+Shift+?. */}
       {view === "home" && (

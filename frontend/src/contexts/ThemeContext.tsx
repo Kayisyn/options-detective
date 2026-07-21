@@ -26,15 +26,15 @@ export interface ThemeMeta {
 
 export const THEMES: ThemeMeta[] = [
   {
-    id: "dark", name: "Amethyst", hint: "Default — amethyst glass, violet accents",
+    id: "dark", name: "Amethyst", hint: "Default, amethyst glass, violet accents",
     swatch: { bg: "#0a0a0f", panel: "#15151f", accents: ["#9733FF", "#10b981", "#ef4444"] },
   },
   {
-    id: "green", name: "Emerald", hint: "Terminal green — emerald titles, mint profits",
+    id: "green", name: "Emerald", hint: "Terminal green, emerald titles, mint profits",
     swatch: { bg: "#0a0f0a", panel: "#1a201a", accents: ["#10b981", "#6ee7b7", "#ef4444"] },
   },
   {
-    id: "bw", name: "Obsidian", hint: "Finance terminal — pure black & white, formal aesthetic",
+    id: "bw", name: "Obsidian", hint: "Finance terminal, pure black & white, formal aesthetic",
     swatch: { bg: "#000000", panel: "#1a1a1a", accents: ["#ffffff", "#ebebeb", "#969696"] },
   },
 ];

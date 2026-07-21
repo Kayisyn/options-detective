@@ -49,7 +49,7 @@ test("budget lifecycle: setup once, then reset", () => {
   const { budget, balance } = paper.setBudget(50_000);
   assert.equal(budget.initialBalance, 50_000);
   assert.equal(balance.available, 50_000);
-  assert.throws(() => paper.setBudget(25_000), /use reset/);
+  assert.throws(() => paper.setBudget(25_000), /use reset/i);
   const after = paper.reset(25_000);
   assert.equal(after.balance.initialBalance, 25_000);
 });
@@ -276,7 +276,7 @@ test("v1.5.0: auto-assign off leaves expired positions open with a warning", asy
   });
   const out = await paper.process();
   assert.equal(out.trades[0].status, "open");
-  assert.ok(out.warnings.some((w) => /auto-assign is off/.test(w)));
+  assert.ok(out.warnings.some((w) => /auto-assign is off/i.test(w)));
   assert.equal(out.holdings.length, 0);
 });
 

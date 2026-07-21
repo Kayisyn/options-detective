@@ -122,7 +122,7 @@ export default function Recommender() {
       <details className="text-xs text-content-3">
         <summary className="cursor-pointer">How to read this</summary>
         <p className="mt-1 max-w-2xl">
-          Every number comes from the deterministic math engine — POP {pct(0.62)} means the
+          Every number comes from the deterministic math engine. POP {pct(0.62)} means the
           lognormal model gives 62 profitable paths out of 100, not a promise. Max loss is as
           important as max profit: it is the number your position size is built on. Export
           copies a broker-ready order ticket to your clipboard; paste it into your broker and

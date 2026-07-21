@@ -13,7 +13,7 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   /** rank-#1 treatment: violet glow border */
   glow?: boolean;
   /** v1.5.0 liquid-glass shimmer (opt-in: hero/stat/panel surfaces, not
-      100-row result lists — keeps the compositor layer count sane) */
+      100-row result lists, keeps the compositor layer count sane) */
   liquid?: boolean;
   /** staggered entrance: animation-delay in ms */
   enterDelayMs?: number;

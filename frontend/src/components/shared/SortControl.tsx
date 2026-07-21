@@ -29,7 +29,7 @@ export default function SortControl({ sort, onChange, className }: {
       </select>
       <button
         onClick={() => onChange({ ...sort, dir: sort.dir === "asc" ? "desc" : "asc" })}
-        title={sort.dir === "asc" ? "Ascending — click for descending" : "Descending — click for ascending"}
+        title={sort.dir === "asc" ? "Ascending, click for descending" : "Descending, click for ascending"}
         data-testid="sort-dir"
         className="rounded-sm border border-dark-600 bg-dark-700 px-2 py-1.5 text-sm text-content-2 transition-all duration-150 ease-out hover:bg-dark-600"
       >

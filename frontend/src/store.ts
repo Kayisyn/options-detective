@@ -620,7 +620,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const { purged } = await api.purgeTrash();
       await get().loadTrash();
-      get().showToast(`Trash emptied — ${purged} deleted permanently`);
+      get().showToast(`Trash emptied, ${purged} deleted permanently`);
     } catch (err) {
       set({ error: friendlyError(err) });
     }
@@ -642,7 +642,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const closed = await api.closeTrade(id, input);
       await get().loadJournal();
-      get().showToast(`✓ Closed — P&L $${(closed.actualPnl ?? 0).toFixed(2)}`);
+      get().showToast(`✓ Closed. P&L $${(closed.actualPnl ?? 0).toFixed(2)}`);
       return true;
     } catch (err) {
       set({ error: friendlyError(err) });
@@ -664,7 +664,7 @@ export const useStore = create<AppState>((set, get) => ({
       const { trades, warnings } = await api.refreshMarks();
       set({ savedTrades: trades });
       get().showToast(warnings.length > 0
-        ? `Marks refreshed — ${warnings.length} warning${warnings.length > 1 ? "s" : ""}`
+        ? `Marks refreshed, ${warnings.length} warning${warnings.length > 1 ? "s" : ""}`
         : "✓ Marks refreshed");
       if (warnings.length > 0) {
         set({ error: warnings.join(" · ") });
@@ -698,7 +698,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const { balance } = await api.paperOpen(body);
       await Promise.all([get().loadPaper(), get().loadJournal()]);
-      get().showToast(`✓ Sandbox trade opened — $${balance.available.toFixed(0)} available`);
+      get().showToast(`✓ Sandbox trade opened, $${balance.available.toFixed(0)} available`);
       return true;
     } catch (err) {
       set({ error: friendlyError(err) });
@@ -710,7 +710,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const { trade } = await api.paperClose(id, input);
       await Promise.all([get().loadPaper(), get().loadJournal()]);
-      get().showToast(`✓ Sandbox close — P&L $${(trade.actualPnl ?? 0).toFixed(2)}`);
+      get().showToast(`✓ Sandbox close. P&L $${(trade.actualPnl ?? 0).toFixed(2)}`);
       return true;
     } catch (err) {
       set({ error: friendlyError(err) });
@@ -740,7 +740,7 @@ export const useStore = create<AppState>((set, get) => ({
       if (!quiet) {
         if (!events || events.length === 0) {
           get().showToast(warnings.length > 0
-            ? `Processed — ${warnings.length} warning${warnings.length > 1 ? "s" : ""}`
+            ? `Processed, ${warnings.length} warning${warnings.length > 1 ? "s" : ""}`
             : "✓ Marks & expirations processed");
         }
         if (warnings.length > 0) set({ error: warnings.join(" · ") });
@@ -756,7 +756,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const { archived } = await api.paperReset(initialBalance);
       await Promise.all([get().loadPaper(), get().loadJournal()]);
-      get().showToast(`✓ Sandbox reset — ${archived} position${archived === 1 ? "" : "s"} archived`);
+      get().showToast(`✓ Sandbox reset, ${archived} position${archived === 1 ? "" : "s"} archived`);
     } catch (err) {
       set({ error: friendlyError(err) });
     }
@@ -777,7 +777,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const { sold } = await api.paperSellHolding(symbol, shares ? { shares } : {});
       await get().loadPaper();
-      get().showToast(`✓ Sold ${sold.shares} ${sold.symbol} @ $${sold.price.toFixed(2)} — P&L $${sold.realized.toFixed(2)}`);
+      get().showToast(`✓ Sold ${sold.shares} ${sold.symbol} @ $${sold.price.toFixed(2)}. P&L $${sold.realized.toFixed(2)}`);
     } catch (err) {
       set({ error: friendlyError(err) });
     }
@@ -799,7 +799,7 @@ export const useStore = create<AppState>((set, get) => ({
       const etfResult = await api.etfScreen({ filters, strategy, limit: 0 });
       set({ etfResult, etfBusy: false });
       if (!etfResult.anyMetrics) {
-        set({ error: "No live metrics yet — hit “Refresh data” to fetch prices, IV and premiums." });
+        set({ error: "No live metrics yet, hit “Refresh data” to fetch prices, IV and premiums." });
       }
     } catch (err) {
       set({ etfBusy: false, error: friendlyError(err) });

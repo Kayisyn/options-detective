@@ -100,7 +100,7 @@ function WatchlistBody() {
           <button key={sym} onClick={() => prefillScreener(sym)} title={`Screen ${sym}`}
             className="flex w-full items-baseline justify-between rounded px-1.5 py-1 text-left transition-colors duration-150 hover:bg-dark-700">
             <span className="font-mono text-xs font-semibold text-content-1">{sym}</span>
-            <span className="font-mono text-xs text-content-3">—</span>
+            <span className="font-mono text-xs text-content-3">-</span>
           </button>
         );
       })}

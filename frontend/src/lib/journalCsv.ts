@@ -142,9 +142,9 @@ export function downloadWatchlistCsv(etfs: EtfRecord[]) {
 // Email-ready trade confirmation text (roadmap "trade confirmation email").
 export function confirmationText(t: JournalTrade): string {
   const lines = [
-    `Trade confirmation — ${t.symbol} ${t.strategy.replace(/_/g, " ")}`,
+    `Trade confirmation, ${t.symbol} ${t.strategy.replace(/_/g, " ")}`,
     `Status: ${t.status}`,
-    `Opened: ${t.entryDate.slice(0, 10)} — ${t.side} $${t.entryPrice.toFixed(2)} × ${t.entryQty} (multiplier ${t.multiplier})`,
+    `Opened: ${t.entryDate.slice(0, 10)}, ${t.side} $${t.entryPrice.toFixed(2)} × ${t.entryQty} (multiplier ${t.multiplier})`,
   ];
   if (t.exportText) lines.push(`Order: ${t.exportText}`);
   if (t.status === "closed" && t.exitPrice !== null) {
@@ -156,7 +156,7 @@ export function confirmationText(t: JournalTrade): string {
       + (t.lastMark.stale ? " (stale quotes)" : ""));
   }
   if (t.mae !== null || t.mfe !== null) {
-    lines.push(`MAE ${t.mae ?? "—"} / MFE ${t.mfe ?? "—"} (from observed marks)`);
+    lines.push(`MAE ${t.mae ?? "-"} / MFE ${t.mfe ?? "-"} (from observed marks)`);
   }
   if (t.tags.length) lines.push(`Tags: ${t.tags.join(", ")}`);
   if (t.notes) lines.push(`Notes: ${t.notes}`);

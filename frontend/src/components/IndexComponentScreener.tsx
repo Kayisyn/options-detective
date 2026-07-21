@@ -112,7 +112,7 @@ export default function IndexComponentScreener() {
             ← Asset Screener
           </button>
           <h2 className="text-lg font-medium">
-            {s.icsEtf} — component screener
+            {s.icsEtf}, component screener
             {result?.cached && <Badge variant="blue" className="ml-2 align-middle">cached</Badge>}
           </h2>
           {result && (
@@ -148,14 +148,14 @@ export default function IndexComponentScreener() {
           </div>
           <div className="text-xs text-content-3">
             First run fetches live option chains for each holding (typically 30–90s).
-            Results are cached for a day — re-opening is instant.
+            Results are cached for a day, re-opening is instant.
           </div>
         </Card>
       )}
 
       {result && (
         <>
-          {/* filters — client-side over the screened set, instant */}
+          {/* filters, client-side over the screened set, instant */}
           <Card className="flex flex-wrap items-end gap-4" data-testid="ics-filters">
             <div>
               <div className="mb-1 text-[11px] uppercase tracking-wide text-content-3">Holdings</div>
@@ -229,7 +229,7 @@ export default function IndexComponentScreener() {
                     <td className="px-3 py-2 text-content-3">{i + 1}</td>
                     <td className="px-3 py-2 font-mono font-semibold">{c.symbol}</td>
                     <td className="px-3 py-2 text-right font-mono text-content-3">{pct(c.holding.weight, 1)}</td>
-                    <td className="px-3 py-2 text-content-2">{c.holding.sector ?? "—"}</td>
+                    <td className="px-3 py-2 text-content-2">{c.holding.sector ?? "-"}</td>
                     <td className="px-3 py-2 capitalize text-content-2">{strategyLabel(c.strategyType)}</td>
                     <td className="px-3 py-2 text-right font-mono text-content-3">{c.daysToExpiry}</td>
                     <td className="px-3 py-2 text-right font-mono">{pct(c.probability.pop)}</td>
@@ -246,7 +246,7 @@ export default function IndexComponentScreener() {
             </table>
             {filtered.length === 0 && (
               <div className="p-6 text-center text-content-3">
-                No candidates match these filters — loosen the sector/subset/strategy filters.
+                No candidates match these filters, loosen the sector/subset/strategy filters.
               </div>
             )}
           </div>
@@ -266,7 +266,7 @@ export default function IndexComponentScreener() {
               </summary>
               <ul className="mt-1 space-y-0.5 pl-4">
                 {result.skipped.map((sk) => (
-                  <li key={sk.symbol}><span className="font-mono">{sk.symbol}</span> — {sk.reason}</li>
+                  <li key={sk.symbol}><span className="font-mono">{sk.symbol}</span>, {sk.reason}</li>
                 ))}
               </ul>
             </details>

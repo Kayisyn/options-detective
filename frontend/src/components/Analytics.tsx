@@ -138,8 +138,8 @@ function MaeMfeChart({ points }: { points: MaeMfePoint[] }) {
   if (points.length === 0) {
     return (
       <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-dark-600 px-4 text-center text-sm text-content-3">
-        MAE/MFE appear for positions whose marks were refreshed while open —
-        use “Refresh marks” in the Position Log, then close positions.
+        MAE/MFE appear for positions whose marks were refreshed while open.
+        Use “Refresh marks” in the Position Log, then close positions.
       </div>
     );
   }
@@ -264,7 +264,7 @@ export default function Analytics() {
           <div className="text-base font-medium text-content-1">No settled trades in this range</div>
           <p className="max-w-md text-sm text-content-3">
             Close a position in the Position Log (or widen the time range) and
-            the dashboard fills in — win rate, profit factor, equity curve and
+            the dashboard fills in, win rate, profit factor, equity curve and
             a per-strategy breakdown.
           </p>
         </div>
@@ -273,22 +273,22 @@ export default function Analytics() {
           {/* risk-adjusted returns */}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" data-testid="advanced-ratios">
             <MetricBox label="Sharpe ratio"
-              value={adv.sharpe === null ? "—" : adv.sharpe.toFixed(2)}
-              hint="Mean per-trade return over its volatility — above 1 is good, above 2 excellent"
+              value={adv.sharpe === null ? "-" : adv.sharpe.toFixed(2)}
+              hint="Mean per-trade return over its volatility, above 1 is good, above 2 excellent"
               highlight={adv.sharpe !== null && adv.sharpe >= 1 ? "green" : "none"} />
             <MetricBox label="Sortino ratio"
-              value={adv.sortino === null ? "—" : adv.sortino.toFixed(2)}
-              hint="Like Sharpe but only downside swings count against you — needs at least one loss"
+              value={adv.sortino === null ? "-" : adv.sortino.toFixed(2)}
+              hint="Like Sharpe but only downside swings count against you, needs at least one loss"
               highlight={adv.sortino !== null && adv.sortino >= 1 ? "green" : "none"} />
             <MetricBox label="Calmar ratio"
-              value={adv.calmar === null ? "—" : adv.calmar.toFixed(2)}
-              hint="Annualized P&L over max drawdown — treat with care on short histories" />
+              value={adv.calmar === null ? "-" : adv.calmar.toFixed(2)}
+              hint="Annualized P&L over max drawdown, treat with care on short histories" />
           </div>
 
           {/* drawdown analysis */}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" data-testid="advanced-drawdown">
             <MetricBox label="Max drawdown"
-              value={adv.maxDrawdown === null ? "—"
+              value={adv.maxDrawdown === null ? "-"
                 : `${money(adv.maxDrawdown)}${adv.maxDrawdownPct !== null ? ` (${adv.maxDrawdownPct}%)` : ""}`}
               hint="Biggest peak-to-trough drop of realized equity" highlight="red" />
             <MetricBox label="Current drawdown"
@@ -296,12 +296,12 @@ export default function Analytics() {
               highlight={adv.currentDrawdown < 0 ? "red" : "green"}
               hint="Distance below the high-water mark right now" />
             <MetricBox label="Drawdown duration"
-              value={adv.drawdownDays === 0 ? "—" : `${adv.drawdownDays} ${adv.drawdownDays === 1 ? "day" : "days"}`}
+              value={adv.drawdownDays === 0 ? "-" : `${adv.drawdownDays} ${adv.drawdownDays === 1 ? "day" : "days"}`}
               hint="Days since the current peak was set" />
           </div>
           <div className="card-glass p-4">
             <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-heading">
-              Drawdown — distance below the high-water mark
+              Drawdown, distance below the high-water mark
             </h3>
             <DrawdownChart points={adv.drawdownCurve} />
           </div>
@@ -309,21 +309,21 @@ export default function Analytics() {
           {/* trade quality */}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" data-testid="advanced-quality">
             <MetricBox label="Expectancy"
-              value={adv.expectancy === null ? "—" : `${signedMoney(adv.expectancy)}/trade`}
-              hint="Win% × avg win − loss% × avg loss — expected P&L of the next trade"
+              value={adv.expectancy === null ? "-" : `${signedMoney(adv.expectancy)}/trade`}
+              hint="Win% × avg win − loss% × avg loss, expected P&L of the next trade"
               highlight={adv.expectancy !== null && adv.expectancy > 0 ? "green" : "red"} />
             <MetricBox label="Profit factor"
               value={stats.profitFactor === null ? "∞" : stats.profitFactor.toFixed(2)}
-              hint="Gross profit ÷ gross loss — above 1.5 is solid, above 2.0 excellent" />
+              hint="Gross profit ÷ gross loss, above 1.5 is solid, above 2.0 excellent" />
             <MetricBox label="Recovery factor"
-              value={adv.recoveryFactor === null ? "—" : adv.recoveryFactor.toFixed(2)}
-              hint="Net P&L over max drawdown — how thoroughly losses were recovered" />
+              value={adv.recoveryFactor === null ? "-" : adv.recoveryFactor.toFixed(2)}
+              hint="Net P&L over max drawdown, how thoroughly losses were recovered" />
           </div>
 
           {/* MAE/MFE */}
           <div className="card-glass p-4">
             <h3 className="mb-1 text-xs font-medium uppercase tracking-wide text-heading">
-              MAE / MFE — exit quality
+              MAE / MFE, exit quality
             </h3>
             <p className="mb-3 text-xs text-content-3">
               Each dot is a settled trade: how far it went against you at its
@@ -340,11 +340,11 @@ export default function Analytics() {
             <MetricBox label="Total trades" value={String(stats.totalTrades)}
               hint="Settled positions in this range (manual close, assignment or expiry)" />
             <MetricBox label="Win rate"
-              value={stats.winRate === null ? "—" : pct(stats.winRate)}
+              value={stats.winRate === null ? "-" : pct(stats.winRate)}
               hint={`${stats.wins} wins, ${stats.losses} losses`} />
             <MetricBox label="Profit factor"
               value={stats.profitFactor === null ? "∞" : stats.profitFactor.toFixed(2)}
-              hint="Gross profit ÷ gross loss — above 1.0 means the wins pay for the losses"
+              hint="Gross profit ÷ gross loss, above 1.0 means the wins pay for the losses"
               highlight={stats.profitFactor === null || stats.profitFactor >= 1 ? "green" : "red"} />
             <MetricBox label="Gross profit" value={money(stats.grossProfit)} highlight="green" />
             <MetricBox label="Gross loss" value={money(-stats.grossLoss)} highlight="red" />
@@ -356,7 +356,7 @@ export default function Analytics() {
           {/* equity curve */}
           <div className="card-glass p-4">
             <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-heading">
-              Equity curve — cumulative realized P&L
+              Equity curve, cumulative realized P&L
             </h3>
             <EquityCurveChart points={stats.equityCurve} />
           </div>
@@ -364,21 +364,21 @@ export default function Analytics() {
           {/* performance metrics grid */}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" data-testid="analytics-metrics">
             <MetricBox label="Average win"
-              value={stats.avgWin === null ? "—" : money(stats.avgWin)} highlight="green" />
+              value={stats.avgWin === null ? "-" : money(stats.avgWin)} highlight="green" />
             <MetricBox label="Average loss"
-              value={stats.avgLoss === null ? "—" : money(stats.avgLoss)} highlight="red" />
+              value={stats.avgLoss === null ? "-" : money(stats.avgLoss)} highlight="red" />
             <MetricBox label="Max win"
-              value={stats.maxWin === null ? "—" : money(stats.maxWin)} highlight="green" />
+              value={stats.maxWin === null ? "-" : money(stats.maxWin)} highlight="green" />
             <MetricBox label="Max loss"
-              value={stats.maxLoss === null ? "—" : money(stats.maxLoss)} highlight="red" />
+              value={stats.maxLoss === null ? "-" : money(stats.maxLoss)} highlight="red" />
             <MetricBox label="Risk-reward"
-              value={stats.riskReward === null ? "—" : stats.riskReward.toFixed(2)}
+              value={stats.riskReward === null ? "-" : stats.riskReward.toFixed(2)}
               hint="Average win ÷ average loss" />
             <MetricBox label="Best day"
-              value={stats.bestDay === null ? "—" : signedMoney(stats.bestDay.pnl)}
+              value={stats.bestDay === null ? "-" : signedMoney(stats.bestDay.pnl)}
               hint={stats.bestDay?.date} highlight="green" />
             <MetricBox label="Worst day"
-              value={stats.worstDay === null ? "—" : signedMoney(stats.worstDay.pnl)}
+              value={stats.worstDay === null ? "-" : signedMoney(stats.worstDay.pnl)}
               hint={stats.worstDay?.date} highlight="red" />
             <MetricBox label="Consecutive wins" value={String(stats.maxConsecutiveWins)}
               hint="Longest winning streak in this range" />

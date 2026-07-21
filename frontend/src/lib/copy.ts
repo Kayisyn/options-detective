@@ -14,5 +14,5 @@ export const BEST_FOR: Record<StrategyType, string> = {
   put_vertical: "A defined-risk bet that the stock goes down.",
   iron_condor: "Betting the stock stays inside a range while time passes.",
   long_straddle: "Betting on a big move in either direction.",
-  short_strangle: "Collecting premium if the stock stays calm — risk is unlimited.",
+  short_strangle: "Collecting premium if the stock stays calm, risk is unlimited.",
 };

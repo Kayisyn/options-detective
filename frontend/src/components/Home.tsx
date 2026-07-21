@@ -104,7 +104,7 @@ export default function Home() {
           </Card>
           <Card liquid enterDelayMs={150} className="text-center">
             <div className="font-mono text-2xl font-bold text-accent-primary-text">
-              {winRate === null ? "—" : pct(winRate)}
+              {winRate === null ? "-" : pct(winRate)}
             </div>
             <div className="mt-1 text-xs uppercase tracking-wide text-heading">Win rate</div>
           </Card>
@@ -123,7 +123,7 @@ export default function Home() {
           </Card>
           <Card liquid enterDelayMs={150} className="text-center">
             <div className="font-mono text-2xl font-semibold">
-              {lastScreen ? lastScreen.symbol : "—"}
+              {lastScreen ? lastScreen.symbol : "-"}
             </div>
             <div className="mt-1 text-xs uppercase tracking-wide text-heading">
               {lastScreen ? `Last screened ${relativeTime(lastScreen.at)}` : "Nothing screened yet"}
