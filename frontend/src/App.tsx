@@ -147,13 +147,27 @@ function MainApp() {
 
   return (
     <div className="min-h-screen">
+      {/* v1.9.3 a11y: first focusable — jump past the nav to the view */}
+      <a
+        href="#main-content"
+        data-testid="skip-link"
+        className="sr-only rounded-md bg-accent-primary px-4 py-2 text-sm font-medium text-on-accent focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70]"
+      >
+        Skip to main content
+      </a>
       <Onboarding open={onboardingOpen} onClose={() => setOnboardingOpen(false)} />
       <SettingsPanel open={settingsOpen} openTab={settingsTab}
         onClose={() => { setSettingsOpen(false); setSettingsTab(null); }} />
       <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       <HelpDrawer onReplayWalkthrough={() => setOnboardingOpen(true)} />
+      {/* v1.9.3 a11y: persistent polite live region so toast confirmations
+          (saved, exported, alerts…) are announced to screen readers */}
+      <div role="status" aria-live="polite" className="sr-only" data-testid="toast-live">
+        {toast ?? ""}
+      </div>
       {toast && (
         <div
+          aria-hidden="true"
           className="card-glass fixed left-1/2 top-4 z-[60] -translate-x-1/2 animate-toast-in border-accent-green/40 px-4 py-2 text-sm text-accent-green"
           data-testid="toast"
         >
@@ -272,7 +286,7 @@ function MainApp() {
         </div>
       )}
       <div className="mx-auto flex max-w-[1880px] items-start gap-4 px-6">
-        <main className="min-w-0 flex-1 overflow-x-hidden py-6">
+        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 overflow-x-hidden py-6">
           <div className="mx-auto max-w-7xl">
             <ViewTransition viewKey={view}>
               {/* Suspense catches the lazy chart chunk on first visit to
