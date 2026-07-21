@@ -16,6 +16,7 @@ import FeedbackModal from "./components/shared/FeedbackModal";
 import HelpDrawer from "./components/shared/HelpDrawer";
 import Onboarding, { hasCompletedOnboarding } from "./components/shared/Onboarding";
 import ObeliskInsignia from "./components/shared/ObeliskInsignia";
+import { AccountIcon, FeedbackIcon, HelpIcon, SettingsIcon } from "./components/ui/Icons";
 import ParticleField from "./components/shared/ParticleField";
 import SettingsPanel, { type TabId as SettingsTabId } from "./components/shared/SettingsPanel";
 import SplashScreen from "./components/shared/SplashScreen";
@@ -235,18 +236,21 @@ function MainApp() {
                     onClick={() => setMenuOpen(false)} />
                   <div role="menu" data-testid="more-menu"
                     className="card-glass absolute right-0 top-full z-50 mt-1 w-52 animate-card-enter p-1.5">
+                    {/* v1.10.2: monochrome icons (accent-colored, inherit the
+                        theme) replace the colored emoji */}
                     {([
-                      ["≡ Settings", () => { setSettingsTab(null); setSettingsOpen(true); }],
-                      ["⚙ Account", () => { setSettingsTab("account"); setSettingsOpen(true); }],
-                      ["❓ Help & Glossary", () => openHelp()],
-                      ["📋 Feedback & Bugs", () => setFeedbackOpen(true)],
-                    ] as const).map(([label, action]) => (
+                      [SettingsIcon, "Settings", () => { setSettingsTab(null); setSettingsOpen(true); }],
+                      [AccountIcon, "Account", () => { setSettingsTab("account"); setSettingsOpen(true); }],
+                      [HelpIcon, "Help & Glossary", () => openHelp()],
+                      [FeedbackIcon, "Feedback & Bugs", () => setFeedbackOpen(true)],
+                    ] as const).map(([Icon, label, action]) => (
                       <button key={label} role="menuitem"
-                        data-testid={`menu-${label.slice(2).toLowerCase().replace(/[^a-z]+/g, "-")}`}
+                        data-testid={`menu-${label.toLowerCase().replace(/[^a-z]+/g, "-")}`}
                         onClick={() => { setMenuOpen(false); action(); }}
-                        className="block w-full rounded px-3 py-2 text-left text-sm text-content-2 transition-colors duration-150 hover:bg-dark-700 hover:text-content-1"
+                        className="flex w-full items-center gap-2.5 rounded px-3 py-2 text-left text-sm text-content-2 transition-colors duration-150 hover:bg-dark-700 hover:text-content-1"
                       >
-                        {label}
+                        <Icon className="h-4 w-4 shrink-0 text-accent-primary-text" />
+                        <span>{label}</span>
                       </button>
                     ))}
                   </div>
