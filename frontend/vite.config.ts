@@ -18,6 +18,24 @@ export default defineConfig(({ mode }) => {
     define: { __APP_VERSION__: JSON.stringify(pkg.version) },
     // relative asset paths so the packaged Electron build can loadFile()
     base: "./",
+    build: {
+      rollupOptions: {
+        output: {
+          // v1.9.3: keep the rarely-changing framework in its own chunk so an
+          // app edit doesn't bust React/zustand from cache. The chart library
+          // is already isolated by the React.lazy chart views (rec2); this
+          // just stabilises the vendor chunk hash.
+          manualChunks(id) {
+            if (id.includes("node_modules")) {
+              if (/[\\/](react|react-dom|scheduler|zustand|use-sync-external-store)[\\/]/.test(id)) {
+                return "vendor";
+              }
+            }
+            return undefined;
+          },
+        },
+      },
+    },
     server: {
       port: 5173,
       strictPort: true,
