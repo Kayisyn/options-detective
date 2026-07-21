@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../store";
 import { money, pct, strategyLabel } from "../lib/format";
 import { ALL_STRATEGY_TYPES } from "../lib/copy";
@@ -58,7 +59,20 @@ function applyJournalFilters(
 }
 
 export default function Journal() {
-  const s = useStore();
+  // v1.9.3: field selectors — see Recommender for the rationale
+  const s = useStore(useShallow((st) => ({
+    savedTrades: st.savedTrades, trashedTrades: st.trashedTrades, paper: st.paper,
+    exportedId: st.exportedId,
+    loadJournal: st.loadJournal, loadTrash: st.loadTrash, loadPaper: st.loadPaper,
+    logTrade: st.logTrade, openPaperTrade: st.openPaperTrade,
+    closeTrade: st.closeTrade, closePaperTrade: st.closePaperTrade,
+    updateTrade: st.updateTrade, exportTrade: st.exportTrade,
+    refreshMarks: st.refreshMarks, clearAllPositions: st.clearAllPositions,
+    trashPosition: st.trashPosition, restorePosition: st.restorePosition,
+    deletePositionForever: st.deletePositionForever,
+    restoreAllTrash: st.restoreAllTrash, purgeTrash: st.purgeTrash,
+    showToast: st.showToast,
+  })));
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [scope, setScope] = useState<ScopeFilter>("all");
   const [symbolFilter, setSymbolFilter] = useState("");

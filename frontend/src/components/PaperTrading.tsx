@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../store";
 import { money, pct, strategyLabel } from "../lib/format";
 import { useTheme } from "../contexts/ThemeContext";
@@ -77,7 +78,13 @@ function EquityCurve({ points, days }: { points: EquityPoint[]; days: number }) 
 }
 
 export default function PaperTrading() {
-  const s = useStore();
+  // v1.9.3: field selectors — see Recommender for the rationale
+  const s = useStore(useShallow((st) => ({
+    paper: st.paper, paperCurve: st.paperCurve, paperMarking: st.paperMarking,
+    loadPaper: st.loadPaper, processPaper: st.processPaper,
+    createPaperAccount: st.createPaperAccount, resetPaper: st.resetPaper,
+    closePaperTrade: st.closePaperTrade,
+  })));
   const [initial, setInitial] = useState("50000");
   const [busy, setBusy] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);

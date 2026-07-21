@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../store";
 import { money, num, pct } from "../lib/format";
 import { api } from "../lib/api";
@@ -317,7 +318,15 @@ function ColumnSettings({ config, onChange, onClose }: {
 }
 
 export default function EtfScreener() {
-  const s = useStore();
+  // v1.9.3: field selectors — see Recommender for the rationale
+  const s = useStore(useShallow((st) => ({
+    account: st.account, etfBusy: st.etfBusy, etfReference: st.etfReference,
+    etfResult: st.etfResult, etfWatchlist: st.etfWatchlist,
+    loadEtfReference: st.loadEtfReference, screenEtf: st.screenEtf,
+    refreshEtfMetrics: st.refreshEtfMetrics, toggleEtfWatch: st.toggleEtfWatch,
+    analyzeEtfInDetector: st.analyzeEtfInDetector, openIcs: st.openIcs,
+    showToast: st.showToast,
+  })));
   const [strategy, setStrategy] = useState<EtfStrategy>("covered_call");
   const [filters, setFilters] = useState<EtfFilters>({ sectors: [], assetClasses: [] });
   const [sort, setSort] = useState<SortKey>("score");
