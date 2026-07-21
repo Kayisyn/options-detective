@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useStore } from "../store";
 import Button from "./ui/Button";
 import ObeliskInsignia from "./shared/ObeliskInsignia";
+import { friendlyError } from "../lib/friendlyError";
 import { cx } from "../lib/cx";
 
 // v1.6.0 local-accounts sign-in gate. Renders before the app when no account
@@ -53,7 +54,10 @@ export default function AuthGate() {
       else await login(username.trim(), password, remember);
       // on success the store sets `account`; App swaps to the main app
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      // full error to the console for debugging; a safe message to the user.
+      // login always shows the same non-enumerating message.
+      console.error("[auth]", mode, "failed:", err);
+      setError(friendlyError(err, mode === "create" ? "register" : "login"));
     }
   }
 

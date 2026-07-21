@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from "react";
+import { friendlyError } from "../../lib/friendlyError";
 import { THEMES, useTheme } from "../../contexts/ThemeContext";
 import { useMode } from "../../contexts/ModeContext";
 import { useStore, type SidebarSection } from "../../store";
@@ -582,7 +583,7 @@ export function TemplatesTab() {
         refresh();
         showToast(`✓ Imported ${added} ${added === 1 ? "template" : "templates"}`);
       } catch (err) {
-        showToast(err instanceof Error ? err.message : "Template import failed");
+        showToast(friendlyError(err));
       }
     };
     reader.readAsText(file);
@@ -905,7 +906,7 @@ export function AccountTab() {
       // spec: announce, then end the session so the new password is exercised
       setTimeout(() => logout(), 10_000);
     } catch (err) {
-      setPwError(err instanceof Error ? err.message : "Password change failed");
+      setPwError(friendlyError(err));
     } finally {
       setPwBusy(false);
     }
@@ -925,7 +926,7 @@ export function AccountTab() {
       URL.revokeObjectURL(url);
       showToast("✓ Backup downloaded");
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Export failed");
+      showToast(friendlyError(err));
     } finally {
       setBusy(false);
     }
@@ -943,7 +944,7 @@ export function AccountTab() {
         }
         setPendingImport(parsed);
       } catch (err) {
-        setImportError(err instanceof Error ? err.message : "Unreadable backup file");
+        setImportError(friendlyError(err));
       }
     };
     reader.onerror = () => setImportError("Could not read that file");
@@ -959,7 +960,7 @@ export function AccountTab() {
       showToast("✓ Data imported — reloading…");
       setTimeout(() => window.location.reload(), 800);
     } catch (err) {
-      setImportError(err instanceof Error ? err.message : "Import failed");
+      setImportError(friendlyError(err));
       setPendingImport(null);
       setBusy(false);
     }
@@ -972,7 +973,7 @@ export function AccountTab() {
       showToast("✓ All data cleared — reloading…");
       setTimeout(() => window.location.reload(), 800);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Clear failed");
+      showToast(friendlyError(err));
       setBusy(false);
       setConfirmClear(false);
     }
@@ -989,7 +990,7 @@ export function AccountTab() {
       await logout();
       await bootAuth();
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "Delete failed");
+      setDeleteError(friendlyError(err));
       setBusy(false);
     }
   }

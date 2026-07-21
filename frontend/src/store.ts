@@ -10,6 +10,7 @@ import {
 } from "./lib/scoring";
 import { applyMotionPref, type MotionPref } from "./lib/motionPref";
 import { applyFxClasses } from "./lib/fxClasses";
+import { friendlyError } from "./lib/friendlyError";
 import type {
   Account, CalcResult, Candidate, CloseTradeInput, DirectionalView, EquityPoint,
   EtfFilters, EtfReference, EtfScreenResult, EtfStrategy, IcsResult,
@@ -339,7 +340,7 @@ export const useStore = create<AppState>((set, get) => ({
         // private mode — the home screen just won't show "last screened"
       }
     } catch (err) {
-      set({ status: "idle", error: err instanceof Error ? err.message : String(err) });
+      set({ status: "idle", error: friendlyError(err) });
     }
   },
 
@@ -364,7 +365,7 @@ export const useStore = create<AppState>((set, get) => ({
       });
       set({ calcResult, status: "idle" });
     } catch (err) {
-      set({ status: "idle", error: err instanceof Error ? err.message : String(err) });
+      set({ status: "idle", error: friendlyError(err) });
     }
   },
 
@@ -386,7 +387,7 @@ export const useStore = create<AppState>((set, get) => ({
       });
       set({ calcResult, status: "idle" });
     } catch (err) {
-      set({ status: "idle", error: err instanceof Error ? err.message : String(err) });
+      set({ status: "idle", error: friendlyError(err) });
     }
   },
 
@@ -416,7 +417,7 @@ export const useStore = create<AppState>((set, get) => ({
       const recommendation = await api.recommend({ candidates });
       set({ recommendation, status: "idle" });
     } catch (err) {
-      set({ status: "idle", error: err instanceof Error ? err.message : String(err) });
+      set({ status: "idle", error: friendlyError(err) });
     }
   },
 
@@ -430,7 +431,7 @@ export const useStore = create<AppState>((set, get) => ({
         if (get().exportedId === id) set({ exportedId: null });
       }, 2000);
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -525,7 +526,7 @@ export const useStore = create<AppState>((set, get) => ({
       const { trades } = await api.listTrades();
       set({ savedTrades: trades });
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -538,7 +539,7 @@ export const useStore = create<AppState>((set, get) => ({
       get().showToast("✓ Saved to Position Log");
       return true;
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
       return false;
     }
   },
@@ -548,7 +549,7 @@ export const useStore = create<AppState>((set, get) => ({
       await api.deleteTrade(id);
       await get().loadJournal();
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -560,7 +561,7 @@ export const useStore = create<AppState>((set, get) => ({
       const { trades } = await api.listTrash();
       set({ trashedTrades: trades });
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -571,7 +572,7 @@ export const useStore = create<AppState>((set, get) => ({
       get().showToast(`${trashed} position${trashed === 1 ? "" : "s"} moved to Trash`);
       return trashed;
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
       return 0;
     }
   },
@@ -581,7 +582,7 @@ export const useStore = create<AppState>((set, get) => ({
       await api.trashTrade(id);
       await Promise.all([get().loadJournal(), get().loadTrash(), get().loadPaper()]);
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -591,7 +592,7 @@ export const useStore = create<AppState>((set, get) => ({
       await Promise.all([get().loadJournal(), get().loadTrash(), get().loadPaper()]);
       get().showToast("✓ Position restored");
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -601,7 +602,7 @@ export const useStore = create<AppState>((set, get) => ({
       await get().loadTrash();
       get().showToast("Position deleted permanently");
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -611,7 +612,7 @@ export const useStore = create<AppState>((set, get) => ({
       await Promise.all([get().loadJournal(), get().loadTrash(), get().loadPaper()]);
       get().showToast(`✓ ${restored} position${restored === 1 ? "" : "s"} restored`);
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -621,7 +622,7 @@ export const useStore = create<AppState>((set, get) => ({
       await get().loadTrash();
       get().showToast(`Trash emptied — ${purged} deleted permanently`);
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -632,7 +633,7 @@ export const useStore = create<AppState>((set, get) => ({
       get().showToast("✓ Trade logged");
       return true;
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
       return false;
     }
   },
@@ -644,7 +645,7 @@ export const useStore = create<AppState>((set, get) => ({
       get().showToast(`✓ Closed — P&L $${(closed.actualPnl ?? 0).toFixed(2)}`);
       return true;
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
       return false;
     }
   },
@@ -654,7 +655,7 @@ export const useStore = create<AppState>((set, get) => ({
       await api.patchTrade(id, patch);
       await get().loadJournal();
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -669,7 +670,7 @@ export const useStore = create<AppState>((set, get) => ({
         set({ error: warnings.join(" · ") });
       }
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -679,7 +680,7 @@ export const useStore = create<AppState>((set, get) => ({
       const [state, curve] = await Promise.all([api.paperGet(), api.paperCurve(resolved)]);
       set({ paper: state, paperCurve: curve.points, paperCurveDays: resolved });
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -689,7 +690,7 @@ export const useStore = create<AppState>((set, get) => ({
       await get().loadPaper();
       get().showToast("✓ Sandbox account ready");
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -700,7 +701,7 @@ export const useStore = create<AppState>((set, get) => ({
       get().showToast(`✓ Sandbox trade opened — $${balance.available.toFixed(0)} available`);
       return true;
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
       return false;
     }
   },
@@ -712,7 +713,7 @@ export const useStore = create<AppState>((set, get) => ({
       get().showToast(`✓ Sandbox close — P&L $${(trade.actualPnl ?? 0).toFixed(2)}`);
       return true;
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
       return false;
     }
   },
@@ -745,7 +746,7 @@ export const useStore = create<AppState>((set, get) => ({
         if (warnings.length > 0) set({ error: warnings.join(" · ") });
       }
     } catch (err) {
-      if (!quiet) set({ error: err instanceof Error ? err.message : String(err) });
+      if (!quiet) set({ error: friendlyError(err) });
     } finally {
       set({ paperMarking: false });
     }
@@ -757,7 +758,7 @@ export const useStore = create<AppState>((set, get) => ({
       await Promise.all([get().loadPaper(), get().loadJournal()]);
       get().showToast(`✓ Sandbox reset — ${archived} position${archived === 1 ? "" : "s"} archived`);
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -768,7 +769,7 @@ export const useStore = create<AppState>((set, get) => ({
       const { settings } = await api.paperSettings(patch);
       set((s) => ({ paper: s.paper ? { ...s.paper, settings } : s.paper }));
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -778,7 +779,7 @@ export const useStore = create<AppState>((set, get) => ({
       await get().loadPaper();
       get().showToast(`✓ Sold ${sold.shares} ${sold.symbol} @ $${sold.price.toFixed(2)} — P&L $${sold.realized.toFixed(2)}`);
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -787,7 +788,7 @@ export const useStore = create<AppState>((set, get) => ({
       if (!get().etfReference) set({ etfReference: await api.etfReference() });
       await get().loadEtfWatchlist();
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -801,7 +802,7 @@ export const useStore = create<AppState>((set, get) => ({
         set({ error: "No live metrics yet — hit “Refresh data” to fetch prices, IV and premiums." });
       }
     } catch (err) {
-      set({ etfBusy: false, error: err instanceof Error ? err.message : String(err) });
+      set({ etfBusy: false, error: friendlyError(err) });
     }
   },
 
@@ -815,7 +816,7 @@ export const useStore = create<AppState>((set, get) => ({
         set({ error: `${errors.length} could not be fetched: ${errors.slice(0, 3).join(" · ")}` });
       }
     } catch (err) {
-      set({ etfBusy: false, error: err instanceof Error ? err.message : String(err) });
+      set({ etfBusy: false, error: friendlyError(err) });
     }
   },
 
@@ -824,7 +825,7 @@ export const useStore = create<AppState>((set, get) => ({
       const { etfs } = await api.etfWatchlist();
       set({ etfWatchlist: etfs.map((e) => e.ticker) });
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -833,7 +834,7 @@ export const useStore = create<AppState>((set, get) => ({
       const { watchlist } = await api.etfWatchToggle(ticker, watched ? "add" : "remove");
       set({ etfWatchlist: watchlist });
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: friendlyError(err) });
     }
   },
 
@@ -932,7 +933,7 @@ export const useStore = create<AppState>((set, get) => ({
     } catch (err) {
       set({
         icsBusy: false,
-        icsError: err instanceof Error ? err.message : String(err),
+        icsError: friendlyError(err),
       });
     }
   },

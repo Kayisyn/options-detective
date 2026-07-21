@@ -48,11 +48,8 @@ export default class ErrorBoundary extends Component<Props, State> {
             {this.props.label
               ? `The ${this.props.label} hit an unexpected error.`
               : "The app hit an unexpected error."}{" "}
-            Your saved data is untouched — try again, or reload.
+            Your saved data is untouched. Try again, or reload the app.
           </p>
-          <pre className="mt-3 max-h-28 overflow-auto rounded bg-dark-900/60 px-3 py-2 text-left text-xs text-content-3">
-            {error.message || String(error)}
-          </pre>
           <div className="mt-4 flex justify-center gap-3">
             <button
               onClick={this.reset}
