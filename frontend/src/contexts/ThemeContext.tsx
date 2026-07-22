@@ -15,7 +15,7 @@ import {
 // ids of retired themes (light/neon/professional/deuteranopia/protanopia)
 // fall back to obsidian.
 
-export type ThemeId = "dark" | "green" | "bw";
+export type ThemeId = "dark" | "green" | "bw" | "opal";
 
 export interface ThemeMeta {
   id: ThemeId;
@@ -36,6 +36,10 @@ export const THEMES: ThemeMeta[] = [
   {
     id: "bw", name: "Obsidian", hint: "Finance terminal, pure black & white, formal aesthetic",
     swatch: { bg: "#000000", panel: "#1a1a1a", accents: ["#ffffff", "#ebebeb", "#969696"] },
+  },
+  {
+    id: "opal", name: "Opal", hint: "Light mode. Clean surfaces, muted teal accents, formal finance aesthetic.",
+    swatch: { bg: "#fbfcfd", panel: "#ffffff", accents: ["#2f8f76", "#059669", "#dc2626"] },
   },
 ];
 

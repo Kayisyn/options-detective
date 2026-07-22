@@ -37,7 +37,7 @@ export function AppearanceTab() {
   const { theme, setTheme } = useTheme();
   return (
     <Section index={0}>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {THEMES.map((t) => (
           <button
             key={t.id}

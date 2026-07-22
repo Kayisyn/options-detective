@@ -115,6 +115,53 @@
   border-color: rgb(16 185 129 / 0.18);
 }
 
+/* ============================================================
+   Opal — light mode (v1.10.3). The app's first light theme,
+   built on Obsidian's (theme-bw) flat, blur-free architecture,
+   recolored light: near-white surfaces, muted teal accents, a
+   formal finance aesthetic. Component overrides below flatten the
+   glass exactly as bw does (no backdrop-filter, no ambient
+   radials, no breathing halo/shimmer) so Opal stays as cheap to
+   composite as Obsidian. Glow is a box-shadow focus ring only,
+   never a drop-shadow filter.
+
+   `color-scheme: light` is essential: without it some browsers /
+   OSes force-darken native controls (inputs, sliders, checkboxes,
+   scrollbars) even when our CSS is correct.
+
+   The palette is locked; only the three provided accents (teal,
+   success, danger) plus the neutrals exist, so the app's extra
+   semantic hue slots collapse onto the neutrals the way bw
+   collapses to grayscale: info/warning -> muted slate (the badge
+   LABEL carries the meaning), chart "now" marker -> teal. Text
+   tiers 1 and 2 share the single primary text tone (#111827).
+   Contrast on white: text #111827 ~16:1, muted #6b7480 ~4.9:1,
+   accent-text #256f5b ~5.9:1, white-on-teal button ~3.9:1 (AA for
+   the 14px semibold labels it is used on).
+   ============================================================ */
+:root.theme-opal {
+  color-scheme: light;
+  --od-dark-900: 251 252 253;  /* #fbfcfd page background */
+  --od-dark-800: 255 255 255;  /* #ffffff cards / panels / modals */
+  --od-dark-700: 234 236 239;  /* #eaecef inputs / inset / chips */
+  --od-dark-600: 205 209 214;  /* #cdd1d6 default border */
+  --od-dark-500: 179 184 191;  /* #b3b8bf strong / hover border */
+  --od-text-1: 17 24 39;       /* #111827 primary text */
+  --od-text-2: 17 24 39;       /* palette defines one primary text tone */
+  --od-text-3: 107 116 128;    /* #6b7480 muted labels / hints */
+  --od-heading: 107 116 128;   /* section headers use the muted tone */
+  --od-accent-primary: 47 143 118;       /* #2f8f76 muted teal */
+  --od-accent-primary-hover: 37 111 91;  /* #256f5b darker teal */
+  --od-accent-primary-text: 37 111 91;   /* small accent text, AA on white */
+  --od-on-accent: 255 255 255;   /* white text on teal fills */
+  --od-accent-blue: 107 116 128; /* info -> muted slate (no blue in palette) */
+  --od-accent-green: 5 150 105;  /* profit #059669 */
+  --od-accent-red: 220 38 38;    /* loss #dc2626 */
+  --od-accent-orange: 107 116 128; /* warning -> muted slate (label carries it) */
+  --od-chart-spot: 47 143 118;   /* now-marker teal */
+  --od-glass-fill: 255 255 255;  /* flat white base (blur disabled below) */
+}
+
 body {
   @apply bg-dark-900 font-sans text-content-1 antialiased;
 }
@@ -363,6 +410,69 @@ body::before {
    the terminal theme desaturates them. */
 :root.theme-bw .emoji-icon {
   filter: grayscale(1);
+}
+
+/* ============================================================
+   Opal theme overrides: same flat, blur-free treatment as bw, but
+   on light surfaces. Cards are white with a hairline op-border and
+   the faintest lift; glass blur, ambient radials, breathing halos
+   and liquid shimmer are all off (the accent glow becomes a plain
+   focus ring). The white-overlay utility classes (border-white/x,
+   bg-white/x, divide-white/x) are re-pointed to dark-on-light
+   equivalents so borders and dividers stay visible on white.
+   ============================================================ */
+:root.theme-opal body::before { display: none; } /* no ambient radials */
+:root.theme-opal .card-glass {
+  background-color: rgb(var(--od-dark-800));       /* white surface */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: rgb(var(--od-dark-600));           /* op-border hairline */
+  box-shadow: 0 1px 2px rgb(var(--od-text-1) / 0.05);
+}
+:root.theme-opal .card-glass-hover:hover {
+  border-color: rgb(var(--od-dark-500));
+  box-shadow: 0 2px 10px rgb(var(--od-accent-primary) / 0.12);
+}
+:root.theme-opal .bg-glass {
+  background-color: rgb(var(--od-dark-900) / 0.9); /* nav header, near-opaque */
+}
+:root.theme-opal .backdrop-blur-glass,
+:root.theme-opal .backdrop-blur-sm {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+/* no breathing neon halo or liquid shimmer; keep it clean and flat */
+:root.theme-opal .od-halo::before {
+  animation: none;
+  opacity: 0;
+  box-shadow: none;
+}
+:root.theme-opal .od-halo::after,
+:root.theme-opal .liquid-glass::before,
+:root.theme-opal .liquid-glass::after {
+  animation: none;
+  opacity: 0;
+}
+/* primary button: a subtle teal lift on hover instead of a halo (spec §4) */
+:root.theme-opal .od-btn-primary:hover {
+  box-shadow: 0 2px 8px rgb(var(--od-accent-primary) / 0.25);
+}
+/* focused input: a crisp 3px soft ring, not a breathing glow */
+:root.theme-opal .od-input:focus {
+  animation: none;
+  background-color: rgb(var(--od-dark-800));
+  border-color: rgb(var(--od-accent-primary));
+  box-shadow: 0 0 0 3px rgb(var(--od-accent-primary) / 0.12);
+}
+/* white overlay utilities -> dark-on-light equivalents (op-text at low
+   alpha) so hairline borders and dividers remain visible on white */
+:root.theme-opal .border-white\/5  { border-color: rgb(var(--od-text-1) / 0.05); }
+:root.theme-opal .border-white\/10 { border-color: rgb(var(--od-text-1) / 0.08); }
+:root.theme-opal .border-white\/15 { border-color: rgb(var(--od-text-1) / 0.10); }
+:root.theme-opal .border-white\/20 { border-color: rgb(var(--od-text-1) / 0.12); }
+:root.theme-opal .bg-white\/10 { background-color: rgb(var(--od-text-1) / 0.06); }
+:root.theme-opal .divide-white\/5 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgb(var(--od-text-1) / 0.05);
 }
 
 /* Solid fallback when the user asks for reduced transparency. */
