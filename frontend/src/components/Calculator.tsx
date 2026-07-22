@@ -22,10 +22,10 @@ function narrative(result: CalcResult, symbol: string): string | null {
   const highSideProfit = curve[curve.length - 1].profit > 0;
   const fmt = (b: number) => `$${b.toFixed(2)}`;
   if (bes.length === 2 && lowSideProfit && highSideProfit) {
-    return `Profitable if ${symbol} finishes below ${fmt(bes[0])} or above ${fmt(bes[1])} at expiry — a bet on movement.`;
+    return `Profitable if ${symbol} finishes below ${fmt(bes[0])} or above ${fmt(bes[1])} at expiry, a bet on movement.`;
   }
   if (bes.length === 2 && !lowSideProfit && !highSideProfit) {
-    return `Profitable if ${symbol} finishes between ${fmt(bes[0])} and ${fmt(bes[1])} at expiry — a bet on calm.`;
+    return `Profitable if ${symbol} finishes between ${fmt(bes[0])} and ${fmt(bes[1])} at expiry, a bet on calm.`;
   }
   if (bes.length === 1 && highSideProfit) {
     return `Profitable if ${symbol} finishes above ${fmt(bes[0])} at expiry.`;
@@ -91,7 +91,7 @@ export default function Calculator() {
         </span>
         {candidate.meta.marksQuality === "indicative" && (
           <span className="rounded bg-accent-orange/15 px-2 py-0.5 text-xs text-accent-orange"
-            title="Market was closed when these quotes were captured — verify live prices before trading">
+            title="Market was closed when these quotes were captured, verify live prices before trading">
             indicative marks
           </span>
         )}
@@ -147,7 +147,7 @@ export default function Calculator() {
                   Understanding the payoff
                 </h3>
                 <p>
-                  This is a {strategyLabel(candidate.strategyType).toLowerCase()} —{" "}
+                  This is a {strategyLabel(candidate.strategyType).toLowerCase()}:{" "}
                   {BEST_FOR[candidate.strategyType].charAt(0).toLowerCase()}
                   {BEST_FOR[candidate.strategyType].slice(1)}{" "}
                   You {result.sizing.totalDebit >= 0
@@ -155,8 +155,8 @@ export default function Calculator() {
                     : `collect ${money(-result.sizing.totalDebit)} for opening it`}.
                   The chart shows what you would make or lose at every stock
                   price when the options expire. The most you can lose is{" "}
-                  <b className="text-accent-red">{money(result.payoff.maxLoss)}</b> —
-                  never risk money you can't afford to lose on that number.
+                  <b className="text-accent-red">{money(result.payoff.maxLoss)}</b>.
+                  Never risk money you can't afford to lose on that number.
                 </p>
               </div>
             )}
@@ -164,9 +164,9 @@ export default function Calculator() {
               <Stat label="Max profit" value={money(result.payoff.maxProfit)} tone="good"
                 hint="Best possible outcome at expiry" />
               <Stat label="Max loss" value={money(result.payoff.maxLoss)} tone="bad"
-                hint="Worst possible outcome at expiry — size positions off this number" />
+                hint="Worst possible outcome at expiry, size positions off this number" />
               <Stat label="Breakevens"
-                value={result.payoff.breakevens.map((b) => b.toFixed(2)).join(" / ") || "—"}
+                value={result.payoff.breakevens.map((b) => b.toFixed(2)).join(" / ") || "-"}
                 hint="Underlying prices where the trade neither makes nor loses money" />
               <Stat label="POP" value={pct(result.probability.pop)}
                 hint="Probability of any profit at expiry (lognormal model, risk-neutral drift)"
@@ -199,7 +199,7 @@ export default function Calculator() {
                       <td className="px-3 py-2 capitalize">{leg.type.replace(/_/g, " ")}</td>
                       <td className="px-3 py-2">
                         {leg.type.endsWith("stock") ? (
-                          <span className="text-content-3">—</span>
+                          <span className="text-content-3">-</span>
                         ) : (
                           <input
                             type="number"
@@ -213,7 +213,7 @@ export default function Calculator() {
                       <td className="px-3 py-2 tabular-nums">
                         {money(leg.price, 2)}
                         {leg.theoretical && (
-                          <span className="ml-1 text-xs text-accent-orange" title="Black-Scholes theoretical price at the leg's IV — not a market quote">
+                          <span className="ml-1 text-xs text-accent-orange" title="Black-Scholes theoretical price at the leg's IV, not a market quote">
                             theo
                           </span>
                         )}

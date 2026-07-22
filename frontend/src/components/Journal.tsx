@@ -165,15 +165,15 @@ export default function Journal() {
             <div className="grid grid-cols-2 gap-2">
               <MetricBox label="Trades" value={String(stats.total)} />
               <MetricBox label="Open" value={String(stats.open)} />
-              <MetricBox label="Win rate" value={stats.winRate === null ? "—" : pct(stats.winRate)}
+              <MetricBox label="Win rate" value={stats.winRate === null ? "-" : pct(stats.winRate)}
                 hint="Winners among closed trades" />
               <MetricBox label="Realized P&L"
                 value={<DualValue usd={stats.totalPnl} title="Aggregates convert at today's rate" />}
                 highlight={stats.totalPnl > 0 ? "green" : stats.totalPnl < 0 ? "red" : "none"} />
-              <MetricBox label="Avg win" value={stats.avgWin === null ? "—" : <DualValue usd={stats.avgWin} />} highlight="green" />
-              <MetricBox label="Avg loss" value={stats.avgLoss === null ? "—" : <DualValue usd={stats.avgLoss} />} highlight="red" />
-              <MetricBox label="Best" value={stats.largestWin === null ? "—" : <DualValue usd={stats.largestWin} />} highlight="green" />
-              <MetricBox label="Worst" value={stats.largestLoss === null ? "—" : <DualValue usd={stats.largestLoss} />} highlight="red" />
+              <MetricBox label="Avg win" value={stats.avgWin === null ? "-" : <DualValue usd={stats.avgWin} />} highlight="green" />
+              <MetricBox label="Avg loss" value={stats.avgLoss === null ? "-" : <DualValue usd={stats.avgLoss} />} highlight="red" />
+              <MetricBox label="Best" value={stats.largestWin === null ? "-" : <DualValue usd={stats.largestWin} />} highlight="green" />
+              <MetricBox label="Worst" value={stats.largestLoss === null ? "-" : <DualValue usd={stats.largestLoss} />} highlight="red" />
             </div>
             {(stats.byStrategy.length > 0 || stats.bySymbol.length > 0) && (
               <div className="mt-3 space-y-1 border-t border-white/10 pt-3 text-xs text-content-3">
@@ -262,7 +262,7 @@ export default function Journal() {
                     {t.status}
                   </Badge>
                   {t.paper && (
-                    <Badge variant="violet" title="Simulated position — Sandbox budget, not real money">
+                    <Badge variant="violet" title="Simulated position. Sandbox budget, not real money">
                       sandbox
                     </Badge>
                   )}
@@ -285,7 +285,7 @@ export default function Journal() {
                     )}
                     <span className={`font-mono font-bold tabular-nums ${pnlClass(pnl.value)}`}
                       title={pnl.realized ? "Realized P&L" : "Unrealized P&L from the latest mark"}>
-                      {pnl.value === null ? "—" : (
+                      {pnl.value === null ? "-" : (
                         <DualValue usd={pnl.value}
                           histRate={pnl.realized
                             ? (t.exchangeRateAtClose ?? t.exchangeRateUsed ?? null)
@@ -314,8 +314,8 @@ export default function Journal() {
                       )}
                       {(t.mae !== null || t.mfe !== null) && (
                         <span title="Watermarks of marks observed while the app was open">
-                          MAE <b className="text-accent-red">{t.mae === null ? "—" : money(t.mae)}</b>
-                          {" "}/ MFE <b className="text-accent-green">{t.mfe === null ? "—" : money(t.mfe)}</b>
+                          MAE <b className="text-accent-red">{t.mae === null ? "-" : money(t.mae)}</b>
+                          {" "}/ MFE <b className="text-accent-green">{t.mfe === null ? "-" : money(t.mfe)}</b>
                         </span>
                       )}
                       {t.status === "closed" && (
@@ -339,7 +339,7 @@ export default function Journal() {
                         {s.exportedId === t.id ? "Copied ✓" : "Copy confirmation"}
                       </Button>
                       <Button variant="secondary" size="xs" data-testid="trash-position"
-                        title="Move to Trash — recoverable from the Trash tab"
+                        title="Move to Trash, recoverable from the Trash tab"
                         onClick={() => s.trashPosition(t.id)}>
                         Move to Trash
                       </Button>
@@ -409,7 +409,7 @@ function CsvExportModal({ open, onClose, trades, onExported }: {
     <Modal open={open} onClose={onClose} testid="csv-export-modal" maxWidth="max-w-md">
       <h2 className="text-lg font-semibold">Export Position Log CSV</h2>
       <p className="mt-1 text-sm text-content-3">
-        Pick the columns to include — the selection is remembered.
+        Pick the columns to include, the selection is remembered.
       </p>
       <div className="mt-3 grid max-h-72 grid-cols-2 gap-x-3 overflow-y-auto">
         {CSV_COLUMNS.map((c) => (
@@ -509,7 +509,7 @@ function TrashView({ trades, onRestore, onDelete, onRestoreAll, onPurge }: {
           {confirmPurge ? (
             <Button variant="destructive" size="xs" data-testid="purge-confirm"
               onClick={() => { onPurge(); setConfirmPurge(false); }}>
-              Confirm — delete {trades.length} forever
+              Confirm, delete {trades.length} forever
             </Button>
           ) : (
             <Button variant="ghost" size="xs" data-testid="purge-trash"
@@ -638,7 +638,7 @@ function LogTradeModal({ open, onClose, onSubmit }: {
           onChange={(e) => patch({ assignmentStrike: e.target.value })} />
       </div>
       <label className="mt-3 flex items-center gap-2 text-sm text-content-2"
-        title="Simulated position against your Sandbox budget — capital is reserved, P&L tracked, no real money">
+        title="Simulated position against your Sandbox budget, capital is reserved, P&L tracked, no real money">
         <input type="checkbox" checked={form.paper} data-testid="paper-toggle"
           onChange={(e) => patch({ paper: e.target.checked })}
           className="accent-accent-primary" />
@@ -710,10 +710,10 @@ export function CloseTradeModal({ trade, onClose, onSubmit }: {
         <FormInput label="Exit date" type="date" value={exitDate}
           onChange={(e) => setExitDate(e.target.value)} />
         <FormInput label="MAE $ (optional)" type="number" value={mae}
-          hint="Max adverse excursion — worst unrealized P&L you saw"
+          hint="Max adverse excursion, worst unrealized P&L you saw"
           onChange={(e) => setMae(e.target.value)} />
         <FormInput label="MFE $ (optional)" type="number" value={mfe}
-          hint="Max favorable excursion — best unrealized P&L you saw"
+          hint="Max favorable excursion, best unrealized P&L you saw"
           onChange={(e) => setMfe(e.target.value)} />
       </div>
       <div className="mt-4 flex gap-2">

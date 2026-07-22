@@ -61,7 +61,7 @@ export function buildPositionSummary(trades: JournalTrade[]): string {
   const byStrategy = [...strategies.entries()]
     .map(([k, n]) => `${k} ×${n}`)
     .join(", ");
-  return `${trades.length} positions (${open} open, ${closed} settled)${byStrategy ? ` — ${byStrategy}` : ""}`;
+  return `${trades.length} positions (${open} open, ${closed} settled)${byStrategy ? `, ${byStrategy}` : ""}`;
 }
 
 export function issueTitle(entry: Pick<FeedbackEntry, "type" | "text">): string {

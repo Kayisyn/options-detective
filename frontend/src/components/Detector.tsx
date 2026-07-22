@@ -59,7 +59,7 @@ const STAGGER_CAP = 8; // cards past #9 enter together; nobody waits a second
 
 function riskReward(c: Candidate): string {
   if (c.metrics.riskRewardRatio !== null) return `${num(c.metrics.riskRewardRatio)}x`;
-  return c.payoff.maxProfit === null ? "∞" : "—";
+  return c.payoff.maxProfit === null ? "∞" : "-";
 }
 
 // View 1: symbol + intent -> ranked candidate cards across all expirations.
@@ -199,13 +199,13 @@ export default function Detector() {
 
           {expertMode && result.ivBand === "high" && (
             <div className="rounded-md border border-accent-blue/30 bg-accent-blue/10 px-4 py-2 text-sm text-accent-blue">
-              <span className="emoji-icon">💡</span> IV rank {result.ivRank} is high — options are expensive right now, so the
+              <span className="emoji-icon">💡</span> IV rank {result.ivRank} is high, options are expensive right now, so the
               screen favors premium-selling structures (condors, strangles, covered calls).
             </div>
           )}
           {expertMode && result.ivBand === "low" && (
             <div className="rounded-md border border-accent-blue/30 bg-accent-blue/10 px-4 py-2 text-sm text-accent-blue">
-              <span className="emoji-icon">💡</span> IV rank {result.ivRank} is low — options are cheap right now, so the screen
+              <span className="emoji-icon">💡</span> IV rank {result.ivRank} is low, options are cheap right now, so the screen
               favors long-volatility structures (straddles) and debit spreads.
             </div>
           )}
@@ -285,20 +285,20 @@ export default function Detector() {
                   </div>
                   <div className="flex items-center gap-2">
                     {c.meta.marksQuality === "indicative" && (
-                      <Badge variant="orange" title="Market closed — closing marks, verify live spreads">
+                      <Badge variant="orange" title="Market closed, closing marks, verify live spreads">
                         indicative
                       </Badge>
                     )}
                     <Badge variant={c.probability.pop >= 0.6 ? "green" : "blue"}
                       title={expertMode
                         ? "Probability of any profit at expiry (lognormal model)"
-                        : "Rough odds this trade ends up profitable — 60%+ is favorable"}>
+                        : "Rough odds this trade ends up profitable, 60%+ is favorable"}>
                       {pct(c.probability.pop)} POP
                     </Badge>
                     {expertMode && (
                       <span className="font-mono font-bold tabular-nums text-accent-primary-text"
                         title={customWeights
-                          ? "Composite score under YOUR weights — open Settings → Scoring to adjust"
+                          ? "Composite score under YOUR weights, open Settings → Scoring to adjust"
                           : "Composite: POP 30% · risk/reward 20% · theta 20% · capital efficiency 15% · liquidity 15%"}>
                         {effectiveScore(c, s.weights).toFixed(1)}
                       </span>
@@ -314,7 +314,7 @@ export default function Detector() {
                   <MetricBox label="Max Loss"
                     value={c.payoff.maxLoss === null ? "∞"
                       : <CountUp to={c.payoff.maxLoss} format={(n) => money(n)} />}
-                    highlight="red" hint="Worst possible outcome — size positions off this number" />
+                    highlight="red" hint="Worst possible outcome, size positions off this number" />
                   {expertMode && (
                     <MetricBox label="Risk/Reward" value={riskReward(c)}
                       hint="Max profit divided by max loss" />
@@ -363,7 +363,7 @@ export default function Detector() {
                       suggested {c.sizing.contractsSuggested > 0
                         ? `${c.sizing.contractsSuggested} contract${c.sizing.contractsSuggested > 1 ? "s" : ""}`
                         : "manual sizing"} ·
-                      breakevens {c.payoff.breakevens.map((b) => b.toFixed(2)).join(" / ") || "—"}
+                      breakevens {c.payoff.breakevens.map((b) => b.toFixed(2)).join(" / ") || "-"}
                     </p>
                   </div>
                 )}
@@ -386,7 +386,7 @@ export default function Detector() {
       {!result && !screening && (
         <div className="rounded-lg border border-dashed border-dark-600 p-10 text-center text-content-3">
           Enter a symbol and hit <b>Screen</b>. Every expiration and eligible
-          strategy is checked, priced, and ranked — then filter and sort to taste.
+          strategy is checked, priced, and ranked, then filter and sort to taste.
         </div>
       )}
     </section>

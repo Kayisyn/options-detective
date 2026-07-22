@@ -60,7 +60,7 @@ export default function CandidateCard({
           highlight="green" hint="Best case at expiry" />
         {/* max loss always carries equal visual weight to max profit */}
         <MetricBox label="Max Loss" value={money(c.payoff.maxLoss)}
-          highlight="red" hint="Worst case at expiry — the number that sizes your position" />
+          highlight="red" hint="Worst case at expiry, the number that sizes your position" />
         {expertMode && (
           <>
             <MetricBox

@@ -2,7 +2,6 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { useStore } from "../../store";
 import Button from "../ui/Button";
 import Modal from "../ui/Modal";
-import ViewTransition from "./ViewTransition";
 import { cx } from "../../lib/cx";
 // v1.10.1: the tab components live in SettingsTabs.tsx; this file is the shell
 import {
@@ -18,10 +17,9 @@ interface SettingsPanelProps {
 }
 
 // Settings, v1.4.x: fixed header (title + close), tab strip with a sliding
-// underline, scrollable body. Tab switches reuse the page-level
-// ViewTransition (exit slide-left 200ms, enter slide-right 300ms) and the
-// sections inside each tab stagger in 50ms apart. Selection applies
-// instantly and persists.
+// underline, scrollable body. Tab switches do a snappy 200ms opacity fade
+// (v1.10.2) and the sections inside each tab stagger in 50ms apart.
+// Selection applies instantly and persists.
 
 export type TabId = "appearance" | "customization" | "sidebar" | "currency" | "scoring" | "complexity" | "templates" | "alerts" | "account";
 
@@ -58,7 +56,7 @@ export default function SettingsPanel({ open, onClose, openTab }: SettingsPanelP
 
   function close() {
     onClose();
-    showToast("✓ Settings saved"); // §5.4 — settings apply instantly
+    showToast("✓ Settings saved"); // §5.4, settings apply instantly
   }
 
   return (
@@ -69,7 +67,9 @@ export default function SettingsPanel({ open, onClose, openTab }: SettingsPanelP
           <h2 className="text-xl font-semibold">Settings</h2>
           <Button variant="ghost" size="xs" onClick={close} aria-label="Close settings">✕</Button>
         </div>
-        <div className="relative flex gap-1" role="tablist" aria-label="Settings sections">
+        {/* v1.10.2: scroll horizontally when the 9 tabs don't fit, so none
+            are cut off on the right edge */}
+        <div className="settings-tabs relative flex gap-1 overflow-x-auto pb-1" role="tablist" aria-label="Settings sections">
           {SETTINGS_TABS.map((t) => (
             <button
               key={t.id}
@@ -79,7 +79,7 @@ export default function SettingsPanel({ open, onClose, openTab }: SettingsPanelP
               data-settings-tab={t.id}
               onClick={() => setTab(t.id)}
               className={cx(
-                "group relative rounded-t px-3 pb-2.5 pt-1 text-sm transition-all duration-150 ease-out-quad",
+                "group relative shrink-0 rounded-t px-3 pb-2.5 pt-1 text-sm transition-all duration-150 ease-out-quad",
                 tab === t.id
                   ? "text-content-1"
                   : "text-content-2 opacity-60 hover:scale-[1.02] hover:opacity-100",
@@ -94,15 +94,17 @@ export default function SettingsPanel({ open, onClose, openTab }: SettingsPanelP
           ))}
           <span
             aria-hidden
-            className="settings-tab-underline absolute bottom-0 left-0 h-0.5 w-px bg-accent-primary"
+            className="settings-tab-underline absolute bottom-1 left-0 h-0.5 w-px bg-accent-primary"
             style={{ transform: `translateX(${underline.x}px) scaleX(${underline.w})` }}
           />
         </div>
       </div>
 
-      {/* scrollable body — the header above never moves */}
+      {/* scrollable body, the header above never moves */}
       <div className="settings-scroll min-h-0 flex-1 overflow-y-auto px-6 py-4">
-        <ViewTransition viewKey={tab}>
+        {/* v1.10.2: a snappy 200ms opacity fade on tab change (keyed remount),
+            replacing the 500ms slide transition, lighter and higher-fps */}
+        <div key={tab} className="animate-fade-in">
           {tab === "appearance" && <AppearanceTab />}
           {tab === "customization" && <CustomizationTab />}
           {tab === "sidebar" && <SidebarTab />}
@@ -112,7 +114,7 @@ export default function SettingsPanel({ open, onClose, openTab }: SettingsPanelP
           {tab === "templates" && <TemplatesTab />}
           {tab === "alerts" && <AlertsTab />}
           {tab === "account" && <AccountTab />}
-        </ViewTransition>
+        </div>
         <p className="mt-4 flex items-baseline justify-between text-xs text-content-3">
           <span>Settings apply instantly and persist on this machine.</span>
           <span data-testid="app-version">Option Obelisk v{__APP_VERSION__}</span>

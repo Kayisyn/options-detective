@@ -34,7 +34,7 @@ export const COMPONENT_META: Record<ScoreComponentKey, {
   },
   theta: {
     label: "Theta",
-    explain: "Daily time decay relative to the other candidates in this screen — the best collector scores 1, the worst bleeder 0.",
+    explain: "Daily time decay relative to the other candidates in this screen, the best collector scores 1, the worst bleeder 0.",
     color: "bg-accent-green",
   },
   capEff: {

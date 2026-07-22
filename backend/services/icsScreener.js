@@ -137,7 +137,7 @@ function createIcsScreener({
   }
 
   function unavailableMsg(t) {
-    return `Holdings data is not available for ${t} — try an equity index or sector ETF.`;
+    return `Holdings data is not available for ${t}. Try an equity index or sector ETF.`;
   }
 
   function cacheKeyOf(etf, opts) {

@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useStore } from "../store";
 import Button from "./ui/Button";
+import ObeliskInsignia from "./shared/ObeliskInsignia";
+import { friendlyError } from "../lib/friendlyError";
 import { cx } from "../lib/cx";
 
 // v1.6.0 local-accounts sign-in gate. Renders before the app when no account
@@ -52,7 +54,10 @@ export default function AuthGate() {
       else await login(username.trim(), password, remember);
       // on success the store sets `account`; App swaps to the main app
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      // full error to the console for debugging; a safe message to the user.
+      // login always shows the same non-enumerating message.
+      console.error("[auth]", mode, "failed:", err);
+      setError(friendlyError(err, mode === "create" ? "register" : "login"));
     }
   }
 
@@ -67,7 +72,10 @@ export default function AuthGate() {
     <div className="flex min-h-[100dvh] items-center justify-center px-4">
       <div className="card-glass liquid-glass w-full max-w-sm p-8" data-testid="auth-gate">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 h-8 w-2 rounded-full bg-gradient-to-b from-accent-primary-hover to-accent-primary" />
+          {/* v1.10.2: the Obelisk insignia replaces the old pill placeholder */}
+          <div className="mb-3 flex justify-center">
+            <ObeliskInsignia size={56} glow title="Option Obelisk" />
+          </div>
           <h1 className="text-2xl font-bold tracking-tight">Option Obelisk</h1>
           <p className="mt-1 text-sm text-content-3">
             {mode === "create"

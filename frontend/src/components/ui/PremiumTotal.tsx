@@ -16,7 +16,7 @@ export default function PremiumTotal({ trade }: { trade: JournalTrade }) {
     <span
       className="font-mono text-sm tabular-nums"
       data-testid="premium-total"
-      title={`${credit ? "Premium collected" : "Debit paid"} at entry — $${trade.entryPrice.toFixed(2)} × ${trade.entryQty} × ${trade.multiplier}`}
+      title={`${credit ? "Premium collected" : "Debit paid"} at entry, $${trade.entryPrice.toFixed(2)} × ${trade.entryQty} × ${trade.multiplier}`}
     >
       <span className="text-content-3">{credit ? "collected " : "paid "}</span>
       <b className={credit ? "text-accent-green" : "text-content-1"}>

@@ -147,7 +147,7 @@ function createDetector({ dataLayer = defaultDataLayer, engineBatch = callEngine
     const warnings = [];
     if (data.stale) {
       const ageMin = Math.round((data.quoteAgeSeconds ?? data.dataAgeSeconds) / 60);
-      warnings.push(`quotes are ~${ageMin} minutes old (market closed?) — treat marks as indicative`);
+      warnings.push(`quotes are ~${ageMin} minutes old (market closed?). Treat marks as indicative`);
     }
 
     // Closed/quiet market (stale quotes, or mostly missing books): screening
@@ -168,7 +168,7 @@ function createDetector({ dataLayer = defaultDataLayer, engineBatch = callEngine
     const allowIndicative = data.stale
       || (keptContracts > 0 && bookless / keptContracts > 0.5);
     if (allowIndicative) {
-      warnings.push("market appears closed (stale quotes / empty books) — candidates priced off closing marks; verify live spreads before trading");
+      warnings.push("market appears closed (stale quotes / empty books). Candidates priced off closing marks; verify live spreads before trading");
     }
 
     // ---- build drafts across expirations ----

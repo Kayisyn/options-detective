@@ -26,9 +26,9 @@ const BEGINNER: Record<keyof Greeks, string> = {
 
 const EXPERT: Record<keyof Greeks, string> = {
   delta: "Directional exposure in $ per $1 underlying move; hedge ratio for the position",
-  gamma: "Delta convexity per $1 move — short gamma loses on whipsaw, long gamma gains",
+  gamma: "Delta convexity per $1 move, short gamma loses on whipsaw, long gamma gains",
   theta: "Carry per calendar day; positive = collecting decay, negative = paying for optionality",
-  vega: "IV exposure per point — long vega benefits from expansion, watch IV crush after events",
+  vega: "IV exposure per point, long vega benefits from expansion, watch IV crush after events",
   rho: "Rate sensitivity per point; matters for long-dated or deep ITM positions",
 };
 

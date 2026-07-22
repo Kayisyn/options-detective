@@ -53,7 +53,7 @@ function createJournal({
       if (candidate?.legs?.length && candidate.expiration) {
         const dte = dteOf(candidate.expiration, now());
         if (dte <= 0) {
-          warnings.push(`${trade.symbol} ${trade.strategy}: expired ${candidate.expiration} — close it with your broker's settlement values`);
+          warnings.push(`${trade.symbol} ${trade.strategy}: expired ${candidate.expiration}. Close it with your broker's settlement values`);
         } else {
           try {
             const res = await calculator.analyze({

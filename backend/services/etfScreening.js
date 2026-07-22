@@ -119,19 +119,19 @@ function screen(universe, { filters = {}, strategy = "covered_call", limit = 10 
 const PRESETS = [
   {
     id: "covered_call", name: "Covered Call Machine",
-    hint: "High premium, liquid, stable — consistent income",
+    hint: "High premium, liquid, stable: consistent income",
     strategy: "covered_call",
     filters: { ivRankMin: 60, premiumMin: 12, minAum: 5, priceMin: 30, priceMax: 300 },
   },
   {
     id: "csp", name: "CSP Income Hunter",
-    hint: "High IV on quality funds — strong fundamentals + premium",
+    hint: "High IV on quality funds: strong fundamentals + premium",
     strategy: "csp",
     filters: { ivRankMin: 60, maxExpenseRatioPct: 0.25, minAum: 20, assetClasses: ["Equity"] },
   },
   {
     id: "spread", name: "Low IV Spread Play",
-    hint: "Cheap options to buy — defined-risk spread entries",
+    hint: "Cheap options to buy: defined-risk spread entries",
     strategy: "spread",
     filters: { ivRankMax: 35, priceMin: 50, minCallVolume: 500 },
   },

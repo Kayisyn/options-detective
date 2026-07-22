@@ -107,7 +107,7 @@ export default function PayoffChart({
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} opacity={0.2} />
-            {/* v1.5.2: the curve + fill paint FIRST — SVG stacks by DOM
+            {/* v1.5.2: the curve + fill paint FIRST. SVG stacks by DOM
                 order (z-index is a no-op), so everything declared after the
                 Area (reference lines, dots, labels) renders on top of it.
                 Previously the Area was last and buried every label. */}

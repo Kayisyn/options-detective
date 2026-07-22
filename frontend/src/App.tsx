@@ -15,8 +15,11 @@ const PaperTrading = lazy(() => import("./components/PaperTrading"));
 import FeedbackModal from "./components/shared/FeedbackModal";
 import HelpDrawer from "./components/shared/HelpDrawer";
 import Onboarding, { hasCompletedOnboarding } from "./components/shared/Onboarding";
+import ObeliskInsignia from "./components/shared/ObeliskInsignia";
+import { AccountIcon, FeedbackIcon, HelpIcon, SettingsIcon } from "./components/ui/Icons";
 import ParticleField from "./components/shared/ParticleField";
 import SettingsPanel, { type TabId as SettingsTabId } from "./components/shared/SettingsPanel";
+import SplashScreen from "./components/shared/SplashScreen";
 import { RightSidebar } from "./components/shared/Sidebars";
 import AuthGate from "./components/AuthGate";
 import ViewTransition from "./components/shared/ViewTransition";
@@ -34,26 +37,10 @@ const TABS: Array<{ id: View; label: string; hint: string }> = [
   { id: "calculator", label: "Analyzer", hint: "Analyze the trade math" },
   { id: "recommender", label: "Recommendations", hint: "Optimal strategies, compared and exportable" },
   { id: "journal", label: "Position Log", hint: "Your saved positions" },
-  { id: "analytics", label: "Analytics", hint: "Realized performance — equity curve, win rate, per-strategy stats" },
+  { id: "analytics", label: "Analytics", hint: "Realized performance, equity curve, win rate, per-strategy stats" },
   { id: "paper", label: "Sandbox", hint: "Risk-free simulator with a practice budget" },
-  { id: "etf", label: "Assets", hint: "Asset Screener — discover ETF option-selling candidates" },
+  { id: "etf", label: "Assets", hint: "Asset Screener, discover ETF option-selling candidates" },
 ];
-
-// Minimal geometric obelisk mark. Gradient stops ride the accent tokens,
-// so the mark is violet on obsidian and white on the B&W theme.
-function ObeliskMark() {
-  return (
-    <svg width="18" height="24" viewBox="0 0 18 24" aria-hidden className="shrink-0">
-      <defs>
-        <linearGradient id="obelisk-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" style={{ stopColor: "rgb(var(--od-accent-primary-hover))" }} />
-          <stop offset="1" style={{ stopColor: "rgb(var(--od-accent-primary))" }} />
-        </linearGradient>
-      </defs>
-      <path d="M6 24 L7 6 L9 0 L11 6 L12 24 Z" fill="url(#obelisk-grad)" />
-    </svg>
-  );
-}
 
 // Suspense fallback for a lazy view chunk — mirrors the boot splash's
 // pulsing accent bar so the load reads as intentional, not a flash.
@@ -147,7 +134,7 @@ function MainApp() {
 
   return (
     <div className="min-h-screen">
-      {/* v1.10.1 a11y: first focusable — jump past the nav to the view */}
+      {/* v1.10.1 a11y: first focusable, jump past the nav to the view */}
       <a
         href="#main-content"
         data-testid="skip-link"
@@ -182,7 +169,7 @@ function MainApp() {
             title="Home"
             data-testid="logo"
           >
-            <ObeliskMark />
+            <ObeliskInsignia size={24} />
             Option Obelisk
           </button>
           <nav className="flex flex-wrap items-center gap-1">
@@ -206,7 +193,7 @@ function MainApp() {
             <span className="mx-2 h-6 w-px bg-white/10" />
             <button
               onClick={toggleMode}
-              title="Switch complexity level — beginner hides greeks behind plain-language summaries"
+              title="Switch complexity level, beginner hides greeks behind plain-language summaries"
               data-testid="mode-toggle"
               className="rounded-md px-3 py-1.5 text-sm text-content-3 transition-all duration-150 ease-out-quad hover:bg-dark-700 hover:text-content-1"
             >
@@ -214,7 +201,7 @@ function MainApp() {
             </button>
             <button
               onClick={() => setSettingsOpen(true)}
-              title="Settings — theme, scoring and complexity"
+              title="Settings, theme, scoring and complexity"
               data-testid="settings-button"
               aria-label="Settings"
               className="rounded-md px-3 py-1.5 text-sm text-content-3 transition-all duration-150 ease-out-quad hover:bg-dark-700 hover:text-content-1"
@@ -249,18 +236,21 @@ function MainApp() {
                     onClick={() => setMenuOpen(false)} />
                   <div role="menu" data-testid="more-menu"
                     className="card-glass absolute right-0 top-full z-50 mt-1 w-52 animate-card-enter p-1.5">
+                    {/* v1.10.2: monochrome icons (accent-colored, inherit the
+                        theme) replace the colored emoji */}
                     {([
-                      ["≡ Settings", () => { setSettingsTab(null); setSettingsOpen(true); }],
-                      ["⚙ Account", () => { setSettingsTab("account"); setSettingsOpen(true); }],
-                      ["❓ Help & Glossary", () => openHelp()],
-                      ["📋 Feedback & Bugs", () => setFeedbackOpen(true)],
-                    ] as const).map(([label, action]) => (
+                      [SettingsIcon, "Settings", () => { setSettingsTab(null); setSettingsOpen(true); }],
+                      [AccountIcon, "Account", () => { setSettingsTab("account"); setSettingsOpen(true); }],
+                      [HelpIcon, "Help & Glossary", () => openHelp()],
+                      [FeedbackIcon, "Feedback & Bugs", () => setFeedbackOpen(true)],
+                    ] as const).map(([Icon, label, action]) => (
                       <button key={label} role="menuitem"
-                        data-testid={`menu-${label.slice(2).toLowerCase().replace(/[^a-z]+/g, "-")}`}
+                        data-testid={`menu-${label.toLowerCase().replace(/[^a-z]+/g, "-")}`}
                         onClick={() => { setMenuOpen(false); action(); }}
-                        className="block w-full rounded px-3 py-2 text-left text-sm text-content-2 transition-colors duration-150 hover:bg-dark-700 hover:text-content-1"
+                        className="flex w-full items-center gap-2.5 rounded px-3 py-2 text-left text-sm text-content-2 transition-colors duration-150 hover:bg-dark-700 hover:text-content-1"
                       >
-                        {label}
+                        <Icon className="h-4 w-4 shrink-0 text-accent-primary-text" />
+                        <span>{label}</span>
                       </button>
                     ))}
                   </div>
@@ -270,7 +260,7 @@ function MainApp() {
             <span className="mx-1 h-6 w-px bg-white/10" />
             <button
               onClick={() => logout()}
-              title={account ? `Signed in as ${account.username} — sign out` : "Sign out"}
+              title={account ? `Signed in as ${account.username}, sign out` : "Sign out"}
               data-testid="logout-button"
               className="rounded-md px-3 py-1.5 text-sm text-content-3 transition-all duration-150 ease-out-quad hover:bg-dark-700 hover:text-accent-red"
             >
@@ -309,7 +299,7 @@ function MainApp() {
       </div>
 
       {/* v1.5.1 help affordance, bottom-left of Home. Rendered at the app
-          root (not inside the view) so `fixed` anchors to the viewport — a
+          root (not inside the view) so `fixed` anchors to the viewport, a
           transformed ViewTransition ancestor would otherwise capture it.
           Opens the same searchable Help & Glossary as Ctrl+Shift+?. */}
       {view === "home" && (
@@ -336,21 +326,27 @@ export default function App() {
   const account = useStore((s) => s.account);
   const bootAuth = useStore((s) => s.bootAuth);
 
+  // v1.10.2: the launch splash shows until the boot check finishes AND a short
+  // minimum has elapsed, so the branded splash reads as intentional even when
+  // the backend answers instantly (in the packaged app the backend spawn makes
+  // authReady the longer wait). Then it crossfades out.
+  const [minElapsed, setMinElapsed] = useState(false);
+  const [splashGone, setSplashGone] = useState(false);
+  const bootDone = authReady && minElapsed;
+
   useEffect(() => {
     bootAuth();
+    const t = setTimeout(() => setMinElapsed(true), 1400);
+    return () => clearTimeout(t);
   }, [bootAuth]);
 
   return (
     <>
       <ParticleField />
-      {!authReady ? (
-        <div className="flex min-h-[100dvh] items-center justify-center">
-          <div className="h-8 w-2 animate-pulse rounded-full bg-gradient-to-b from-accent-primary-hover to-accent-primary" />
-        </div>
-      ) : account ? (
-        <MainApp />
-      ) : (
-        <AuthGate />
+      {/* the app mounts behind the splash so the fade-out reveals it */}
+      {bootDone && (account ? <MainApp /> : <AuthGate />)}
+      {!splashGone && (
+        <SplashScreen leaving={bootDone} onExited={() => setSplashGone(true)} />
       )}
     </>
   );

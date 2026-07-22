@@ -38,7 +38,7 @@ function EquityCurve({ points, days }: { points: EquityPoint[]; days: number }) 
     return (
       <div className="flex h-44 items-center justify-center rounded-lg border border-dashed border-dark-600 px-4 text-center text-sm text-content-3">
         {days > 0
-          ? "No snapshots in this range yet — try a wider range, or open/close/process positions."
+          ? "No snapshots in this range yet, try a wider range, or open/close/process positions."
           : "The equity curve appears after a few snapshots (open, close or process positions)."}
       </div>
     );
@@ -154,7 +154,7 @@ export default function PaperTrading() {
               <DualValue usd={balance.accountValue} digits={2} />
             </b>{" "}
             ({totalReturn >= 0 ? "+" : ""}{((totalReturn / balance.initialBalance) * 100).toFixed(2)}%)
-            — simulated money, engine marks, deterministic assignment.
+           , simulated money, engine marks, deterministic assignment.
             {open.length > 0 && (
               <span className="text-content-3" data-testid="paper-mark-freshness">
                 {" "}Marks auto-refresh every minute
@@ -173,7 +173,7 @@ export default function PaperTrading() {
           {confirmReset ? (
             <Button variant="destructive" size="sm" data-testid="paper-reset-confirm"
               onClick={() => { setConfirmReset(false); s.resetPaper(); }}>
-              Confirm reset — archives {open.length + settled.length} trades
+              Confirm reset, archives {open.length + settled.length} trades
             </Button>
           ) : (
             <Button variant="ghost" size="sm" onClick={() => {
@@ -210,11 +210,11 @@ export default function PaperTrading() {
           <MetricBox label="Realized P&L" value={<DualValue usd={balance.realizedPnl} digits={2} />}
             highlight={balance.realizedPnl > 0 ? "green" : balance.realizedPnl < 0 ? "red" : "none"} />
           <MetricBox label="Unrealized"
-            value={balance.unrealizedPnl === null ? "—" : <DualValue usd={balance.unrealizedPnl} digits={2} />}
+            value={balance.unrealizedPnl === null ? "-" : <DualValue usd={balance.unrealizedPnl} digits={2} />}
             highlight={(balance.unrealizedPnl ?? 0) > 0 ? "green" : (balance.unrealizedPnl ?? 0) < 0 ? "red" : "none"}
             hint="From theoretical marks, auto-refreshed every minute while this tab is open" />
-          <MetricBox label="Win rate" value={stats.winRate === null ? "—" : pct(stats.winRate)}
-            hint={`Profit factor ${stats.profitFactor ?? "—"} · ${stats.assigned} assigned`} />
+          <MetricBox label="Win rate" value={stats.winRate === null ? "-" : pct(stats.winRate)}
+            hint={`Profit factor ${stats.profitFactor ?? "-"} · ${stats.assigned} assigned`} />
           {(balance.feesPaid ?? 0) > 0 && (
             <MetricBox label="Commissions" value={money(balance.feesPaid ?? 0, 2)}
               highlight="red"
@@ -281,9 +281,9 @@ export default function PaperTrading() {
                         )}
                         <span className={`font-mono font-bold tabular-nums ${pnlClass(unrl)}`}
                           title={unrl === null
-                            ? "No pricing model for this position — it was logged manually without a linked candidate, so it can't be repriced. Close it manually at your own exit price."
+                            ? "No pricing model for this position, it was logged manually without a linked candidate, so it can't be repriced. Close it manually at your own exit price."
                             : "Unrealized P&L at the latest theoretical mark"}>
-                          {unrl === null ? "—" : money(unrl)}
+                          {unrl === null ? "-" : money(unrl)}
                           {unrl !== null && <span className="ml-1 text-[10px] font-normal text-content-3">unrl</span>}
                         </span>
                       </span>
@@ -318,10 +318,10 @@ export default function PaperTrading() {
           {(stats.byStrategy.length > 0 || stats.bySymbol.length > 0) && (
             <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-content-3">
               <span>
-                Avg win <b className="text-accent-green">{stats.avgWin === null ? "—" : money(stats.avgWin)}</b>
-                {" "}· avg loss <b className="text-accent-red">{stats.avgLoss === null ? "—" : money(stats.avgLoss)}</b>
-                {" "}· best <b className="text-accent-green">{stats.largestWin === null ? "—" : money(stats.largestWin)}</b>
-                {" "}· worst <b className="text-accent-red">{stats.largestLoss === null ? "—" : money(stats.largestLoss)}</b>
+                Avg win <b className="text-accent-green">{stats.avgWin === null ? "-" : money(stats.avgWin)}</b>
+                {" "}· avg loss <b className="text-accent-red">{stats.avgLoss === null ? "-" : money(stats.avgLoss)}</b>
+                {" "}· best <b className="text-accent-green">{stats.largestWin === null ? "-" : money(stats.largestWin)}</b>
+                {" "}· worst <b className="text-accent-red">{stats.largestLoss === null ? "-" : money(stats.largestLoss)}</b>
               </span>
               {stats.byStrategy.length > 0 && (
                 <span>
@@ -373,11 +373,11 @@ export default function PaperTrading() {
                 <span className="capitalize">{strategyLabel(t.strategy)}</span>
                 <Badge variant={t.status === "assigned" ? "orange" : "neutral"}>{t.status}</Badge>
                 <span className="font-mono text-content-2">
-                  ${t.entryPrice.toFixed(2)} → {t.exitPrice === null ? "—" : `$${t.exitPrice.toFixed(2)}`}
+                  ${t.entryPrice.toFixed(2)} → {t.exitPrice === null ? "-" : `$${t.exitPrice.toFixed(2)}`}
                 </span>
                 <span className="text-xs text-content-3">{(t.exitDate ?? "").slice(0, 10)}</span>
                 <span className={`ml-auto font-mono font-bold tabular-nums ${pnlClass(t.actualPnl)}`}>
-                  {t.actualPnl === null ? "—" : money(t.actualPnl)}
+                  {t.actualPnl === null ? "-" : money(t.actualPnl)}
                 </span>
               </div>
             </Card>

@@ -29,7 +29,7 @@ export const DEFAULT_ALERT_PREFS: AlertPrefs = {
 };
 
 export interface AlertEvent {
-  key: string;    // dedup key — one fire per key
+  key: string;    // dedup key, one fire per key
   type: "pnl" | "expiry" | "score";
   title: string;
   body: string;
@@ -129,7 +129,7 @@ export function evaluatePnl(trades: JournalTrade[], prefs: AlertPrefs, now: Date
       key: `pnl-up:${day}`,
       type: "pnl",
       title: "Daily P&L goal hit 🎉",
-      body: `Realized ${daily >= 0 ? "+" : ""}$${daily.toFixed(0)} today — your goal was +$${prefs.pnlUp.toFixed(0)}.`,
+      body: `Realized ${daily >= 0 ? "+" : ""}$${daily.toFixed(0)} today, your goal was +$${prefs.pnlUp.toFixed(0)}.`,
     });
   }
   if (prefs.pnlDown > 0 && daily <= -prefs.pnlDown) {
@@ -137,7 +137,7 @@ export function evaluatePnl(trades: JournalTrade[], prefs: AlertPrefs, now: Date
       key: `pnl-down:${day}`,
       type: "pnl",
       title: "Daily loss threshold reached",
-      body: `Realized -$${Math.abs(daily).toFixed(0)} today — your limit was -$${prefs.pnlDown.toFixed(0)}.`,
+      body: `Realized -$${Math.abs(daily).toFixed(0)} today, your limit was -$${prefs.pnlDown.toFixed(0)}.`,
     });
   }
   return events;
@@ -154,7 +154,7 @@ export function evaluateExpiry(trades: JournalTrade[], prefs: AlertPrefs, now: D
         key: `expiry-day:${t.id}`,
         type: "expiry",
         title: "Position expires today",
-        body: `${t.symbol} ${t.strategy.replace(/_/g, " ")} expires today — close, roll or let it settle.`,
+        body: `${t.symbol} ${t.strategy.replace(/_/g, " ")} expires today, close, roll or let it settle.`,
       });
     } else if (prefs.expiry7d && days > 0 && days <= 7) {
       events.push({
@@ -177,7 +177,7 @@ export function evaluateScore(etfs: EtfRecord[], prefs: AlertPrefs, now: Date): 
       key: `iv:${e.ticker}:${day}`,
       type: "score" as const,
       title: "High IV rank found",
-      body: `${e.ticker} IV rank ${Math.round(e.ivRank ?? 0)} ≥ ${prefs.scoreIvRank} — premium selling setup.`,
+      body: `${e.ticker} IV rank ${Math.round(e.ivRank ?? 0)} ≥ ${prefs.scoreIvRank}, premium selling setup.`,
     }));
 }
 
@@ -190,7 +190,7 @@ function deliverOs(event: AlertEvent): boolean {
     if (typeof Notification === "undefined") return false;
     if (Notification.permission !== "granted") return false;
     // eslint-disable-next-line no-new -- fire-and-forget OS toast
-    new Notification(`Option Obelisk — ${event.title}`, { body: event.body, tag: event.key });
+    new Notification(`Option Obelisk, ${event.title}`, { body: event.body, tag: event.key });
     return true;
   } catch {
     return false;
@@ -225,7 +225,7 @@ export function fireAlerts(events: AlertEvent[], fallback: NotifyFallback, now: 
   const entries: AlertHistoryEntry[] = fresh.map((e) => ({ ...e, at: now.toISOString() }));
   for (const event of fresh) {
     fired[event.key] = now.toISOString();
-    if (!deliverOs(event)) fallback(`📢 ${event.title} — ${event.body}`);
+    if (!deliverOs(event)) fallback(`📢 ${event.title}, ${event.body}`);
   }
   saveFired(fired);
   pushHistory(entries);
