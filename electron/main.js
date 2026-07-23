@@ -120,6 +120,12 @@ function createWindow() {
     width: 1440,
     height: 900,
     backgroundColor: "#0a0a0f", // obsidian black — pre-paint bg, no blue tint
+    // v1.10.5: the running window's taskbar/titlebar icon. The packaged .exe
+    // icon comes from electron-builder (build.win.icon), but the live window
+    // needs this explicitly or it shows the default Electron logo — most
+    // visible in dev and when the window is pinned. Bundled via the files
+    // array so __dirname resolves in both dev and the packaged asar.
+    icon: path.join(__dirname, "build", "icon.ico"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

@@ -15,7 +15,7 @@ const PaperTrading = lazy(() => import("./components/PaperTrading"));
 import FeedbackModal from "./components/shared/FeedbackModal";
 import HelpDrawer from "./components/shared/HelpDrawer";
 import Onboarding, { hasCompletedOnboarding } from "./components/shared/Onboarding";
-import BrandLogo from "./components/shared/BrandLogo";
+import ObeliskMark from "./components/shared/ObeliskMark";
 import { AccountIcon, FeedbackIcon, HelpIcon, SettingsIcon } from "./components/ui/Icons";
 import ParticleField from "./components/shared/ParticleField";
 import SettingsPanel, { type TabId as SettingsTabId } from "./components/shared/SettingsPanel";
@@ -162,24 +162,26 @@ function MainApp() {
         </div>
       )}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-glass backdrop-blur-glass">
-        <div className="mx-auto flex min-h-14 max-w-7xl flex-wrap items-center justify-between gap-y-1 px-6 py-1.5">
+        <div className="mx-auto flex min-h-14 max-w-7xl items-center gap-3 px-6 py-1.5">
+          {/* brand — fixed, never shrinks (v1.10.5) */}
           <button
             onClick={() => setView("home")}
-            className="flex items-center gap-2 text-lg font-bold tracking-tight transition-colors duration-150 hover:text-accent-primary-text"
+            className="group flex shrink-0 items-center gap-2 text-lg font-bold tracking-tight transition-colors duration-150 hover:text-accent-primary-text"
             title="Home"
             data-testid="logo"
           >
-            <BrandLogo size={26} />
+            <ObeliskMark size={28} className="text-content-3 transition-colors duration-150 group-hover:text-accent-primary-text" />
             Option Obelisk
           </button>
-          <nav className="flex flex-wrap items-center gap-1">
+          {/* view tabs — flexible middle section, scrolls when the window is narrow */}
+          <nav className="nav-scroll flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => enabled[tab.id] && setView(tab.id)}
                 title={tab.hint}
                 disabled={!enabled[tab.id]}
-                className={`rounded-md px-3 py-1.5 text-sm transition-all duration-150 ease-out-quad ${
+                className={`shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition-all duration-150 ease-out-quad ${
                   activeTab === tab.id
                     ? "bg-accent-primary text-on-accent shadow-accent-glow"
                     : enabled[tab.id]
@@ -190,7 +192,9 @@ function MainApp() {
                 {tab.label}
               </button>
             ))}
-            <span className="mx-2 h-6 w-px bg-white/10" />
+          </nav>
+          {/* right controls — fixed, never shrink */}
+          <div className="flex shrink-0 items-center gap-1">
             <button
               onClick={toggleMode}
               title="Switch complexity level, beginner hides greeks behind plain-language summaries"
@@ -267,7 +271,7 @@ function MainApp() {
               <span className="font-medium text-content-2">{account?.username}</span>
               <span className="text-content-3"> · Sign out</span>
             </button>
-          </nav>
+          </div>
         </div>
       </header>
       {error && (

@@ -1,6 +1,6 @@
 {
   "name": "options-detective-electron",
-  "version": "1.10.4",
+  "version": "1.10.5",
   "private": true,
   "description": "Electron shell for Option Obelisk (formerly Options Detective)",
   "main": "main.js",
@@ -21,7 +21,8 @@
     "files": [
       "main.js",
       "preload.js",
-      "package.json"
+      "package.json",
+      "build/icon.ico"
     ],
     "extraResources": [
       {

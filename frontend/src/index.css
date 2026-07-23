@@ -596,6 +596,15 @@ body::before {
   background: rgb(var(--od-accent-primary) / 0.55);
 }
 
+/* v1.10.5: the nav view-tabs scroll horizontally on narrow widths (so the
+   brand and controls never shrink), with no visible scrollbar in the header. */
+.nav-scroll {
+  scrollbar-width: none;
+}
+.nav-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* Settings tab strip: the active-tab underline slides between tabs on
    a GPU-only translateX + scaleX (the bar itself is 1px wide and gets
    stretched to the measured tab width). */
