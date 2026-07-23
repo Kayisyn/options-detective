@@ -15,7 +15,7 @@ const PaperTrading = lazy(() => import("./components/PaperTrading"));
 import FeedbackModal from "./components/shared/FeedbackModal";
 import HelpDrawer from "./components/shared/HelpDrawer";
 import Onboarding, { hasCompletedOnboarding } from "./components/shared/Onboarding";
-import ObeliskInsignia from "./components/shared/ObeliskInsignia";
+import BrandLogo from "./components/shared/BrandLogo";
 import { AccountIcon, FeedbackIcon, HelpIcon, SettingsIcon } from "./components/ui/Icons";
 import ParticleField from "./components/shared/ParticleField";
 import SettingsPanel, { type TabId as SettingsTabId } from "./components/shared/SettingsPanel";
@@ -169,7 +169,7 @@ function MainApp() {
             title="Home"
             data-testid="logo"
           >
-            <ObeliskInsignia size={24} />
+            <BrandLogo size={26} />
             Option Obelisk
           </button>
           <nav className="flex flex-wrap items-center gap-1">
@@ -195,7 +195,7 @@ function MainApp() {
               onClick={toggleMode}
               title="Switch complexity level, beginner hides greeks behind plain-language summaries"
               data-testid="mode-toggle"
-              className="rounded-md px-3 py-1.5 text-sm text-content-3 transition-all duration-150 ease-out-quad hover:bg-dark-700 hover:text-content-1"
+              className="min-w-[5.25rem] rounded-md px-3 py-1.5 text-center text-sm text-content-3 transition-all duration-150 ease-out-quad hover:bg-dark-700 hover:text-content-1"
             >
               {expertMode ? "Expert" : "Beginner"}
             </button>

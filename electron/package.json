@@ -1,6 +1,6 @@
 {
   "name": "options-detective-electron",
-  "version": "1.10.3",
+  "version": "1.10.4",
   "private": true,
   "description": "Electron shell for Option Obelisk (formerly Options Detective)",
   "main": "main.js",
@@ -48,7 +48,14 @@
       "target": [
         "nsis"
       ],
+      "icon": "build/icon.png",
       "signAndEditExecutable": false
+    },
+    "mac": {
+      "icon": "build/icon.png"
+    },
+    "linux": {
+      "icon": "build/icon.png"
     },
     "nsis": {
       "oneClick": true,

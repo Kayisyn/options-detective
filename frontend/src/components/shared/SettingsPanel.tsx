@@ -23,16 +23,17 @@ interface SettingsPanelProps {
 
 export type TabId = "appearance" | "customization" | "sidebar" | "currency" | "scoring" | "complexity" | "templates" | "alerts" | "account";
 
+// alphabetical by label (v1.10.4) for predictable scanning
 const SETTINGS_TABS: Array<{ id: TabId; label: string }> = [
-  { id: "appearance", label: "Appearance" },
-  { id: "customization", label: "Customization" },
-  { id: "sidebar", label: "Sidebar" },
-  { id: "currency", label: "Currency" },
-  { id: "scoring", label: "Scoring" },
-  { id: "complexity", label: "Complexity" },
-  { id: "templates", label: "Templates" },
-  { id: "alerts", label: "Alerts" },
   { id: "account", label: "Account" },
+  { id: "alerts", label: "Alerts" },
+  { id: "appearance", label: "Appearance" },
+  { id: "complexity", label: "Complexity" },
+  { id: "currency", label: "Currency" },
+  { id: "customization", label: "Customization" },
+  { id: "scoring", label: "Scoring" },
+  { id: "sidebar", label: "Sidebar" },
+  { id: "templates", label: "Templates" },
 ];
 
 export default function SettingsPanel({ open, onClose, openTab }: SettingsPanelProps) {

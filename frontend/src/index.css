@@ -400,6 +400,35 @@ body::before {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
+
+/* ============================================================
+   v1.10.4 performance: Amethyst (theme-dark) and Emerald
+   (theme-green) drop the expensive 30px backdrop-filter blur on
+   glass surfaces, matching Obsidian's / Opal's flat compositing.
+   The glass fill goes near-solid (0.96) so cards read the same
+   without the blur, and the accent border + depth shadow stay, so
+   the layered-card look and the theme colors are unchanged. (The
+   only filter:drop-shadow in the app is the launch splash's
+   one-element glow; there is no broad drop-shadow to remove.)
+   ============================================================ */
+:root.theme-dark .card-glass,
+:root.theme-green .card-glass {
+  background-color: rgb(var(--od-glass-fill) / 0.96);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+:root.theme-dark .bg-glass,
+:root.theme-green .bg-glass {
+  background-color: rgb(var(--od-glass-fill) / 0.96);
+}
+:root.theme-dark .backdrop-blur-glass,
+:root.theme-dark .backdrop-blur-sm,
+:root.theme-green .backdrop-blur-glass,
+:root.theme-green .backdrop-blur-sm {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 /* Primary CTAs invert terminal-style: white fill, black text (via
    --od-on-accent). Destructive fills are light gray in B&W, so their
    label flips to black for contrast. */
@@ -511,20 +540,18 @@ body::before {
   100% { clip-path: inset(0 0 0 0); }
 }
 
-/* v1.10.2 launch splash: the insignia breathes with an accent-colored halo */
-@keyframes obelisk-glow {
-  0%, 100% {
-    filter: drop-shadow(0 0 6px rgb(var(--od-accent-primary) / 0.35));
-    transform: scale(1);
-  }
-  50% {
-    filter: drop-shadow(0 0 22px rgb(var(--od-accent-primary) / 0.7));
-    transform: scale(1.045);
-  }
+/* v1.10.4 launch splash: the logo tile breathes with a soft accent halo.
+   Box-shadow + transform only, no drop-shadow filter (lighter to composite). */
+@keyframes brand-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
 }
-.obelisk-glow {
-  animation: obelisk-glow 2.6s ease-in-out infinite;
-  will-change: filter, transform;
+.brand-pulse {
+  animation: brand-pulse 2.6s ease-in-out infinite;
+  will-change: transform;
+}
+.brand-splash {
+  box-shadow: 0 8px 40px rgb(var(--od-accent-primary) / 0.3);
 }
 
 /* Settings panel: fixed header, scrolling body. The thumb rides the
@@ -629,10 +656,9 @@ body::before {
 :root.motion-off .chart-trace {
   animation: none;
 }
-/* splash insignia: keep a static halo, no pulse, when motion is off */
-:root.motion-off .obelisk-glow {
+/* splash logo: keep the static halo, drop the breathe, when motion is off */
+:root.motion-off .brand-pulse {
   animation: none;
-  filter: drop-shadow(0 0 10px rgb(var(--od-accent-primary) / 0.45));
 }
 :root.motion-off .card-glass-hover,
 :root.motion-off .card-glass-hover:hover {

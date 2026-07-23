@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useStore } from "../store";
 import Button from "./ui/Button";
-import ObeliskInsignia from "./shared/ObeliskInsignia";
+import BrandLogo from "./shared/BrandLogo";
 import { friendlyError } from "../lib/friendlyError";
 import { cx } from "../lib/cx";
 
@@ -74,7 +74,7 @@ export default function AuthGate() {
         <div className="mb-6 text-center">
           {/* v1.10.2: the Obelisk insignia replaces the old pill placeholder */}
           <div className="mb-3 flex justify-center">
-            <ObeliskInsignia size={56} glow title="Option Obelisk" />
+            <BrandLogo size={72} className="mx-auto" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Option Obelisk</h1>
           <p className="mt-1 text-sm text-content-3">

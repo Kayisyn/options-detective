@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import ObeliskInsignia from "./ObeliskInsignia";
+import BrandLogo from "./BrandLogo";
 import { cx } from "../../lib/cx";
 
 // v1.10.2 launch splash. Replaces the bare loading bar: the Obelisk insignia
@@ -37,7 +37,7 @@ export default function SplashScreen({
         leaving ? "pointer-events-none opacity-0" : "opacity-100",
       )}
     >
-      <ObeliskInsignia size={104} glow title="Option Obelisk" />
+      <BrandLogo size={104} glow />
       <div className="animate-fade-in text-center" style={{ animationDelay: "150ms" }}>
         <div className="text-2xl font-bold tracking-tight text-content-1">Option Obelisk</div>
         <div className="mt-1 text-sm text-content-3">Loading your workspace…</div>
