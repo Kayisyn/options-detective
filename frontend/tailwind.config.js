@@ -62,6 +62,9 @@ export default {
         // glows ride the accent primary: violet on obsidian, white on B&W
         "glass-lg": "0 8px 32px rgb(var(--od-accent-primary) / 0.25)",
         "accent-glow": "0 0 24px rgb(var(--od-accent-primary) / 0.5)",
+        // v1.10.6 active nav tab: a subtly raised pill, not the harsh 24px
+        // halo — a thin top highlight plus a soft, low-opacity accent shadow.
+        "tab-active": "inset 0 1px 0 rgb(255 255 255 / 0.18), 0 1px 4px rgb(var(--od-accent-primary) / 0.3)",
         glow: "0 0 0 1px rgb(var(--od-accent-primary) / 0.4), 0 0 24px rgb(var(--od-accent-primary) / 0.15)",
       },
       transitionTimingFunction: {

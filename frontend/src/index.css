@@ -369,6 +369,7 @@ body::before {
     0 8px 32px rgb(0 0 0 / 0.2);
 }
 :root.fx-no-glow .shadow-accent-glow,
+:root.fx-no-glow .shadow-tab-active,
 :root.fx-no-glow .shadow-glow {
   box-shadow: none !important;
 }

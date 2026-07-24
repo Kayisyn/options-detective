@@ -170,7 +170,7 @@ function MainApp() {
             title="Home"
             data-testid="logo"
           >
-            <ObeliskMark size={28} className="text-content-3 transition-colors duration-150 group-hover:text-accent-primary-text" />
+            <ObeliskMark size={28} className="text-accent-primary transition-colors duration-150 group-hover:text-accent-primary-hover" />
             Option Obelisk
           </button>
           {/* view tabs — flexible middle section, scrolls when the window is narrow */}
@@ -183,7 +183,7 @@ function MainApp() {
                 disabled={!enabled[tab.id]}
                 className={`shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition-all duration-150 ease-out-quad ${
                   activeTab === tab.id
-                    ? "bg-accent-primary text-on-accent shadow-accent-glow"
+                    ? "bg-accent-primary text-on-accent shadow-tab-active"
                     : enabled[tab.id]
                       ? "text-content-3 hover:bg-dark-700 hover:text-content-1"
                       : "cursor-not-allowed text-content-3/40"
@@ -203,24 +203,9 @@ function MainApp() {
             >
               {expertMode ? "Expert" : "Beginner"}
             </button>
-            <button
-              onClick={() => setSettingsOpen(true)}
-              title="Settings, theme, scoring and complexity"
-              data-testid="settings-button"
-              aria-label="Settings"
-              className="rounded-md px-3 py-1.5 text-sm text-content-3 transition-all duration-150 ease-out-quad hover:bg-dark-700 hover:text-content-1"
-            >
-              ⚙
-            </button>
-            <button
-              onClick={() => openHelp()}
-              title="Help & glossary (Ctrl+Shift+?)"
-              data-testid="help-button"
-              aria-label="Help"
-              className="rounded-md px-3 py-1.5 text-sm text-content-3 transition-all duration-150 ease-out-quad hover:bg-dark-700 hover:text-content-1"
-            >
-              ?
-            </button>
+            {/* v1.10.6: standalone ⚙ Settings and ? Help buttons removed —
+                both live in the ⋮ menu below, so the header stays compact and
+                the view tabs fit without horizontal scrolling. */}
             {/* v1.9.1 ⋮ menu: Settings / Account / Help / Feedback & Bugs */}
             <div className="relative">
               <button
